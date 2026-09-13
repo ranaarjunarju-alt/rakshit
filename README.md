@@ -4,26 +4,29 @@ Complete reverse-engineering of `com.nivaroid.topfollow`, an Instagram
 follower-exchange manipulation app that advertises anti-tamper, anti-Frida,
 SSL pinning and Play Integrity protection.
 
-**Result: 63 vulnerabilities (11 Critical, 22 High, 21 Medium, 9 Low), 8 Frida
-proof-of-concept scripts, every claimed protection located and defeated.**
+**Result: 73 vulnerabilities (11 Critical, 25 High, 25 Medium, 12 Low), 11 Frida
+scripts (10 proof-of-concepts + a shared helper), every claimed protection
+located and defeated — including a native AES-256 that a first pass missed and
+that was then proven by executing the code under Unicorn.**
 
 ---
 
 ## Read this first
 
 👉 **[`TopFollow_Security_Analysis.html`](TopFollow_Security_Analysis.html)** —
-a single self-contained 425 KiB HTML report. No external assets, no network
+a single self-contained 544 KiB HTML report. No external assets, no network
 requests. Open it in any browser; use **Print → Save as PDF** for an offline
 copy (print styles strip the interactive chrome and expand every code block).
 
 It contains the threat model, the full architectural reconstruction, the
 Instagram login flow, the private-API layer, the task-verification logic, the
-coin economy, all 26 backend endpoints, all 22 native JNI functions, the
+coin economy, all 26 backend endpoints, all 22 native JNI functions, a dedicated
+section on the native AES-256 and the Unicorn execution that proved it, the
 cryptographic analysis, the complete vulnerability register with evidence and
-remediation, and the source of all 8 Frida scripts.
+remediation, and the source of all 11 Frida scripts.
 
 Interactive features: sticky table of contents with scroll-spy, a global
-search across all 63 findings, per-severity and per-category filters, and
+search across all 73 findings, per-severity and per-category filters, and
 filterable data tables.
 
 ## Headline findings
@@ -39,7 +42,10 @@ filterable data tables.
 | 7 | **Backend base URL *and* certificate pin are downloaded at runtime** from ServerCheck | One MITM'd response redirects the whole fleet, credentials included |
 | 8 | **`allowBackup=true` with completely empty exclusion rules** | The unencrypted credential DB lands in Google cloud backup |
 | 9 | **The "pin" is the APK signing-certificate digest**, and doubles as the tamper-check constant | Pins nothing about the server's TLS key |
-| 10 | **`libtopfollow.so` contains no crypto or TLS code** — pinning is executed via JNI in Java | One Frida hook on `CertificatePinner.check` defeats it |
+| 10 | **`libtopfollow.so` has no TLS stack and imports no crypto library** — pinning is executed via JNI in Java | One Frida hook on `CertificatePinner.check` defeats it |
+| 11 | **A real AES-256 lives in the native library** (S-box `0x128b0`, inv `0x139b0`, rcon `0x13b10`), proven by Unicorn: 14 rcon reads, a 240-byte FIPS-197 schedule | The key is derived at runtime and is **not** any byte window of the file — recoverable only from live memory (script 09) |
+| 12 | **The native AES is not reachable from Java** — none of the 22 JNI natives is `([B)[B`; the one `digest([B)[B` bridge the library asks for does not exist in the DEX | A dead JNI bridge: `GetStaticMethodID` returns NULL → `NoSuchMethodError` (CRED-11) |
+| 13 | **Instagram password sealing uses RSA-PKCS1, not OAEP, with a public key supplied by the network and never validated** | Composes with the ServerCheck pin/URL injection: a MITM replaces the RSA key and reads every password (CRYP-11, CRYP-12) |
 
 ## Repository layout
 
@@ -47,7 +53,7 @@ filterable data tables.
 TopFollow_Security_Analysis.html     ← the deliverable: single-file HTML report
 THREAT_MODEL.md                      ← standalone threat model (assets, actors,
                                         trust boundaries, attack trees)
-dynamic-lab/                         ← 8 Frida PoC scripts + shared helper
+dynamic-lab/                         ← 11 Frida scripts (10 PoCs + shared helper)
   00_common.js                         helpers: class resolver, RegisterNatives
                                        capture, prefs dumper, overload tracer
   01_anti_tamper_killer.js             signature check, maps scan, anti-Frida,
@@ -59,9 +65,15 @@ dynamic-lab/                         ← 8 Frida PoC scripts + shared helper
   06_task_verification_bypass.js       get_coin / order_value forgery
   07_native_jni_dumper.js              22 JNI fns + XOR/base64 string recovery
   08_backend_traffic_and_servercheck.js  all 26 endpoints + pin/URL hijack
+  09_native_aes_dump.js                locate AES S-box by content, Stalker the
+                                       table-referencing code, recover any live
+                                       FIPS-197 round-key schedule + key
+  10_java_crypto_layer.js              q8.t1.f password encryptor dissection,
+                                       Cipher.init raw-key dump, helper.T ECDSA,
+                                       dead digest([B)[B bridge proof
 report/
   build_report.py                    ← regenerates the HTML report
-  vulns_data.py                      ← the 63-finding register (source of truth)
+  vulns_data.py                      ← the 73-finding register (source of truth)
   cipher_poc.py                      ← Python re-implementation of glide.d.p()/q()
 work/
   README.md                          ← the RE toolchain, stage by stage,
@@ -83,10 +95,10 @@ frida -U -f com.nivaroid.topfollow \
       -l dynamic-lab/01_anti_tamper_killer.js \
       -l dynamic-lab/02_ssl_pinning_bypass.js
 
-# add the layer you are investigating (03 … 08), or load all nine
+# add the layer you are investigating (03 … 10), or load all eleven
 ```
 
-Section 17 of the HTML report is a step-by-step reproduction guide, including
+Section 18 of the HTML report is a step-by-step reproduction guide, including
 a no-device static recovery path (signing-block parse, XOR sweep, base64
 endpoint decode) that only needs Python.
 
@@ -120,6 +132,24 @@ so that was attacked instead:
 4. Run an exhaustive single-byte XOR sweep over keys 1–127 across every
    printable run. **Two keys crack everything**: `0x55` (backend URL, IG URLs,
    pin, UUID) and `0x5A` (anti-Frida keywords, root paths).
+5. **Locate the AES tables by content**, not by string heuristic — the resolver
+   in step 3 discarded any `.rodata` target below 92 % printable, which silently
+   filtered out the high-entropy S-box/inverse-S-box/rcon and made the library
+   look crypto-free. Keeping binary references found the forward S-box at
+   `0x128b0`, inverse at `0x139b0`, rcon at `0x13b10` (all three ABIs), and the
+   five functions that address them (`work/aes_forensics.py`, `work/aes_xref.py`).
+6. **Execute the key-expansion routine `0x32158` under Unicorn** rather than
+   infer from disassembly (`work/unicorn_aes.py`). The DSO is mapped at VA 0 and
+   every GOT slot is repointed at a trampoline so libc calls can be serviced from
+   Python — without that the PLT stubs branch through a zeroed GOT to `PC=0`.
+   Result: the routine returns after 89,148 instructions having read the S-box
+   **112 times** and rcon **exactly 14 times** (= AES-256), and writes a
+   **240-byte** round-key schedule that obeys the FIPS-197 recurrence
+   (`SubWord(RotWord(RK0_w3)) = 0xae037e5b` at schedule `+0x4c`).
+7. **Brute-force the key** against the observed RK0 over every 16/24/32-byte
+   window of the file — **5,416,128 candidates, zero hits**. The key is computed
+   at runtime inside the OLLVM prologue, so it is only recoverable from live
+   memory (Frida script `09_native_aes_dump.js`).
 
 `report/cipher_poc.py` re-implements the Java-layer cipher
 (`glide.d.p()` / `q()`): XOR `0x6C` → rotate-left 3 → reverse → XOR

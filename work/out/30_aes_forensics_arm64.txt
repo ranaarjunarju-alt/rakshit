@@ -1,0 +1,130 @@
+=== AES FORENSICS: work/apk/lib/arm64-v8a/libtopfollow.so  (1,805,400 bytes) ===
+
+--- 1. S-box identification (literal + independent GF(2^8) derivation) ---
+  derived fwd S-box[:16] : 637c777bf26b6fc53001672bfed7ab76
+  derived inv S-box[:16] : 52096ad53036a538bf40a39e81f3d7fb
+  full 256B FORWARD S-box occurrences : ['0x128b0']
+  full 256B INVERSE S-box occurrences : ['0x139b0']
+  first-16-byte matches               : ['0x128b0']
+
+--- 2. T-tables / rcon / key schedule ---
+  Te0[0]       [71856]
+  Td0[0]       [76208, 81016]
+  Te0[0] BE    [71856]
+  Td4 packed   NOT PRESENT
+  AES rcon     ['0x13b10']
+
+--- 3. Data-section pointers into the S-box region ---
+  total: 0
+
+--- 4. Code references into the S-box region (ADRP + ADD/LDR) ---
+  ADRP-relative accesses landing in 0x12000-0x14400: 59
+    VA 0x2dc9c  add   x6, x6, #0x8b0                 -> 0x128b0
+    VA 0x2e458  add   x21, x21, #0xb0                -> 0x120b0
+    VA 0x2e488  add   x22, x22, #0x4b0               -> 0x124b0
+    VA 0x2ec5c  add   x4, x4, #0x9b0                 -> 0x139b0
+    VA 0x2f7cc  add   x5, x5, #0x9b0                 -> 0x129b0
+    VA 0x2f7d0  add   x24, x24, #0xdb0               -> 0x12db0
+    VA 0x2f7e8  add   x30, x30, #0x1b0               -> 0x131b0
+    VA 0x2f7f8  add   x8, x8, #0x5b0                 -> 0x135b0
+    VA 0x303e8  add   x9, x9, #0xab0                 -> 0x13ab0
+    VA 0x30724  add   x10, x8, #4                    -> 0x13004
+    VA 0x307ec  add   x1, x1, #0x8b0                 -> 0x128b0
+    VA 0x30d68  add   x1, x1, #0xb0                  -> 0x120b0
+    VA 0x30da8  add   x13, x13, #0x4b0               -> 0x124b0
+    VA 0x317a4  add   x9, x9, #0xab0                 -> 0x13ab0
+    VA 0x3192c  add   x14, x14, #0x9b0               -> 0x129b0
+    VA 0x31940  add   x13, x13, #0xdb0               -> 0x12db0
+    VA 0x3198c  add   x11, x11, #0x1b0               -> 0x131b0
+    VA 0x319c8  add   x13, x13, #0x5b0               -> 0x135b0
+    VA 0x31aa8  add   x0, x0, #0x9b0                 -> 0x139b0
+    VA 0x321f0  add   x8, x0, #0x3d4                 -> 0x133d4
+    VA 0x321f8  add   x9, x0, #0x418                 -> 0x13418
+    VA 0x32200  add   x8, x0, #0x3cc                 -> 0x133cc
+    VA 0x32208  add   x8, x0, #0x3d0                 -> 0x133d0
+    VA 0x32210  add   x9, x0, #0x3d8                 -> 0x133d8
+    VA 0x3221c  add   x8, x0, #0x3f8                 -> 0x133f8
+    VA 0x32834  add   x17, x17, #0x8b0               -> 0x128b0
+    VA 0x33834  add   x17, x17, #0x8b0               -> 0x128b0
+    VA 0x338cc  add   x15, x15, #0xb10               -> 0x13b10
+    VA 0x33da4  add   x15, x15, #0xb30               -> 0x13b30
+    VA 0x33dd8  add   x13, x13, #0xf30               -> 0x13f30
+    VA 0x33df0  add   x13, x13, #0x330               -> 0x14330
+    VA 0x34478  add   x10, x0, #0x3d0                -> 0x133d0
+    VA 0x344e0  add   x23, x0, #0x3f8                -> 0x133f8
+    VA 0x3556c  add   x13, x0, #0x3d0                -> 0x133d0
+    VA 0x355d0  add   x23, x0, #0x3f8                -> 0x133f8
+    VA 0x37374  add   x24, x24, #1                   -> 0x12001
+    VA 0x18f004  add   x11, x4, #4                    -> 0x14004
+    VA 0x198400  add   x8, x11, #0x1a                 -> 0x1401a
+    VA 0x198dac  add   x8, x11, #0x11                 -> 0x14011
+    VA 0x198e18  add   x8, x11, #7                    -> 0x14007
+    VA 0x19bd80  add   x9, x10, #9                    -> 0x14009
+    VA 0x19cc6c  add   x9, x12, #0xa                  -> 0x1400a
+    VA 0x19d324  add   x9, x12, #5                    -> 0x14005
+    VA 0x19d8f8  add   x9, x12, #2                    -> 0x14002
+    VA 0x19e1a8  add   x9, x12, #1                    -> 0x14001
+    VA 0x19e1d0  add   x2, x1, #1                     -> 0x14001
+    VA 0x19e274  add   x9, x12, #2                    -> 0x14002
+    VA 0x19f158  add   x2, x1, #0x11                  -> 0x14011
+    VA 0x19f1a0  add   x2, x1, #7                     -> 0x14007
+    VA 0x19f79c  add   x25, x24, #1                   -> 0x14001
+    VA 0x19f914  add   x25, x24, #1                   -> 0x14001
+    VA 0x1a5980  add   x8, x11, #0xf                  -> 0x1400f
+    VA 0x1afe28  add   x8, x2, #0xf8                  -> 0x140f8
+    VA 0x1afe34  add   x8, x2, #0x100                 -> 0x14100
+    VA 0x1afe64  add   x8, x2, #0x108                 -> 0x14108
+    VA 0x1b0344  add   x11, x0, #0x14                 -> 0x14014
+    VA 0x1b0380  add   x0, x0, #1                     -> 0x14001
+    VA 0x1b0438  add   x0, x0, #7                     -> 0x14007
+    VA 0x1b0530  add   x0, x0, #7                     -> 0x14007
+
+--- 5. ARMv8 crypto-extension instructions (AESE/AESD/AESMC/AESIMC/SHA*) ---
+  NONE — no hardware AES/SHA instructions anywhere
+
+--- 6. Per-section entropy ---
+  section                      addr       size   entropy
+  .text                     0x2d2ac  1,591,568    6.8621
+  .rela.dyn                  0x10e0     65,424    2.8076
+  .eh_frame                 0x23440     40,556    4.7867
+  .rodata                   0x118b0     37,547    6.8779
+  .gcc_except_table         0x1ab5c     26,312    5.6261
+  .data.rel.ro             0x1b6160     17,552    0.1154
+  .bss                     0x1c0320     11,288    0.0000
+  .eh_frame_hdr             0x21224      8,732    5.3861
+  .got                     0x1ba7f0      6,128   -0.0000
+  .dynsym                     0x2f8      2,208    1.0025
+  .rela.plt                 0x11070      2,112    1.9543
+  .plt                     0x1b1bc0      1,440    4.6443
+  .dynstr                     0xcb0      1,067    4.4602
+  .got.plt                 0x1bbfe0        728    1.2779
+  .dynamic                 0x1ba610        480    1.7868
+  .comment                      0x0        434    5.0783
+  .shstrtab                     0x0        260    4.2367
+  .gnu.version                0xb98        184    1.1714
+  .note.android.ident         0x238        152    1.1712
+  .data                    0x1c02b8        104    0.1563
+  .gnu.version_r              0xc50         64    2.1052
+  .note.gnu.build-id          0x2d0         36    4.2472
+  .gnu.hash                   0xc90         32    1.8091
+  .fini_array              0x1ba5f0         16   -0.0000
+  .init_array              0x1ba600         16   -0.0000
+
+  whole-file entropy: 6.7518
+
+--- 7. Highest-entropy 4 KiB windows (white-box table detector) ---
+  0x0012000-0x0013000  entropy 7.9954  uniq 256/256
+  0x0013000-0x0014000  entropy 7.9613  uniq 256/256
+  0x0014000-0x0015000  entropy 7.6942  uniq 256/256
+  0x0110000-0x0111000  entropy 6.9274  uniq 241/256
+  0x012f000-0x0130000  entropy 6.8831  uniq 239/256
+  0x003b000-0x003c000  entropy 6.8813  uniq 250/256
+  0x0109000-0x010a000  entropy 6.8792  uniq 242/256
+  0x0148000-0x0149000  entropy 6.8641  uniq 244/256
+  0x00e6000-0x00e7000  entropy 6.8382  uniq 239/256
+  0x011d000-0x011e000  entropy 6.8380  uniq 244/256
+
+--- 8. Crypto API fingerprints (strings + imports) ---
+  DT_NEEDED: ['libz.so', 'libandroid.so', 'liblog.so', 'libm.so', 'libdl.so', 'libc.so']
+  imports  : ['__ctype_get_mb_cur_max', '__cxa_atexit', '__cxa_finalize', '__errno', '__memmove_chk', '__open_2', '__read_chk', '__register_atfork', '__sF', '__stack_chk_fail', '__strlen_chk', '__vsnprintf_chk', '_ctype_', 'abort', 'access', 'android_set_abort_message', 'atoi', 'clock', 'close', 'closelog', 'dl_iterate_phdr', 'fflush', 'fprintf', 'fputc', 'free', 'freelocale', 'fwrite', 'getc', 'inflate', 'inflateEnd', 'inflateInit2_', 'isdigit_l', 'islower_l', 'isupper_l', 'iswlower_l', 'isxdigit_l', 'malloc', 'mbrlen', 'mbrtowc', 'mbsnrtowcs', 'mbsrtowcs', 'mbtowc', 'memchr', 'memcmp', 'memcpy', 'memmove', 'memset', 'newlocale', 'openlog', 'posix_memalign', 'pthread_cond_broadcast', 'pthread_cond_wait', 'pthread_getspecific', 'pthread_key_create', 'pthread_key_delete', 'pthread_mutex_lock', 'pthread_mutex_unlock', 'pthread_once', 'pthread_rwlock_rdlock', 'pthread_rwlock_unlock', 'pthread_rwlock_wrlock', 'pthread_setspecific', 'read', 'realloc', 'sscanf', 'strcmp', 'strcpy', 'strerror_r', 'strftime_l', 'strlen', 'strtod', 'strtof', 'strtol', 'strtold_l', 'strtoll_l', 'strtoull_l', 'syscall', 'syslog', 'ungetc', 'uselocale', 'vasprintf', 'vfprintf', 'vsnprintf', 'vsscanf', 'wcrtomb', 'wcslen', 'wcsnrtombs', 'wmemcpy', 'wmemmove', 'wmemset']
+  exports  : ['JNI_OnLoad']

@@ -1,0 +1,49 @@
+{
+  "so": "work/apk/lib/arm64-v8a/libtopfollow.so",
+  "size": 1805400,
+  "aes_tables": {
+    "sbox": "0x128b0",
+    "isbox": "0x139b0",
+    "rcon": "0x13b10"
+  },
+  "aes_functions": [
+    {
+      "va": "0x2dc00",
+      "size": 3988,
+      "refs": {
+        "SBOX": 1
+      }
+    },
+    {
+      "va": "0x2eb94",
+      "size": 4664,
+      "refs": {
+        "ISBOX": 1
+      }
+    },
+    {
+      "va": "0x2fdcc",
+      "size": 4428,
+      "refs": {
+        "SBOX": 1
+      }
+    },
+    {
+      "va": "0x30f18",
+      "size": 4672,
+      "refs": {
+        "ISBOX": 1
+      }
+    },
+    {
+      "va": "0x32158",
+      "size": 8908,
+      "refs": {
+        "RCON": 1,
+        "SBOX": 2
+      }
+    }
+  ],
+  "jni_methods": [],
+  "function_count": 1090
+}

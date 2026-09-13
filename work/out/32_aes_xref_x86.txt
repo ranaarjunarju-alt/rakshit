@@ -1,0 +1,37 @@
+=== AES XREF: work/apk/lib/x86/libtopfollow.so  (902,720 bytes, x86) ===
+  SBOX   256 B  file offsets ['0x7070']
+  ISBOX  256 B  file offsets ['0x8170']
+  RCON    14 B  file offsets ['0x82d0']
+
+  functions from .eh_frame: 1069
+  disassembled 230,524 instructions
+
+--- 4. functions referencing AES tables: 0 ---
+
+--- 5. call graph into the AES functions ---
+
+--- 6. JNI RegisterNatives mapping ---
+    x0011a4c2      0x039df0  ()J                                                                    
+    x0014e2e9      0x039ff0  ()Ljava/lang/String;                                                   
+    x0016d3b9      0x03a130  ()Ljava/lang/String;                                                   
+    x0012d3e0      0x03a3e0  (Ljava/lang/String;)Ljava/lang/String;                                 
+    x0011e28b      0x03a6d0  (Ljava/lang/String;)Ljava/lang/String;                                 
+    x00120b1e      0x03aa50  (Lcom/google/gson/JsonObject;Ljava/lang/String;)V                      
+    x0012e5a1      0x03d0e0  (Lcom/google/gson/JsonObject;)V                                        
+    x00135e2a      0x0446e0  (Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramA 
+    x00105e9b      0x045d50  (Ljava/lang/String;)Ljava/lang/String;                                 
+    x0015b1e9      0x046090  (Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)V    
+    x0015a3b7      0x04b260  (Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramA 
+    x0017b62c      0x04d9f0  (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Str 
+    x0011f42b      0x04e780  ()Ljava/lang/String;                                                   
+    x0012f5b7      0x04fc30  ()Ljava/lang/String;                                                   
+    x0014b4f3      0x050a30  (Ljava/lang/String;)Ljava/lang/String;                                 
+    x0011f1a2      0x051280  (Lcom/nivaroid/topfollow/models/Order;)Ljava/lang/String;              
+    x0015e49c      0x052640  (Lretrofit2/Response;Lcom/nivaroid/topfollow/models/Order;Lcom/nivaroi 
+    x0010e27f      0x058090  ()Ljava/lang/String;                                                   
+    x00113f7a      0x0581a0  ()Ljava/lang/String;                                                   
+    x0014c1f9      0x0582a0  (Lretrofit2/Response;)Ljava/lang/String;                               
+    x00126f7c      0x058a00  (ZLjava/lang/String;)Lretrofit2/Retrofit;                              
+    x0018d3f7      0x05a080  (I)Lretrofit2/Retrofit;                                                
+
+    wrote work/out/32_aes_xref_x86.json

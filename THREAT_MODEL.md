@@ -214,9 +214,16 @@ scans `/proc/self/maps`; probes nine `su` paths; reads `ANDROID_ID`,
 `CertificatePinner$Builder.add`.
 
 Binary hardening is sound — FULL RELRO + `BIND_NOW`, stack canary, FORTIFY on
-all three ABIs — but there is **no crypto and no TLS code in the library**, so
-every protection executes by calling back into Java. That places the entire
-integrity story on the wrong side of the JNI boundary.
+all three ABIs — and the library **does** implement its own AES-256 (forward
+S-box `0x128b0`, inverse `0x139b0`, rcon `0x13b10`; proven by Unicorn execution:
+112 S-box reads, **14 rcon reads** = AES-256, a 240-byte FIPS-197 schedule). But
+there is **no TLS stack and no crypto *import*** (`DT_NEEDED` = libz/libandroid/
+liblog/libm/libdl/libc), and the AES is not reachable from Java — none of the 22
+JNI natives is `([B)[B`. So every *protection* executes by calling back into
+Java, placing the entire integrity story on the wrong side of the JNI boundary.
+The AES key is derived at runtime and matches no byte window of the 1.8 MB file
+(5.4 M candidates brute-forced, zero hits), so it is recoverable only from live
+memory (Frida script 09).
 
 ### 5.4 Local storage
 

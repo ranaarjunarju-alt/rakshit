@@ -25,6 +25,7 @@ def _find_apk(root):
 
 APK = _find_apk(ROOT)
 LAB = os.path.join(ROOT, "dynamic-lab")
+WORK = os.path.join(ROOT, "work")
 OUT = os.path.join(ROOT, "TopFollow_Security_Analysis.html")
 
 SEV_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
@@ -78,7 +79,91 @@ SCRIPT_DESC = {
     "06_task_verification_bypass.js": "Forges InstagramResponse.getStatus()=='ok', forces get_coin='true', rewrites order_value and dumps the entire order/syncOrder.php claim.",
     "07_native_jni_dumper.js": "Intercepts RegisterNatives to resolve all 22 helper.q JNI functions, instruments each, and re-derives the XOR 0x55/0x5A and triple-base64 string tables from memory.",
     "08_backend_traffic_and_servercheck.js": "Logs every backend POST with headers and body, traces ServerCheck pin/URL rotation live, and can redirect the whole app to an attacker host.",
+    "09_native_aes_dump.js": "Locates the AES S-box by content scan (not hard-coded offsets), Stalker-resolves every instruction that addresses it, attaches the five AES functions, and recovers any FIPS-197 round-key schedule from live memory.",
+    "10_java_crypto_layer.js": "Hooks q8.t1.f (the #PWD_INSTAGRAM:4 password encryptor), dissecting the AES-256-GCM key, IV, tag, RSA-wrapped key and plaintext; hooks every javax.crypto.Cipher.init to dump raw SecretKeySpec bytes; instruments helper.T ECDSA attestation and proves the dead digest([B)[B JNI bridge.",
 }
+
+# ---------------------------------------------------------------------------
+# Section 11 data.  Every value below is read directly out of the artefacts in
+# work/out/30..34; nothing here is inferred.
+# ---------------------------------------------------------------------------
+def _tail(path, n=9999):
+    d = read(path) or ""
+    lines = d.splitlines()
+    return "\n".join(lines[-n:]) if len(lines) > n else d
+
+UNICORN_LOG = _tail(os.path.join(WORK, "out", "33_unicorn_aes_arm64.txt"), 140)
+RK_TABLE    = _tail(os.path.join(WORK, "out", "34_aes_key_recovery.txt"), 60)
+
+AES_TABLES = [
+    ("forward S-box", "<code>0x128b0</code>", "<code>0xdb80</code>", "<code>0x7070</code>",
+     "<code>63 7c 77 7b f2 6b 6f c5</code>", "CRYP-09"),
+    ("inverse S-box", "<code>0x139b0</code>", "<code>0xec80</code>", "<code>0x8170</code>",
+     "<code>52 09 6a d5 30 36 a5 38</code>", "CRYP-09"),
+    ("rcon (14 bytes)", "<code>0x13b10</code>", "<code>0xede0</code>", "<code>0x82d0</code>",
+     "<code>01 02 04 08 10 20 40 80</code>", "CRYP-10"),
+]
+
+AES_ABSENT = [
+    ("White-box AES tables", "4&#215;1&nbsp;KB T-box / 256&#215;16&nbsp;B per round",
+     "<b>absent</b> &mdash; <code>.rodata</code> is only 37,547&nbsp;B in total",
+     "The key is not protected by a white-box transform; it is a normal AES-256 schedule (OBFU-02)"),
+    ("Te0 / Td0 T-tables", "<code>[c66363a5, f87c7c84, ee777799, f67b7b8d]</code>",
+     "<b>absent</b> &mdash; only the byte value <code>71856</code> occurs incidentally",
+     "The cipher is the compact S-box variant, not a space-time T-table variant"),
+    ("Td4 packed table", "<code>[6363a5c6, 7c7c84f8, &hellip;]</code>",
+     "<b>absent</b>", "Confirms no T-table implementation is present under any packing"),
+    ("ARMv8 Crypto Extension", "<code>aese/aesd/aesmc/aesimc/sha*</code>",
+     "<b>absent</b> &mdash; zero hits in 397,892 instructions",
+     "Software table AES is cache-timing exposed on the S-box (CRYP-13)"),
+    ("GHASH / GCM", "H-table, <code>gcm_*</code>, reduction polynomial <code>0xe1</code>",
+     "<b>absent</b>", "No authenticated encryption in the native layer"),
+    ("SHA-256 / SHA-1 IVs", "<code>6a09e667, bb67ae85, 3c6ef372, a54ff53a</code>",
+     "<b>absent</b>", "All hashing is done in Java (<code>MessageDigest</code>), not natively"),
+    ("HMAC / PBKDF2", "ipad <code>0x36</code>/opad <code>0x5c</code> constants, iteration counter",
+     "<b>absent</b>", "No key-derivation in the native layer (CRYP-05)"),
+    ("ChaCha20 / Salsa20", "<code>61707865 3320646e 79622d32 6b206574</code> (&ldquo;expand 32-byte k&rdquo;)",
+     "<b>absent</b>", "No stream cipher in the native layer"),
+    ("RSA / X.509", "DER <code>30 82</code> sequences, <code>-----BEGIN</code>, <code>rsa_*</code>",
+     "<b>absent</b>", "RSA exists only in <code>q8.t1</code> (Java <code>Cipher</code>), wrapping a server-supplied key (CRYP-11, CRYP-12)"),
+    ("TLS", "<code>SSL_*</code>, <code>EVP_*</code>, <code>*crypt*</code> imports",
+     "<b>absent</b> &mdash; <code>DT_NEEDED</code> is <code>libz, libandroid, liblog, libm, libdl, libc</code>",
+     "Certificate pinning is delegated to OkHttp from native code (CRYP-05)"),
+    ("Packing / encryption of <code>.text</code>", "high-entropy stub, <code>dlopen</code>/<code>mprotect</code> unpacker",
+     "<b>absent</b> &mdash; <code>.text</code> entropy 6.8621",
+     "Obfuscation is OLLVM control-flow flattening only (OBFU-02)"),
+    ("Anti-debug / anti-Frida syscalls", "<code>ptrace</code>, <code>prctl</code>, <code>TracerPid</code>, <code>property_get</code>, <code>dlopen</code>",
+     "<b>absent</b> as imports &mdash; <code>syscall</code> is imported but no raw <code>ptrace</code> number is used",
+     "The only anti-analysis is <code>/proc/self/maps</code> read + string match (INTE-14)"),
+]
+
+ENTROPY_TABLE = [
+    ("<code>.text</code>", "<code>0x2d2ac</code>", "1,591,568", "<b>6.8621</b>",
+     "Normal compiled ARM64. A packed section scores &gt;7.8. <b>Not packed.</b>"),
+    ("<code>.rodata</code>", "<code>0x118b0</code>", "37,547", "6.8779",
+     "Held up almost entirely by the three AES tables; the rest is ordinary literals."),
+    ("<code>.gcc_except_table</code>", "<code>0x1ab5c</code>", "26,312", "5.6261", "Landing pads."),
+    ("<code>.eh_frame</code>", "<code>0x23440</code>", "40,556", "4.7867",
+     "1,090 well-formed FDEs &mdash; the source of every function boundary used here."),
+    ("<code>.rela.dyn</code>", "<code>0x10e0</code>", "65,424", "2.8076", "Relocations."),
+    ("<code>.data.rel.ro</code>", "<code>0x1b6160</code>", "17,552", "0.1154", "vtables / pointers."),
+    ("whole file", "&mdash;", "1,805,400", "<b>6.7518</b>", "No region above 7.0 except the S-boxes themselves."),
+]
+
+AES_FUNCS = [
+    ("<code>0x2dc00</code>", "&mdash;", "SBOX", "Table-driven helper on the forward S-box", "CRYP-09"),
+    ("<code>0x2eb94</code>", "&mdash;", "ISBOX", "Table-driven helper on the inverse S-box", "CRYP-09"),
+    ("<code>0x2fdcc</code>", "&mdash;", "SBOX", "<b>Encrypt block</b>", "CRYP-09"),
+    ("<code>0x30f18</code>", "&mdash;", "ISBOX", "<b>Decrypt block</b>", "CRYP-09"),
+    ("<code>0x32158</code>", "8,908", "SBOX + RCON",
+     "<b>Key expansion</b> &mdash; validates <code>w3 == w4 == 0x20</code> (256-bit). Executed under Unicorn: 89,148 instructions, 112 S-box reads, 14 rcon reads.",
+     "CRYP-09, CRYP-10"),
+    ("<code>0x34424</code>", "&mdash;", "&mdash;", "Wrapper &mdash; encrypt only (calls <code>0x2fdcc</code>)", "CRYP-09"),
+    ("<code>0x35518</code>", "&mdash;", "&mdash;",
+     "Wrapper &mdash; both directions; <code>w4=1</code> encrypt, <code>w4=2</code> decrypt (calls <code>0x2fdcc</code>, <code>0x30f18</code>)", "CRYP-09"),
+    ("<code>0x38fa4</code>", "&mdash;", "&mdash;", "Caller of key expansion", "CRYP-10"),
+    ("<code>0x3a838</code>", "&mdash;", "&mdash;", "Caller of key expansion", "CRYP-10"),
+]
 
 NATIVE_TABLE = [
     ("q.a(String)", "x0014b4f3", "Transforms the raw Instagram response JSON into the claim field <code>x5</code>.", "BIZ-07"),
@@ -446,6 +531,7 @@ summary:hover{{color:#fff}}
 .callout.crit{{border-color:rgba(255,59,107,.42);background:rgba(255,59,107,.09)}}
 .callout.warn{{border-color:rgba(255,138,61,.40);background:rgba(255,138,61,.08)}}
 .callout.info{{border-color:rgba(34,211,238,.36);background:rgba(34,211,238,.07)}}
+.callout.ok{{border-color:rgba(74,222,128,.40);background:rgba(74,222,128,.08)}}
 .callout b{{color:#fff}}
 .flow{{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}}
 .flow .step{{background:var(--glass2);border:1px solid var(--stroke2);border-radius:11px;padding:9px 13px;font:600 12px var(--mono);color:#dfe6ff}}
@@ -519,18 +605,19 @@ mark{{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px
   <a href="#economy">8. Coin economy</a>
   <a href="#backend">9. Backend &amp; endpoints</a>
   <a href="#native">10. Native library</a>
-  <a href="#crypto">11. Crypto &amp; obfuscation</a>
-  <a href="#storage">12. Data storage</a>
-  <a href="#integrity">13. Anti-tamper &amp; integrity</a>
+  <a href="#nativaes">11. Native AES + Unicorn proof</a>
+  <a href="#crypto">12. Crypto &amp; obfuscation</a>
+  <a href="#storage">13. Data storage</a>
+  <a href="#integrity">14. Anti-tamper &amp; integrity</a>
   </div>
   <div class="grp"><h5>Results</h5>
-  <a href="#matrix">14. Vulnerability matrix</a>
-  <a href="#findings">15. Findings ({len(V)})</a>
-  <a href="#lab">16. Frida lab (8 scripts)</a>
-  <a href="#repro">17. Reproduction guide</a>
-  <a href="#remediation">18. Remediation roadmap</a>
-  <a href="#method">19. Methodology &amp; artefacts</a>
-  <a href="#legal">20. Scope &amp; ethics</a>
+  <a href="#matrix">15. Vulnerability matrix</a>
+  <a href="#findings">16. Findings ({len(V)})</a>
+  <a href="#lab">17. Frida lab (11 scripts)</a>
+  <a href="#repro">18. Reproduction guide</a>
+  <a href="#remediation">19. Remediation roadmap</a>
+  <a href="#method">20. Methodology &amp; artefacts</a>
+  <a href="#legal">21. Scope &amp; ethics</a>
   </div>
 </nav>
 
@@ -959,7 +1046,10 @@ Retrofit r = helper.q.k(                       // native libtopfollow.so!x00126f
 <tr><td>RELRO</td><td colspan="3">FULL + <code>BIND_NOW</code></td></tr>
 <tr><td>Stack canary</td><td colspan="3">present</td></tr>
 <tr><td>FORTIFY</td><td colspan="3">present</td></tr>
-<tr><td>Crypto / TLS imports</td><td colspan="3"><b>none</b> &mdash; no <code>SSL_*</code>, no <code>EVP_*</code>, no <code>*crypt*</code> (CRYP-05)</td></tr>
+<tr><td>Crypto / TLS <i>imports</i></td><td colspan="3"><b>none</b> &mdash; <code>DT_NEEDED</code> is <code>libz, libandroid, liblog, libm, libdl, libc</code>; all 90 imported symbols are libc/pthread/locale/zlib. No <code>SSL_*</code>, no <code>EVP_*</code>, no <code>*crypt*</code> (CRYP-05)</td></tr>
+<tr><td>Crypto <i>implemented in-library</i></td><td colspan="3"><b>AES-256</b> &mdash; canonical S-box, inverse S-box and rcon present in all three ABIs; proven by Unicorn execution (14 rcon reads). See section 11 (CRYP-09, CRYP-10)</td></tr>
+<tr><td>ARMv8 Crypto Extension</td><td colspan="3"><b>unused</b> &mdash; zero <code>aese/aesd/aesmc/aesimc/sha*</code> in 397,892 instructions; the AES is a compact table variant, so it is cache-timing exposed (CRYP-13)</td></tr>
+<tr><td>Packing</td><td colspan="3"><b>none</b> &mdash; <code>.text</code> entropy 6.8621, whole-file 6.7518, 1,090 well-formed <code>.eh_frame</code> FDEs. The obfuscation is OLLVM control-flow flattening only (OBFU-02)</td></tr>
 <tr><td>Control flow</td><td colspan="3">OLLVM flattening (state dispatcher) in all 22 functions (INTE-06)</td></tr>
 <tr><td>String protection</td><td colspan="3">XOR 0x55 / 0x5A + nested base64 (CRYP-07, CRYP-08)</td></tr>
 </tbody></table></div>
@@ -986,13 +1076,122 @@ mov   rax, [reg + off]   ; load a string pointer relative to that base</code></p
 <li>Reads <code>ANDROID_ID</code>, <code>Build.DEVICE</code>, <code>Build.HARDWARE</code>; populates <code>DeviceModel</code> (<code>setHash_key</code>, <code>setNonce</code>, <code>setHash_type</code>, <code>addDevice</code>).</li>
 <li>Calls <code>CertificatePinner$Builder.add(...)</code> and wires the OkHttp client.</li>
 </ul>
-<div class="callout info"><b>Why this design fails.</b> Every one of those responsibilities is ultimately executed by calling <em>back into Java</em>, because the library contains no crypto and no filesystem-scanning primitives of its own. That places the entire protection surface on the wrong side of the JNI boundary, where Frida operates natively. Script 01 defeats all of it without modifying a single byte of the <code>.so</code>.</div>
+<div class="callout warn"><b>Correction to a first-pass conclusion.</b> An earlier reading of this library reported &ldquo;no crypto in the <code>.so</code>&rdquo;. That was <b>wrong</b>, and the cause matters: the reference resolver discarded any <code>.rodata</code> target that was not &ge;92% printable, so the AES S-box, inverse S-box and rcon &mdash; high-entropy <em>binary</em> tables &mdash; were filtered out of every listing. Keeping binary references (<code>work/aes_forensics.py</code>, <code>work/aes_xref.py</code>) and then <em>executing</em> the code under Unicorn (<code>work/unicorn_aes.py</code>) established that a real AES-256 is present in all three ABIs. See section 11.</div>
+<div class="callout info"><b>What is still true.</b> The <em>protection</em> logic &mdash; signature verification, maps scanning, root probing, pin installation &mdash; is executed by calling back into Java, because the library has no TLS and no filesystem-scanning primitives of its own. That places the entire protection surface on the wrong side of the JNI boundary, where Frida operates natively. Script 01 defeats all of it without modifying a single byte of the <code>.so</code>. The AES is used internally by the request pipeline and is <b>not</b> reachable from Java: none of the 22 JNI signatures is <code>([B)[B</code> (CRYP-09).</div>
 </div>
 </section>
 
-<!-- ========================================================== 11 CRYPTO -->
+<!-- ==================================================== 11 NATIVE AES + UNICORN -->
+<section id="nativaes">
+<h2>11. Native AES &mdash; discovery, and execution proof under Unicorn</h2>
+
+<div class="callout warn">
+<h4 style="margin-top:0">This section exists because a first-pass conclusion was wrong</h4>
+<p>The initial analysis of <code>libtopfollow.so</code> reported &ldquo;no crypto and no TLS code in the library&rdquo;. That was <b>incorrect</b>, and the failure mode is worth recording precisely because it is easy to repeat.</p>
+<p>The reference resolver used in the first pass kept a <code>.rodata</code> target only if it decoded to a string that was at least 92&nbsp;% printable. The AES S-box, inverse S-box and rcon are <em>high-entropy binary tables</em>, not strings &mdash; so every reference to them was silently discarded, and the resulting listings made the library look crypto-free. Two fixes recovered the truth: keep binary references (<code>work/aes_forensics.py</code>, <code>work/aes_xref.py</code>), and then <b>execute</b> the code rather than infer from it (<code>work/unicorn_aes.py</code>).</p>
+<p>A second bug compounded it. A first attempt to derive the AES S-box from first principles computed the multiplicative inverse as <code>pow(i, 254, 0x11b)</code>. That is invalid &mdash; GF(2<sup>8</sup>) is not <math>&#8484;/0x11b</math>, so modular exponentiation returns the wrong element. A second attempt rotated a running accumulator instead of the original inverse. Both produced a plausible-looking but wrong table, and both made the scanner report &ldquo;no AES S-box present&rdquo; for a binary that contains one. The shipped script derives the inverse by search under <code>gmul</code> (validated against the FIPS-197 worked examples <code>0x57&times;0x83=0xc1</code> and <code>0x57&times;0x13=0xfe</code>), cross-checks the result against a transcribed literal, and <b>aborts rather than reporting a false negative</b> if the two disagree.</p>
+</div>
+
+<div class="card">
+<h4>11.1 The tables, located by content in all three ABIs</h4>
+<p>Each table was found by exact byte-pattern search, then verified two ways: the forward S-box was re-derived from first principles in GF(2<sup>8</sup>), and the inverse table was confirmed to be the exact permutation inverse of the forward one (<code>inv[sbox[i]] == i</code> for all 256 <code>i</code>, and <code>sorted(table) == range(256)</code>).</p>
+{build_table(AES_TABLES, ["Table", "arm64-v8a", "x86_64", "x86", "First 16 bytes", "Findings"], "tbl-aes-tables")}
+
+<h4>11.2 What is <em>not</em> in the library</h4>
+<p>The absence of these is as evidential as the presence of the S-box. Each was searched for as an exact byte pattern across the whole file.</p>
+{build_table(AES_ABSENT, ["Looked for", "Pattern", "Result", "Consequence"], "tbl-aes-absent")}
+
+<h4>11.3 Per-section entropy &mdash; the packing hypothesis tested and rejected</h4>
+<p>Entropy is the standard test for packing: a packed or compressed <code>.text</code> scores above 7.8. This library does not.</p>
+{build_table(ENTROPY_TABLE, ["Section", "Address", "Size", "Entropy", "Reading"], "tbl-entropy")}
+<div class="callout info">The two highest-entropy 4&nbsp;KiB windows in the entire file are <code>0x12000&ndash;0x13000</code> at <b>7.9954</b> and <code>0x13000&ndash;0x14000</code> at <b>7.9613</b>. Those are precisely the AES S-box and inverse S-box &mdash; a 256-byte table of all 256 byte values has near-maximum entropy by construction. Everything else in the file peaks at 6.93. There is no region anywhere that could hold a megabyte-scale white-box table: <code>.rodata</code> is 37,547 bytes and the whole file is 1,805,400.</div>
+
+<h4>11.4 The five AES functions, and the call graph into them</h4>
+<p>Function boundaries come from <code>.eh_frame</code> (1,090 FDEs). Data references were resolved per-function &mdash; on arm64 by pairing each <code>ADRP</code> with the following <code>ADD</code>/<code>LDR</code> immediate.</p>
+{build_table(AES_FUNCS, ["Function", "Size", "Tables referenced", "Role", "Findings"], "tbl-aes-funcs")}
+<pre class="code"><code>call graph (arm64-v8a), arrows point from caller to callee
+
+  0x2dc00 (SBOX)   &lt;-- 0x2fdcc (SBOX, encrypt)
+  0x2eb94 (ISBOX)  &lt;-- 0x30f18 (ISBOX, decrypt)
+
+  0x2fdcc  &lt;-- 0x34424 (wrapper, encrypt only)
+  0x2fdcc  &lt;-- 0x35518 (wrapper, encrypt AND decrypt; mode selected by w4: 1=enc, 2=dec)
+  0x30f18  &lt;-- 0x35518
+
+  0x32158 (SBOX+RCON, key expansion) &lt;-- 0x38fa4, 0x3a838, 0x10c470, 0x110b70
+
+  ancestors of 0x32158 by BFS level:
+      L1 (4) : 0x38fa4  0x3a838  0x10c470  0x110b70
+      L2 (16): 0x3f688  0x4110c  0x435b8  0x4f078  0x76508  0x7f82c  0x81c58
+               0xadacc  0xbf7fc  0xc67a4  0xd46a8  0xe01e4  ...
+      L3 (1) : 0xfe268
+      total  : 22 ancestors
+
+  0x35518 signature, read off the disassembly:
+      x0 = this      (C++ member function)
+      this+0x008  byte flag      ldrb w8,[x0,#8]; cmp #0
+      this+0x3d0  std::string    add x13,x0,#0x3d0 ; str x13,[sp]
+      this+0x3f8  std::string    add x23,x0,#0x3f8
+      x1,x2 = in/out buffers     stp x1,x2,[sp,#0x60]
+      x3    = buffer             str x3,[sp,#8]
+      w4    = mode               cmp #1 -> encrypt, cmp #2 -> decrypt</code></pre>
+
+<h4>11.5 Unicorn execution &mdash; the proof</h4>
+<p>The DSO was mapped at VA&nbsp;0 (its first <code>PT_LOAD</code> has vaddr 0, so VA equals file offset), with stack, heap and TLS regions, and <b>every GOT slot repointed at a unique trampoline</b> so that a <code>UC_HOOK_CODE</code> hook could service each libc call from Python. Without that, the PLT stubs branch through a zeroed GOT and the CPU jumps to <code>PC=0</code> &mdash; which is exactly how the first attempt failed.</p>
+<pre class="code"><code>{esc(UNICORN_LOG)}</code></pre>
+
+<h4>11.6 Reading the result</h4>
+<div class="grid2">
+<div class="callout ok">
+<h4 style="margin-top:0">Proven</h4>
+<ul>
+<li>The routine <b>returns normally</b> after 89,148 instructions &mdash; it is not dead code and it does not require a live JNI environment to run its crypto path.</li>
+<li>It reads the <b>S-box 112 times</b> and <b>rcon exactly 14 times</b>. Fourteen rounds is <b>AES-256</b>. (AES-128 reads rcon 10 times, AES-192 12 times.)</li>
+<li>It writes a <b>240-byte schedule</b> = 15 &times; 16 round keys, the exact AES-256 size.</li>
+<li>The schedule obeys the FIPS-197 recurrence. The observed write <code>0xae037e5b</code> at schedule offset <code>+0x4c</code> equals <code>SubWord(RotWord(RK0 word 3))</code>: <code>RotWord(71f1297a) = f1297a71</code>, <code>SubWord(f1297a71) = ae037e5b</code>. This is not a coincidence available to a non-AES routine.</li>
+<li><code>w3</code> and <code>w4</code> are both compared against <code>#0x20</code> = 32 &mdash; a 256-bit key length is being validated.</li>
+<li>The input buffer is loaded into AES <b>column-major state order</b>, confirming a real AES state matrix rather than a generic byte mixer.</li>
+</ul>
+</div>
+<div class="callout warn">
+<h4 style="margin-top:0">Not proven &mdash; and why</h4>
+<ul>
+<li><b>The key.</b> The run was given the FIPS-197 AES-256 test key in a caller buffer, laid out three ways (libc++ short-string, libc++ long-string, <code>{{ptr,len,cap}}</code> triple). All three runs were <b>byte-identical</b> &mdash; same instruction count, same table-read counts, same schedule. The expansion therefore does not depend on the caller's key.</li>
+<li>Brute force over <b>every 16-, 24- and 32-byte window</b> of the 1,805,400-byte file (5,416,128 candidates) found no window expanding to the observed RK0 <code>1742e227063cdfce2c2b4cbd71f1297a</code>. Simple derivations did not match either.</li>
+<li>So the key is <b>computed at runtime inside the OLLVM-flattened prologue</b>. Recovering it needs a live process, which is what script <code>09_native_aes_dump.js</code> is for: it recovers any valid schedule from writable memory by verifying the expansion recurrence, and prints the key.</li>
+<li><b>Which JNI function reaches it.</b> None of the 22 registered natives has a <code>([B)[B</code> signature, and no <code>com.nivaroid.topfollow</code> method in the DEX has that descriptor, so the AES is <b>not directly callable from Java</b>. On arm64 the <code>JNINativeMethod</code> table is materialised at runtime rather than stored as literal pointers, and <code>JNI_OnLoad</code> is control-flow flattened, so static attribution of the 22 function pointers was not achieved. Script <code>07_native_jni_dumper.js</code> intercepts <code>RegisterNatives</code> to settle it on a device.</li>
+</ul>
+</div>
+</div>
+
+<h4>11.7 The observed round-key schedule</h4>
+<pre class="code"><code>{esc(RK_TABLE)}</code></pre>
+
+<h4>11.8 A dead JNI bridge</h4>
+<p>At arm64 <code>0x106660</code> and <code>0x162c4c</code> the library calls JNIEnv slot <b>33</b> (<code>ldr x8,[x8,#0x108]</code>, <code>0x108 / 8 = 33</code>) = <code>GetStaticMethodID</code>, asking class <code>com/nivaroid/topfollow/helper/T</code> for a method named <code>digest</code> with descriptor <code>([B)[B</code>. Enumerating the DEX directly, <code>helper.T</code> declares exactly two methods &mdash; <code>o(Ljava/lang/String;)Ljava/lang/String;</code> and <code>sd(Ljava/lang/String;)Ljava/lang/String;</code>. There is no <code>digest</code>, and no <code>([B)[B</code> method exists in any application class. The lookup returns NULL and raises <code>NoSuchMethodError</code>. See CRED-11.</p>
+<pre class="code"><code>0x106644  ldr  x8, [x19]            ; JNIEnv*
+0x106648  ldr  x8, [x8, #0x108]     ; slot 33 = GetStaticMethodID
+0x10664c  ldr  x1, [sp, #0x38]      ; clazz  = helper/T
+0x106650  adrp x2, #0x14000
+0x106654  adrp x3, #0x14000
+0x106658  mov  x0, x19
+0x10665c  add  x2, x2, #0xb88       ; -&gt; "digest"
+0x106660  add  x3, x3, #0xcc4       ; -&gt; "([B)[B"
+0x106664  blr  x8                   ; returns NULL -&gt; NoSuchMethodError
+
+.rodata cluster around the lookup:
+  0x14b2f  "F3AES"                                   &lt;- referenced by nothing (CRYP-14)
+  0x14b35  "(Lretrofit2/Response;)Ljava/lang/String;"
+  0x14b5e  "(ZLjava/lang/String;)Lretrofit2/Retrofit;"
+  0x14b88  "digest"
+  0x14b8f  "com/nivaroid/topfollow/helper/T"
+  0x14baf  "setup"</code></pre>
+</div>
+</section>
+
+<!-- ========================================================== 12 CRYPTO -->
 <section id="crypto">
-<h2>11. Cryptography &amp; obfuscation</h2>
+<h2>12. Cryptography &amp; obfuscation</h2>
 <div class="card">
 <h4>The keyless cipher &mdash; <code>com.bumptech.glide.d.p()</code> / <code>.q()</code></h4>
 <p>Both directions run the same four stages; decryption is the exact inverse. There is no key, no IV, no per-install entropy and no server involvement.</p>
@@ -1028,7 +1227,7 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 
 <!-- ========================================================= 12 STORAGE -->
 <section id="storage">
-<h2>12. Data storage</h2>
+<h2>13. Data storage</h2>
 <div class="card">
 <h4>Room database <code>t_f_d_b_f_v_c</code> &mdash; <span class="badge" style="--c:#ff3b6b">unencrypted</span></h4>
 <p><code>MyDatabase.setup()</code> builds it through a plain Room builder. There is no SQLCipher dependency, no <code>SupportFactory</code> passphrase and no Jetpack Security usage anywhere in the DEX.</p>
@@ -1063,7 +1262,7 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 
 <!-- ======================================================= 13 INTEGRITY -->
 <section id="integrity">
-<h2>13. Anti-tamper &amp; integrity controls &mdash; and how each one falls</h2>
+<h2>14. Anti-tamper &amp; integrity controls &mdash; and how each one falls</h2>
 <div class="card">
 <p>The app advertises five protections. All five were located precisely and all five are defeated by script <code>01_anti_tamper_killer.js</code> without patching the binary.</p>
 <div class="tablewrap"><table><thead><tr><th>Control</th><th>Implementation</th><th>Bypass</th><th>Finding</th></tr></thead><tbody>
@@ -1076,13 +1275,13 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 <tr><td><b>Native obfuscation</b></td><td>OLLVM CFF on all 22 functions; XOR 0x55/0x5A strings; nested base64; scrambled DEX <code>map_list</code>; JNI-only exports</td><td>Resolve the 943 PIC thunks and read the data references; brute-force 127 XOR keys; intercept <code>RegisterNatives</code></td><td><a href="#INTE-06">INTE-06</a>, <a href="#INTE-07">INTE-07</a>, <a href="#CRYP-07">CRYP-07</a></td></tr>
 <tr><td><b>Kill switches</b></td><td><code>System.exit</code>, <code>Process.killProcess</code>, <code>Runtime.exit</code></td><td>All three suppressed</td><td><a href="#INTE-01">INTE-01</a></td></tr>
 </tbody></table></div>
-<div class="callout info"><b>The common thread.</b> <code>libtopfollow.so</code> contains no crypto and no TLS code, so every &ldquo;native&rdquo; protection is executed by calling back into the Java framework. That puts the whole integrity story on the side of the JNI boundary where instrumentation frameworks already live. The obfuscation is competent and it did cost real effort &mdash; but it delays analysis rather than preventing tampering, and none of it changes what the server is willing to trust.</div>
+<div class="callout info"><b>The common thread.</b> <code>libtopfollow.so</code> contains no TLS code and imports no crypto library (its own AES-256 is used only inside the request pipeline and is not reachable from Java &mdash; CRYP-09), so every &ldquo;native&rdquo; <em>protection</em> is executed by calling back into the Java framework. That puts the whole integrity story on the side of the JNI boundary where instrumentation frameworks already live. The obfuscation is competent and it did cost real effort &mdash; but it delays analysis rather than preventing tampering, and none of it changes what the server is willing to trust.</div>
 </div>
 </section>
 
 <!-- ========================================================= 14 MATRIX -->
 <section id="matrix">
-<h2>14. Vulnerability matrix</h2>
+<h2>15. Vulnerability matrix</h2>
 <div class="card">
 <p>All {len(V)} findings, ordered by severity. Use the search box to filter across id, title, description, evidence and category.</p>
 <input class="tsearch" id="globalSearch" type="search" placeholder="Search all {len(V)} findings &mdash; try 'password', 'get_coin', 'pin', 'backup', 'frida', 'x0018d3f7'&hellip;">
@@ -1103,7 +1302,7 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 
 <!-- ======================================================= 15 FINDINGS -->
 <section id="findings">
-<h2>15. Detailed findings</h2>
+<h2>16. Detailed findings</h2>
 <p class="muted">{len(V)} findings &middot; each with mechanism, impact, evidence, proof-of-concept script and remediation.</p>
 <div id="vulnList">
 {build_vuln_cards()}
@@ -1112,20 +1311,20 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 
 <!-- ============================================================ 16 LAB -->
 <section id="lab">
-<h2>16. Dynamic analysis lab &mdash; 8 Frida scripts</h2>
+<h2>17. Dynamic analysis lab &mdash; 11 Frida scripts</h2>
 <div class="card">
 <p>Every script is self-contained and heavily commented with the exact classes, offsets and literals it targets. Load <code>00_common.js</code> first; <code>01</code> and <code>02</code> are prerequisites for almost everything else because the app's bootstrap runs its checks inside <code>JNI_OnLoad</code>. <b>Spawn mode is required</b> &mdash; attaching after start misses the signature check and the Retrofit construction.</p>
 <div class="tablewrap"><table><thead><tr><th>#</th><th>Script</th><th>Purpose</th><th>Findings demonstrated</th></tr></thead><tbody>
 {"".join(f'''<tr data-search="{esc((f + SCRIPT_DESC.get(f, '')).lower())}"><td><code>{esc(f.split('_')[0])}</code></td><td><a href="#script-{esc(f.split('.')[0])}"><code>{esc(f)}</code></a></td><td>{esc(SCRIPT_DESC.get(f, ''))}</td><td><span class="chips">{" ".join(f'<a class="chip" href="#{esc(x["id"])}">{esc(x["id"])}</a>' for x in V if f in x["poc"])}</span></td></tr>''' for f in SCRIPTS)}
 </tbody></table></div>
-<div class="callout warn"><b>Coverage.</b> All {len(V)} findings map to at least one of the 8 PoC scripts; every script demonstrates at least one finding. The mapping above is generated from the register, so nothing is claimed that a script does not actually exercise.</div>
+<div class="callout warn"><b>Coverage.</b> All {len(V)} findings map to at least one of the 11 PoC scripts; every script demonstrates at least one finding. The mapping above is generated from the register, so nothing is claimed that a script does not actually exercise.</div>
 </div>
 {script_sections()}
 </section>
 
 <!-- ========================================================== 17 REPRO -->
 <section id="repro">
-<h2>17. Reproduction guide</h2>
+<h2>18. Reproduction guide</h2>
 <div class="card">
 <h4>Prerequisites</h4>
 <ul>
@@ -1207,7 +1406,7 @@ frida -U -f com.nivaroid.topfollow \\
 
 <!-- ==================================================== 18 REMEDIATION -->
 <section id="remediation">
-<h2>18. Remediation roadmap</h2>
+<h2>19. Remediation roadmap</h2>
 <div class="card">
 <div class="callout crit"><b>Read this first.</b> Most of what follows cannot be fixed with client-side engineering, because the product's core function &mdash; automating Instagram accounts that users do not control, in exchange for a currency whose earning is verified on the client &mdash; is itself the vulnerability. Items P0-1 through P0-4 are genuine security fixes; items under &ldquo;existential&rdquo; are not fixable without changing what the app does. This section is written as if the goal were to make the app safe to operate, which requires both.</div>
 
@@ -1275,7 +1474,7 @@ frida -U -f com.nivaroid.topfollow \\
 
 <!-- ======================================================= 19 METHOD -->
 <section id="method">
-<h2>19. Methodology &amp; artefacts</h2>
+<h2>20. Methodology &amp; artefacts</h2>
 <div class="card">
 <h4>Environment</h4>
 <p>No network access to Maven Central, Google Maven, JitPack, Debian mirrors or GitHub release assets was available, and no JDK could be installed &mdash; so <code>apktool</code>, <code>aapt2</code>, <code>apksigner</code>, <code>jadx</code>, <code>dex2jar</code> and <code>radare2</code> were all out of reach. The entire analysis was built from first principles on a Python toolchain: <code>androguard 4.1.4</code>, <code>lief 1.0.0</code>, <code>capstone 5.0.7</code>, <code>asn1crypto</code>, plus <code>frida 17.18.0</code> / <code>frida-tools 14.10.4</code> for the dynamic lab.</p>
@@ -1292,7 +1491,7 @@ frida -U -f com.nivaroid.topfollow \\
 <li><b>String decryption.</b> Exhaustive single-byte XOR sweep over keys 1&ndash;127 across every printable run, scoring candidate plaintexts. Two keys &mdash; <code>0x55</code> and <code>0x5A</code> &mdash; recovered the complete secret set. Nested base64 literals were unwound separately.</li>
 <li><b>Cipher replication.</b> Re-implemented <code>glide.d.p()</code>/<code>q()</code> in Python and verified round-trip on passwords, bearer tokens, TOTP seeds and URLs.</li>
 <li><b>Flow reconstruction.</b> Traced the login chain (<code>ia.v</code> &rarr; <code>ia.s</code> &rarr; <code>ia.i0</code>), the WebView path (<code>oa.l1</code>), the task pipeline (<code>DoTasksService</code> &rarr; <code>ja.e</code> &rarr; <code>ia.g</code>), the claim path (<code>ha.c</code>), the dispatcher (<code>androidx.fragment.app.e</code>, 18 cases) and the integrity gate (<code>d3.d.l</code> &rarr; <code>d8.f.a</code>).</li>
-<li><b>PoC authoring.</b> Wrote 8 Frida scripts plus a shared helper, each annotated with the exact classes, offsets and literals it targets; verified all nine parse cleanly.</li>
+<li><b>PoC authoring.</b> Wrote 10 Frida PoC scripts plus a shared helper (<code>00_common.js</code>), each annotated with the exact classes, offsets and literals it targets; verified all eleven parse cleanly under <code>node --check</code>.</li>
 </ol>
 <h4>Artefacts produced during the engagement</h4>
 <div class="tablewrap"><table><thead><tr><th>Artefact</th><th>Contents</th></tr></thead><tbody>
@@ -1321,7 +1520,7 @@ frida -U -f com.nivaroid.topfollow \\
 
 <!-- ========================================================== 20 LEGAL -->
 <section id="legal">
-<h2>20. Scope, ethics &amp; responsible handling</h2>
+<h2>21. Scope, ethics &amp; responsible handling</h2>
 <div class="card">
 <h4>What this document is</h4>
 <p>A defensive security research report on a single APK file supplied for analysis. It documents vulnerabilities, explains their mechanisms, and provides instrumentation intended to let a defender reproduce and then fix them.</p>
@@ -1341,7 +1540,7 @@ frida -U -f com.nivaroid.topfollow \\
 </section>
 
 <footer>
-<p><b>TopFollow v8.4.5-Beta (versionCode 845) &mdash; <code>com.nivaroid.topfollow</code></b> &middot; {len(V)} findings &middot; 8 Frida proof-of-concept scripts &middot; 26 backend endpoints &middot; 22 native JNI functions mapped.</p>
+<p><b>TopFollow v8.4.5-Beta (versionCode 845) &mdash; <code>com.nivaroid.topfollow</code></b> &middot; {len(V)} findings &middot; 11 Frida scripts (10 PoCs + shared helper) &middot; 26 backend endpoints &middot; 22 native JNI functions mapped.</p>
 <p>APK SHA-256 <code>{APK_SHA256}</code> &middot; signing certificate SHA-256 <code>{CERT_SHA256}</code> &middot; report generated {now}.</p>
 <p class="muted">Produced by static and dynamic reverse engineering with androguard, LIEF, Capstone, asn1crypto and Frida. Self-contained single-file HTML &mdash; no external assets, no network requests. Use your browser's Print / Save as PDF for an offline copy; print styles strip the interactive chrome and expand all code blocks.</p>
 </footer>
