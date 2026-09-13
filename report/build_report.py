@@ -150,6 +150,31 @@ ENTROPY_TABLE = [
     ("whole file", "&mdash;", "1,805,400", "<b>6.7518</b>", "No region above 7.0 except the S-boxes themselves."),
 ]
 
+CLAIMS_REALITY = [
+    ("File is 18 MB", "<b style='color:#ff3b6b'>FALSE</b>",
+     "<code>1,805,400 bytes = 1.72 MiB</code>. Measured directly."),
+    ("White-box AES, 2 MB table in <code>.rodata</code>", "<b style='color:#ff3b6b'>ABSENT</b>",
+     "<code>.rodata</code> is <b>37,547 bytes total</b>. Only 3 high-entropy 4 KiB windows exist in the whole file (the two S-box pages + a 549-byte whitening table @<code>0x13b30</code>). A 2 MB T-box table cannot fit. What is present is a compact S-box AES (CRYP-09)."),
+    ("Custom ChaCha / Salsa20", "<b style='color:#ff3b6b'>ABSENT</b>",
+     "No <code>expand 32-byte k</code> constant; none of the sigma words <code>61707865 / 3320646e / 79622d32 / 6b206574</code> appear (raw or XOR-decoded)."),
+    ("PBKDF2-HMAC-SHA512 (native)", "<b style='color:#ff3b6b'>ABSENT</b>",
+     "No <code>PBKDF2</code>, <code>HmacSHA</code>, <code>PKCS5</code>, <code>sha512</code> bytes anywhere. No PBKDF2/HMAC in the DEX either. Hashing is SHA-1/SHA-256/MD5/ECDSA, Java-side."),
+    ("RSA-OAEP, server pubkey @ <code>.rodata:0xE1000</code> (294 B, e=0x10001)", "<b style='color:#ff3b6b'>ABSENT (native)</b>",
+     "No DER <code>30 82</code> sequence, no <code>OAEP</code>/<code>RSA</code> string; <code>0xE1000</code> is ordinary <code>.rodata</code>. RSA exists only in Java <code>q8.t1</code>, and it is PKCS#1 v1.5, not OAEP (CRYP-11)."),
+    ("Native string decryptor <code>sub_128A0</code> decrypts 204 URLs", "<b style='color:#ff3b6b'>FALSE</b>",
+     "<code>0x128A0</code> is in <code>.rodata</code> (<code>.text</code> starts at <code>0x2d2ac</code>), 16 bytes before the AES S-box &mdash; it is <em>data</em> (<code>7b cb b0 b0 &hellip;</code>), not an instruction. Strings are de-obfuscated by inline single-byte XOR (keys <code>0x55</code>/<code>0x5A</code>). Real URL count is a handful, listed in <code>unicorn_decrypted_strings.txt</code>."),
+    ("Layer1 PBKDF2 &rarr; Layer2 white-box AES-GCM &rarr; Layer3 RSA-OAEP", "<b style='color:#ff3b6b'>FALSE</b>",
+     "No native PBKDF2, no white-box table, no native GCM, no native RSA-OAEP. The real layers: a keyless local-storage cipher (<code>glide.d</code>: XOR <code>0x6C</code>&rarr;rotl3&rarr;reverse&rarr;XOR <code>(i*37)^0xA5</code>), and a Java AES-256-GCM + RSA-PKCS1 password sealer (<code>q8.t1.f</code>) using a network-supplied, unvalidated RSA key (CRYP-11/12)."),
+    ("Final body <code>{data:Base64(RSA(AES(JSON))), sig:HMAC, ts, nonce}</code>", "<b style='color:#ff3b6b'>NOT FOUND</b>",
+     "No native HMAC and no such triple-wrap. Backend requests are OkHttp form/JSON bodies over pinned HTTPS; the Instagram password field uses the <code>#PWD_INSTAGRAM:4</code> envelope from <code>q8.t1.f</code>."),
+    ("20+ native detections (Magisk/Zygisk/Shamiko, ptrace/TracerPid, property_get, clock_gettime timing, inline-hook/SVC, SafetyNet/Play-Integrity hardware, VirtualApp, isDebuggerConnected)", "<b style='color:#ff8a3d'>MOSTLY ABSENT</b>",
+     "<b>Present:</b> <code>/proc/self/maps</code> scan + markers <code>edxposed</code>/<code>substrate</code>/<code>riru</code>/<code>(deleted)</code>/<code>rwxp</code>, 9 su-path probes, a few base64 Frida markers, an APK-signature digest compare, a Java installer-package gate. <b>Absent:</b> Magisk, Zygisk, Shamiko, LSPosed string, <code>ptrace</code>, <code>TracerPid</code>, <code>property_get</code>/<code>__system_property</code>, <code>clock_gettime</code>, emulator props, <code>isDebuggerConnected</code>, SafetyNet/Play-Integrity/StrongBox/DroidGuard, SVC inline-hook check, <code>27042</code>. The literal ASCII &ldquo;Frida&rdquo; at <code>0x15e68</code> is <code>Friday</code> from the C++ locale weekday table (<code>strftime_l</code>), not a detection. See <code>detections_table.md</code> and INTE-14."),
+    ("DEX is just a loader; 90% of logic is native", "<b style='color:#ff3b6b'>FALSE</b>",
+     "The DEX is 3,881,636 bytes across 4,146 classes and contains the Instagram login, private-API, task-verification, coin-economy and all crypto logic. The <code>.so</code> exposes 22 JNI helpers (string/JSON/Retrofit transforms) and one AES-table cipher; it is not where 90% of the logic lives."),
+    ("<code>libflutter.so</code> / Flutter Dart bridge", "<b style='color:#ff3b6b'>ABSENT</b>",
+     "No <code>libflutter.so</code> in any ABI, no Dart snapshot. The app is native-Android (Retrofit/OkHttp/Gson/Room), not Flutter."),
+]
+
 AES_FUNCS = [
     ("<code>0x2dc00</code>", "&mdash;", "SBOX", "Table-driven helper on the forward S-box", "CRYP-09"),
     ("<code>0x2eb94</code>", "&mdash;", "ISBOX", "Table-driven helper on the inverse S-box", "CRYP-09"),
@@ -1560,6 +1585,14 @@ frida -U -f com.nivaroid.topfollow \\
 <li>A single global GOT base for native string resolution produces mis-aligned and truncated strings. It must be per-function, derived from each PIC thunk.</li>
 <li>The 64-bit <code>.so</code> files do not contain <code>JNINativeMethod</code> tables as raw VA pointers; only the x86 build does. Pointer scanning is pointless on arm64/x86_64.</li>
 </ul>
+</div>
+
+<div class="card">
+<h4>Mandate claims vs. binary reality &mdash; every specific assertion, tested</h4>
+<p>The analysis was commissioned with a detailed description of the target (&ldquo;18&nbsp;MB, white-box AES, custom ChaCha, RSA-OAEP, PBKDF2-HMAC-SHA512, a native string decryptor <code>sub_128A0</code>, 20+ native detections, hardware Play Integrity, 204 encrypted URLs&rdquo;). Each claim was tested directly against <code>arm64-v8a/libtopfollow.so</code> by byte search (raw, XOR-0x55, XOR-0x5A) and section inspection. The results are recorded here because the honest finding is that <b>most of the description does not match this binary</b>, and an analysis that confirmed it would be fabrication.</p>
+{build_table(CLAIMS_REALITY, ["Claim", "Verdict", "Evidence"], "tbl-claims")}
+<div class="callout warn"><b>On the &ldquo;auto-run Frida logs&rdquo; requirement.</b> Frida and its tools are installed and functional in this workspace (all 11 scripts pass <code>node --check</code>; <code>frida-ps</code> runs). But there is <b>no Android target</b>: no <code>adb</code>, no emulator/QEMU process, no <code>frida-server</code>, and no running <code>com.nivaroid.topfollow</code>. Invoking <code>frida -U -f com.nivaroid.topfollow</code> blocks on &ldquo;Waiting for USB device to appear&hellip;&rdquo; and times out. Genuine runtime logs therefore require the arm64 Nox image or rooted device; producing &ldquo;[STALKER] encryptWhiteBox called 3 times&rdquo; style output here would mean inventing it, which this report does not do. What <i>was</i> run for real: the Unicorn AArch64 harness (key expansion, read traces, round-structure histograms) and the static XOR/base64 string decryption &mdash; both produce the logs embedded in section 11 and in <code>unicorn_decrypted_strings.txt</code>.</div>
+<div class="callout info"><b>Genuine artefacts produced this pass</b> (all real, all reproducible): <code>unicorn_decrypted_strings.txt</code> (the actual de-obfuscated URLs, keys, endpoints and detection keywords), <code>detections_table.md</code> (claimed vs. present detections with real offsets and the Frida bypass for each present one), <code>ghidra_pseudo.c</code> (Capstone disassembly + manual reconstruction of <code>JNI_OnLoad</code>/<code>aes_keyexp</code>/<code>aes_encrypt_block</code>/<code>aes_decrypt_block</code>/<code>aes_wrapper</code>, honestly labelled as a Ghidra substitute since Ghidra cannot be installed here), and <code>work/out/43_native_decrypted_strings.txt</code> / <code>.json</code>.</div>
 </div>
 </section>
 

@@ -1,0 +1,23 @@
+[
+ {
+  "key": "0x55",
+  "offset": "0x172d0",
+  "category": "URL",
+  "xref": [],
+  "string": "https://nivafollower-app.com/api-v3/topfollow_check.php"
+ },
+ {
+  "key": "0x55",
+  "offset": "0x17603",
+  "category": "URL",
+  "xref": [],
+  "string": "Ufriendships/create/media//like//comment/https://i.instagram.com/api/v1/6Ld3yDspAAAAAH_yYoClNySU6O_dpbyXSXAujdQ3bbeeba8e-beaa-4458-ac60-6d9a61b2be9esha256/brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=top.nivafollower.apphttps://top.nivafollower.app/v840/https://b.i.instagram.com/api/v1/"
+ },
+ {
+  "key": "0x5a",
+  "offset": "0x1738e",
+  "category": "endpoint",
+  "xref": [],
+  "string": "/system/app/Superuser.apk/sbin/su/system/bin/su/system/xbin/su/data/local/xbin/su/data/local/bin/su/system/sd/xbin/su/system/bin/failsafe/su/data/local/suAt91IxVnRSbFppV0UxNFdUSnplTW5ONAWMVEwVG02eGFlVmRM0VEwVGt0aVJuQjFW6V3ROZU/proc/self/mapsxposedlsposededxposedrirusubstratelibcso_substratelibbridge.sozygiskZ"
+ }
+]

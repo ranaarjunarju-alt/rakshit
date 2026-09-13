@@ -1,0 +1,23 @@
+=== NATIVE STRING DECRYPTION (libtopfollow.so, arm64-v8a) ===
+  file 1,805,400 bytes; .rodata VA [0x118b0,0x1ab5b)
+  method: single-byte XOR sweep (keys 0x55, 0x5A) over the whole file,
+  filtered to meaningful runs in the .rodata string-table region,
+  cross-referenced to functions via per-function ADRP+ADD resolution.
+  NOTE: there is NO native sub_128A0 blob-decryptor; 0x128a0 is .rodata
+  data 16 bytes before the AES S-box (0x128b0), not executable code.
+
+
+########## XOR KEY 0x55 ##########
+  2 distinct interesting strings; categories: {'URL': 2}
+
+  offset     category           xref-fn      string
+  ----------------------------------------------------------------------------------------------------
+  0x000172d0 URL                -            'https://nivafollower-app.com/api-v3/topfollow_check.php'
+  0x00017603 URL                -            'Ufriendships/create/media//like//comment/https://i.instagram.com/api/v1/...'
+
+########## XOR KEY 0x5a ##########
+  1 distinct interesting strings; categories: {'endpoint': 1}
+
+  offset     category           xref-fn      string
+  ----------------------------------------------------------------------------------------------------
+  0x0001738e endpoint           -            '/system/app/Superuser.apk/sbin/su/system/bin/su/system/xbin/su/data/loca...'
