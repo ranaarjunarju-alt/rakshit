@@ -1,0 +1,20 @@
+
+=== KEY EXPANSION 0x32158  (insns=89,148, RCON=14) ===
+  total reads=112  distinct IPs=8
+    0x033840: 14
+    0x033844: 14
+    0x033848: 14
+    0x0338c8: 14
+    0x03283c: 14
+    0x032840: 14
+    0x032858: 14
+    0x032888: 14
+  per-IP read counts: [14]  -> period/multiplicity signal
+
+=== ENCRYPT 0x2fdcc on ZEROED schedule (insns=23,186, exit=returned) ===
+  total reads=32  distinct IPs=4
+    0x03082c: 8
+    0x030894: 8
+    0x030900: 8
+    0x030960: 8
+  per-IP read counts: [8]  -> period/multiplicity signal

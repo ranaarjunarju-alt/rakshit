@@ -217,11 +217,14 @@ Binary hardening is sound — FULL RELRO + `BIND_NOW`, stack canary, FORTIFY on
 all three ABIs — and the library **does** use the genuine AES tables in its own
 AES-256-*shaped* cipher (forward S-box `0x128b0`, inverse `0x139b0`, rcon
 `0x13b10`; Unicorn execution: 112 S-box reads, **14 rcon reads** = the AES-256
-count, a 240-byte round-key-shaped schedule). A functional test then showed it is
-**not proven standard AES-256**: the schedule breaks the strict FIPS-197
-recurrence at `w[8]`, the block ciphers read the S-box only 32× each (not ~160),
-and `decrypt(encrypt(pt))≠pt` — a modified/obfuscated variant, or one needing
-live ctx state. But
+count, a 240-byte round-key-shaped output). The **key expansion is structurally
+AES-256** — its 112 S-box reads come from 8 distinct instructions each hit
+exactly 14× (period-14 `SubWord`). The **block ciphers could not be validated**
+under emulation: they early-exit on a zeroed schedule (32 S-box reads, not ~160)
+or spin to the instruction cap on a populated one, because the OLLVM-flattened
+dispatcher needs the exact C++ `ctx` object layout. So the honest claim is *not*
+"proven AES-256" and *not* "proven not-AES" — it is inconclusive, settled only on
+a live device. But
 there is **no TLS stack and no crypto *import*** (`DT_NEEDED` = libz/libandroid/
 liblog/libm/libdl/libc), and the AES is not reachable from Java — none of the 22
 JNI natives is `([B)[B`. So every *protection* executes by calling back into
