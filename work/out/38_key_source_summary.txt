@@ -1,0 +1,150 @@
+=== KEY-SOURCE TRACE SUMMARY (fn 0x32158, arm64-v8a) ===
+
+  reads by region (count / bytes):
+    stack             6,377 reads       27,616 bytes
+    image:data        1,900 reads        8,384 bytes
+    heap                770 reads        2,984 bytes
+    SBOX                112 reads          112 bytes
+    RCON                 14 reads           14 bytes
+
+  image:data reads (file-backed constants): 1,900
+  distinct image:data addresses: 319
+  contiguous image:data runs: 319
+
+=== the 4th table the key expansion reads (NOT SBOX/ISBOX/RCON) ===
+  region 0x13b30..0x13d55  (549 bytes, entropy 7.8099, 244/256 unique)
+  sits immediately after rcon (0x13b10+14 = 0x13b1e), preceded by 16 bytes:
+    0x13b1e  9a 2f 5e bc 63 c6 97 35 6a d4 b3 7d fa ef c5 91
+  keyexp reads 52 scattered single bytes from it -> key-derivation / whitening table
+
+=== verdict ===
+  --- key-source tests ---
+  image:data bytes read (concatenated): 314
+  observed RK0 1742e227063cdfce2c2b4cbd71f1297a present in image:data blob? NO
+  observed RK0 present anywhere in the whole file? NO
+  RK0 first-16 in file? NO
+
+  heap reads: 770 over 147 distinct addresses
+    0x810020c-0x810020d (   1 B) CTX
+    0x8100210-0x8100211 (   1 B) CTX
+    0x8100214-0x8100215 (   1 B) CTX
+    0x8100218-0x8100219 (   1 B) CTX
+    0x810021c-0x810021d (   1 B) CTX
+    0x8100220-0x8100221 (   1 B) CTX
+    0x8100224-0x8100225 (   1 B) CTX
+    0x8100228-0x8100229 (   1 B) CTX
+    0x810022c-0x810022d (   1 B) CTX
+    0x8100230-0x8100231 (   1 B) CTX
+    0x8100234-0x8100235 (   1 B) CTX
+    0x8100238-0x8100239 (   1 B) CTX
+    0x810023c-0x810023d (   1 B) CTX
+    0x8100240-0x8100241 (   1 B) CTX
+    0x8100244-0x8100245 (   1 B) CTX
+    0x8100248-0x8100249 (   1 B) CTX
+    0x810024c-0x810024d (   1 B) CTX
+    0x8100250-0x8100251 (   1 B) CTX
+    0x8100254-0x8100255 (   1 B) CTX
+    0x8100258-0x8100259 (   1 B) CTX
+    0x810025c-0x810025d (   1 B) CTX
+    0x8100260-0x8100261 (   1 B) CTX
+    0x8100264-0x8100265 (   1 B) CTX
+    0x8100268-0x8100269 (   1 B) CTX
+    0x810026c-0x810026d (   1 B) CTX
+    0x8100270-0x8100271 (   1 B) CTX
+    0x8100274-0x8100275 (   1 B) CTX
+    0x8100278-0x8100279 (   1 B) CTX
+    0x810027c-0x810027d (   1 B) CTX
+    0x8100280-0x8100281 (   1 B) CTX
+    0x8100284-0x8100285 (   1 B) CTX
+    0x8100288-0x8100289 (   1 B) CTX
+    0x810028c-0x810028d (   1 B) CTX
+    0x8100290-0x8100291 (   1 B) CTX
+    0x8100294-0x8100295 (   1 B) CTX
+    0x8100298-0x8100299 (   1 B) CTX
+    0x810029c-0x810029d (   1 B) CTX
+    0x81002a0-0x81002a1 (   1 B) CTX
+    0x81002a4-0x81002a5 (   1 B) CTX
+    0x81002a8-0x81002a9 (   1 B) CTX
+    0x81002ac-0x81002ad (   1 B) CTX
+    0x81002b0-0x81002b1 (   1 B) CTX
+    0x81002b4-0x81002b5 (   1 B) CTX
+    0x81002b8-0x81002b9 (   1 B) CTX
+    0x81002bc-0x81002bd (   1 B) CTX
+    0x81002c0-0x81002c1 (   1 B) CTX
+    0x81002c4-0x81002c5 (   1 B) CTX
+    0x81002c8-0x81002c9 (   1 B) CTX
+    0x81002cc-0x81002cd (   1 B) CTX
+    0x81002d0-0x81002d1 (   1 B) CTX
+    0x81002d4-0x81002d5 (   1 B) CTX
+    0x81002d8-0x81002d9 (   1 B) CTX
+    0x81002dc-0x81002dd (   1 B) CTX
+    0x81002e0-0x81002e1 (   1 B) CTX
+    0x81002e4-0x81002e5 (   1 B) CTX
+    0x81002e8-0x81002e9 (   1 B) CTX
+    0x81002ec-0x81002ed (   1 B) CTX
+    0x81002f0-0x81002f1 (   1 B) CTX
+    0x81002f4-0x81002f5 (   1 B) CTX
+    0x81002f8-0x81002f9 (   1 B) CTX
+    0x81002fc-0x81002fd (   1 B) CTX
+    0x8100300-0x8100301 (   1 B) CTX
+    0x8100304-0x8100305 (   1 B) CTX
+    0x8100308-0x8100309 (   1 B) CTX
+    0x810030c-0x810030d (   1 B) CTX
+    0x8100310-0x8100311 (   1 B) CTX
+    0x8100314-0x8100315 (   1 B) CTX
+    0x8100318-0x8100319 (   1 B) CTX
+    0x810031c-0x810031d (   1 B) CTX
+    0x8100320-0x8100321 (   1 B) CTX
+    0x8100324-0x8100325 (   1 B) CTX
+    0x8100328-0x8100329 (   1 B) CTX
+    0x810032c-0x810032d (   1 B) CTX
+    0x8100330-0x8100331 (   1 B) CTX
+    0x8100334-0x8100335 (   1 B) CTX
+    0x8100338-0x8100339 (   1 B) CTX
+    0x810033c-0x810033d (   1 B) CTX
+    0x8100340-0x8100341 (   1 B) CTX
+    0x8100344-0x8100345 (   1 B) CTX
+    0x8100348-0x8100349 (   1 B) CTX
+    0x810034c-0x810034d (   1 B) CTX
+    0x8100350-0x8100351 (   1 B) CTX
+    0x8100354-0x8100355 (   1 B) CTX
+    0x8100358-0x8100359 (   1 B) CTX
+    0x810035c-0x810035d (   1 B) CTX
+    0x8100360-0x8100361 (   1 B) CTX
+    0x8100364-0x8100365 (   1 B) CTX
+    0x8100368-0x8100369 (   1 B) CTX
+    0x810036c-0x810036d (   1 B) CTX
+    0x8100370-0x8100371 (   1 B) CTX
+    0x8100374-0x8100375 (   1 B) CTX
+    0x8100378-0x8100379 (   1 B) CTX
+    0x810037c-0x810037d (   1 B) CTX
+    0x8100380-0x8100381 (   1 B) CTX
+    0x8100384-0x8100385 (   1 B) CTX
+    0x8100388-0x8100389 (   1 B) CTX
+    0x810038c-0x810038d (   1 B) CTX
+    0x8100390-0x8100391 (   1 B) CTX
+    0x8100394-0x8100395 (   1 B) CTX
+    0x8100398-0x8100399 (   1 B) CTX
+    0x810039c-0x810039d (   1 B) CTX
+    0x81003a0-0x81003a1 (   1 B) CTX
+    0x81003a4-0x81003a5 (   1 B) CTX
+    0x81003a8-0x81003a9 (   1 B) CTX
+    0x81003cc-0x81003cd (   1 B) CTX
+    0x81003d0-0x81003d1 (   1 B) CTX
+    0x81003d4-0x81003d5 (   1 B) CTX
+    0x8100418-0x8100419 (   1 B) 
+    0x810041c-0x810041d (   1 B) 
+    0x8100420-0x8100421 (   1 B) 
+    0x8100424-0x8100425 (   1 B) 
+    0x8100428-0x8100429 (   1 B) 
+    0x810042c-0x810042d (   1 B) 
+    0x8100430-0x8100431 (   1 B) 
+    0x8100434-0x8100435 (   1 B) 
+    0x8200000-0x8200020 (  32 B) IN(pt)
+
+  === VERDICT ===
+  RK0 is NOT present in any file-backed region read by 0x32158,
+  nor anywhere in the 1.8 MB file. The key is COMPUTED at runtime
+  from register/immediate state inside the OLLVM prologue, not read
+  from a stored constant. Static extraction is impossible; it is
+  recoverable only from live process memory (dynamic-lab/09).

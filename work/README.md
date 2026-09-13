@@ -82,11 +82,38 @@ Confirmed offsets in this APK: signing-block magic `@0x9d1608`, central
 directory `@0x9d1618`, EOCD `@0x9e616c`, v2 pair `@0x9ce620`. There is **no
 v1/JAR signature** — v2 block plus a verity padding block only.
 
+## Stage 5 — native AES & Unicorn execution
+
+The first pass concluded "no crypto in the `.so`". That was **wrong**, and the
+two reasons are recorded here so they are not repeated:
+
+* the `.rodata` resolver in `fn_strings3.py` discarded any target below 92 %
+  printable, which silently filtered out the high-entropy AES S-box / inverse /
+  rcon (binary tables, not strings); and
+* the S-box re-derivation had two algebra bugs — computing the GF(2⁸) inverse as
+  `pow(i, 254, 0x11b)` (GF(2⁸) is **not** ℤ/0x11b) and rotating a running
+  accumulator instead of the original inverse. Both produced a plausible-but-wrong
+  table and a false "no AES present".
+
+| Script | Output | Purpose |
+|---|---|---|
+| `aes_forensics.py` | `out/30_aes_forensics_arm64.txt` | ✅ locates the AES tables **by content** in all three ABIs (arm64 S-box `0x128b0`, inv `0x139b0`, rcon `0x13b10`), re-derives the S-box from first principles under `gmul` and cross-checks the literal, then **aborts rather than report a false negative** if they disagree. Also: per-section entropy, ARMv8-crypto-extension scan, DT_NEEDED / import inventory. |
+| `aes_xref.py` | `out/32_aes_xref_*.{txt,json}` | per-function ADRP+ADD pairing → the five AES functions and their call graph (arm64 authoritative: `0x2dc00`, `0x2eb94`, `0x2fdcc`, `0x30f18`, `0x32158` → wrappers → 16 L2 → root `0xfe268`). x86/x86_64 PIC-thunk resolution is **incomplete** (`ebx` clobbered between thunk and access) — documented dead end, do not block on it. |
+| `native_deep.py` | `out/31_native_deep_arm64.txt`, `out/31_arm64_jni_and_aes.json` | AES function sizes + table-reference counts, `.eh_frame` FDE walk. |
+| `unicorn_aes.py` | `out/33_unicorn_aes_arm64.txt` | ✅ **the proof.** Unicorn AArch64 harness: maps the DSO at VA 0, repoints **every GOT slot at a trampoline** so libc is serviced from Python (without that the PLT stubs branch through a zeroed GOT to `PC=0`), emulates 30+ libc functions, builds std::string layouts. Runs key expansion `0x32158` → returns after 89,148 insns, **112 S-box reads, 14 rcon reads (= AES-256)**, writes a 240-byte FIPS-197 schedule. |
+| `unicorn_key_trace.py` | `out/37_key_source_trace.txt`, `out/38_key_source_summary.txt` | ✅ per-instruction **read trace** of `0x32158` (9,173 reads). Shows the caller key buffer is never read; instead 52 scattered bytes come from a **549-byte whitening table at `.rodata 0x13b30`** (entropy 7.81, right after rcon, preceded by a 16-byte constant at `0x13b1e`). RK0 is in no file-backed region → key is runtime-derived (CRYP-10). |
+| `x86_aes_jni.py` | `out/35_x86_jni_full.json`, `out/36_x86_aes_jni.json`, `out/39_jni_full_map.json` | parses the **literal x86 `JNINativeMethod` table** at `0xd8fec` (imagebase 0) → all 22 name/signature/fnPtr triples, cross-checked against `helper.q` native decls in the DEX. Confirms **none is `([B)[B`** → the AES is not Java-reachable (CRYP-09). The AES-reachability half is inconclusive because the x86 PIC resolver finds 0 table refs (same `ebx`-clobber dead end). |
+
+Function boundaries for the x86 call graph come from the `.eh_frame_hdr`
+binary-search table (`table_enc 0x3b` = datarel sdata4, relative to the hdr VA),
+which yields 1,069 function starts directly — the raw `.eh_frame` FDE walk was
+fragile on this build.
+
 ## Rebuilding the report
 
 ```bash
 cd .. && .venv/bin/python report/build_report.py
 ```
 
-Reads `report/vulns_data.py` (the 63-finding register), the nine scripts in
+Reads `report/vulns_data.py` (the 73-finding register), the eleven scripts in
 `dynamic-lab/`, and the evidence files above, then emits the single-file HTML.

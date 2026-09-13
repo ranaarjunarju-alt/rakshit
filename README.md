@@ -14,7 +14,7 @@ that was then proven by executing the code under Unicorn.**
 ## Read this first
 
 👉 **[`TopFollow_Security_Analysis.html`](TopFollow_Security_Analysis.html)** —
-a single self-contained 544 KiB HTML report. No external assets, no network
+a single self-contained 554 KiB HTML report. No external assets, no network
 requests. Open it in any browser; use **Print → Save as PDF** for an offline
 copy (print styles strip the interactive chrome and expand every code block).
 
@@ -43,7 +43,7 @@ filterable data tables.
 | 8 | **`allowBackup=true` with completely empty exclusion rules** | The unencrypted credential DB lands in Google cloud backup |
 | 9 | **The "pin" is the APK signing-certificate digest**, and doubles as the tamper-check constant | Pins nothing about the server's TLS key |
 | 10 | **`libtopfollow.so` has no TLS stack and imports no crypto library** — pinning is executed via JNI in Java | One Frida hook on `CertificatePinner.check` defeats it |
-| 11 | **A real AES-256 lives in the native library** (S-box `0x128b0`, inv `0x139b0`, rcon `0x13b10`), proven by Unicorn: 14 rcon reads, a 240-byte FIPS-197 schedule | The key is derived at runtime and is **not** any byte window of the file — recoverable only from live memory (script 09) |
+| 11 | **A real AES-256 lives in the native library** (S-box `0x128b0`, inv `0x139b0`, rcon `0x13b10`), proven by Unicorn: 14 rcon reads, a 240-byte FIPS-197 schedule | The key is derived at runtime from a **549-byte whitening table at `0x13b30`** + ctx state, and is **not** any byte window of the file — recoverable only from live memory (script 09) |
 | 12 | **The native AES is not reachable from Java** — none of the 22 JNI natives is `([B)[B`; the one `digest([B)[B` bridge the library asks for does not exist in the DEX | A dead JNI bridge: `GetStaticMethodID` returns NULL → `NoSuchMethodError` (CRED-11) |
 | 13 | **Instagram password sealing uses RSA-PKCS1, not OAEP, with a public key supplied by the network and never validated** | Composes with the ServerCheck pin/URL injection: a MITM replaces the RSA key and reads every password (CRYP-11, CRYP-12) |
 
@@ -150,6 +150,22 @@ so that was attacked instead:
    window of the file — **5,416,128 candidates, zero hits**. The key is computed
    at runtime inside the OLLVM prologue, so it is only recoverable from live
    memory (Frida script `09_native_aes_dump.js`).
+8. **Trace where the key actually comes from** (`work/unicorn_key_trace.py`): a
+   per-instruction read log of all 9,173 reads shows the caller's key buffer is
+   *never read*; instead the routine pulls **52 scattered single bytes from a
+   549-byte high-entropy table at `.rodata 0x13b30`** (entropy 7.81, immediately
+   after rcon, preceded by a 16-byte constant `9a2f5ebc…c591` at `0x13b1e`). That
+   table is not the S-box, not the inverse, not a permutation, not a GF(2⁸) log
+   table — it is a **key-derivation / whitening table** that the content-scan in
+   step 5 missed because it only looked for the five canonical AES patterns. RK0
+   appears in no file-backed region, so the key is folded at runtime from this
+   table + the `ctx` state (CRYP-10).
+9. **Attribute the 22 JNI natives independently** (`work/x86_aes_jni.py`): the
+   x86 build stores its `JNINativeMethod` table as literal VA pointers at file
+   offset `0xd8fec` (imagebase 0). Parsing all 22 triples and cross-checking each
+   name against the `helper.q` native declarations in the DEX confirms the full
+   mapping in section 10 — and that **none of the 22 signatures is `([B)[B`**, so
+   the AES is not exposed to Java as a byte-array cipher (CRYP-09).
 
 `report/cipher_poc.py` re-implements the Java-layer cipher
 (`glide.d.p()` / `q()`): XOR `0x6C` → rotate-left 3 → reverse → XOR

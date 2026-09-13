@@ -165,6 +165,28 @@ AES_FUNCS = [
     ("<code>0x3a838</code>", "&mdash;", "&mdash;", "Caller of key expansion", "CRYP-10"),
 ]
 
+# Key-source trace (work/unicorn_key_trace.py -> work/out/37,38). Every read the
+# key-expansion routine makes, classified by region.
+KEY_TRACE = _tail(os.path.join(WORK, "out", "38_key_source_summary.txt"), 40)
+KEY_READS = [
+    ("stack", "6,377", "27,616", "OLLVM flattening scratch + the state dispatcher's spill slots"),
+    ("<code>image:data</code>", "1,900", "8,384",
+     "File-backed constants. 1,288 of these are the single byte at <code>0x0</code> (the ELF <code>0x7f</code> magic, read by the flattened dispatcher). The rest are <b>52 scattered single-byte reads of a high-entropy table at <code>0x13b30</code></b> &mdash; see below."),
+    ("heap", "770", "2,984",
+     "The <code>ctx</code> struct (<code>0x810020c&ndash;0x81003d4</code>) read byte-by-byte, plus the 16-byte plaintext at <code>IN</code>. The caller-supplied key buffer is <b>never read</b>."),
+    ("SBOX", "112", "112", "Forward S-box &mdash; AES-256 SubWord during expansion"),
+    ("RCON", "14", "14", "Round constants &mdash; <b>14 = AES-256</b>"),
+]
+FOURTH_TABLE = [
+    ("<code>0x128b0</code>", "forward S-box", "256", "7.99 (page)", "SubBytes / SubWord"),
+    ("<code>0x139b0</code>", "inverse S-box", "256", "7.96 (page)", "InvSubBytes (decrypt)"),
+    ("<code>0x13b10</code>", "rcon", "14", "&mdash;", "round constants"),
+    ("<code>0x13b1e</code>", "16-byte constant", "16", "&mdash;",
+     "<code>9a 2f 5e bc 63 c6 97 35 6a d4 b3 7d fa ef c5 91</code> &mdash; sits between rcon and the derivation table; a seed/whitening constant"),
+    ("<code>0x13b30</code>", "<b>key-derivation / whitening table</b>", "549", "<b>7.8099</b>",
+     "Read 52 times, byte-by-byte, by key expansion. 244/256 unique bytes, <b>not</b> a permutation, <b>not</b> the S-box or inverse, <b>not</b> a GF(2<sup>8</sup>) log/antilog table. Its role is to fold into the runtime key."),
+]
+
 NATIVE_TABLE = [
     ("q.a(String)", "x0014b4f3", "Transforms the raw Instagram response JSON into the claim field <code>x5</code>.", "BIZ-07"),
     ("q.b()", "x0012f5b7", "Returns the User-Agent used on TopFollow backend calls.", "CRYP-06"),
@@ -532,6 +554,7 @@ summary:hover{{color:#fff}}
 .callout.warn{{border-color:rgba(255,138,61,.40);background:rgba(255,138,61,.08)}}
 .callout.info{{border-color:rgba(34,211,238,.36);background:rgba(34,211,238,.07)}}
 .callout.ok{{border-color:rgba(74,222,128,.40);background:rgba(74,222,128,.08)}}
+.callout.bad{{border-color:rgba(255,59,107,.45);background:rgba(255,59,107,.09)}}
 .callout b{{color:#fff}}
 .flow{{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}}
 .flow .step{{background:var(--glass2);border:1px solid var(--stroke2);border-radius:11px;padding:9px 13px;font:600 12px var(--mono);color:#dfe6ff}}
@@ -1186,6 +1209,21 @@ mov   rax, [reg + off]   ; load a string pointer relative to that base</code></p
   0x14b88  "digest"
   0x14b8f  "com/nivaroid/topfollow/helper/T"
   0x14baf  "setup"</code></pre>
+<h4>11.9 Where the AES key comes from &mdash; a full read trace</h4>
+<p>Because the routine produced an <em>identical</em> schedule under three different caller-key layouts, the key is clearly not the caller's. To find its real source, <code>work/unicorn_key_trace.py</code> re-runs <code>0x32158</code> with a per-instruction memory-read logger and classifies all 9,173 reads by region.</p>
+{build_table(KEY_READS, ["Region", "Reads", "Bytes", "What it is"], "tbl-keyreads")}
+<div class="callout bad">
+<h4 style="margin-top:0">A fourth AES-related table that the first pass missed</h4>
+<p>Immediately after rcon (<code>0x13b10</code> + 14 = <code>0x13b1e</code>) sits a <b>549-byte high-entropy table at <code>0x13b30</code></b> (entropy 7.8099, 244/256 distinct bytes). The key expansion reads <b>52 scattered single bytes</b> from it. It is not the S-box, not the inverse, not a permutation of <code>0..255</code>, and not a GF(2<sup>8</sup>) log/antilog table &mdash; it is a key-derivation / whitening table. The earlier content-scan (<code>aes_forensics.py</code>) looked only for the five canonical AES patterns and so missed it entirely; it surfaced only by <em>tracing what the code actually reads</em>.</p>
+{build_table(FOURTH_TABLE, ["Offset", "Table", "Bytes", "Entropy", "Role"], "tbl-fourth")}
+</div>
+<pre class="code"><code>{esc(KEY_TRACE)}</code></pre>
+<div class="callout warn"><b>Verdict, and it is now evidence-backed rather than inferred.</b> The observed round key <code>RK0 = 1742e227063cdfce2c2b4cbd71f1297a</code> appears in <b>no</b> file-backed region the routine reads, and in <b>no</b> byte window of the 1,805,400-byte file (5,416,128 candidates brute-forced). The key is therefore <b>computed at runtime</b> &mdash; the whitening table at <code>0x13b30</code> and the 16-byte constant at <code>0x13b1e</code> are folded together with the <code>ctx</code> state inside the OLLVM-flattened prologue to produce the actual AES-256 key. Static extraction is not possible; the key is recoverable only from live process memory, which is exactly what <code>09_native_aes_dump.js</code> does (CRYP-10).</div>
+
+<h4>11.10 JNI attribution &mdash; the 22 natives, independently verified</h4>
+<p>The report attributes all 22 native functions to their Java wrappers in section 10. That mapping was re-derived here from a completely independent direction and confirmed exactly. On the <b>x86</b> build the <code>JNINativeMethod</code> table is stored as literal virtual-address pointers at file offset <code>0xd8fec</code> (imagebase 0, so name/signature pointers index straight into <code>.rodata</code> and function pointers into <code>.text</code>). Parsing all 22 triples gives the registered name, JNI signature and entry offset for each; every name was then confirmed to be a declared <code>private static native</code> method of <code>com.nivaroid.topfollow.helper.q</code> in the DEX, and every one maps to a public wrapper <code>q.a()</code>&hellip;<code>q.v()</code>.</p>
+<div class="callout info"><b>Confirmed from the table itself:</b> none of the 22 signatures is <code>([B)[B</code>. The natives exchange <code>String</code>, <code>JsonObject</code>, <code>Order</code>, <code>InstagramAccount</code>, <code>retrofit2.Response</code> and <code>retrofit2.Retrofit</code> &mdash; never a raw byte array. So the AES proven above is used <em>inside</em> these request-building and response-parsing routines and is <b>not exposed to Java as a byte-array cipher</b> (CRYP-09). Artefacts: <code>work/out/35_x86_jni_full.json</code>, <code>work/out/39_jni_full_map.json</code>.</div>
+<p>What remains genuinely open is not <em>which Java method</em> reaches the AES (all 22 are named and mapped) but <em>which of them calls it internally</em>: on arm64 the AES sits under 22 call-graph ancestors of root <code>0xfe268</code>, and the x86 PIC-thunk resolver could not be made to attribute the table references because <code>ebx</code> is clobbered between the thunk and the access. <code>09_native_aes_dump.js</code> settles this on a device by Stalker-following whichever JNI native actually touches the S-box at runtime.</p>
 </div>
 </section>
 
