@@ -1,0 +1,67 @@
+{
+  "package": "com.nivaroid.topfollow",
+  "app_name": "TopFollow",
+  "version_name": "8.4.5",
+  "version_code": "845",
+  "min_sdk": "24",
+  "target_sdk": "35",
+  "max_sdk": null,
+  "permissions": [
+    "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.FOREGROUND_SERVICE",
+    "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
+    "android.permission.INTERNET",
+    "android.permission.POST_NOTIFICATIONS",
+    "android.permission.WAKE_LOCK",
+    "com.google.android.c2dm.permission.RECEIVE",
+    "com.nivaroid.topfollow.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ],
+  "declared_permissions": [
+    "com.nivaroid.topfollow.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ],
+  "activities": [
+    "com.nivaroid.topfollow.ui.RequestSaveActivity",
+    "com.nivaroid.topfollow.ui.RequestRepostActivity",
+    "com.nivaroid.topfollow.ui.CoinMinersActivity",
+    "com.nivaroid.topfollow.ui.LeaderBoardActivity",
+    "com.nivaroid.topfollow.ui.ShowFragmentActivity",
+    "com.nivaroid.topfollow.ui.OrdersActivity",
+    "com.nivaroid.topfollow.ui.DailyRewardActivity",
+    "com.nivaroid.topfollow.ui.CouponActivity",
+    "com.nivaroid.topfollow.ui.RequestLikeActivity",
+    "com.nivaroid.topfollow.ui.RequestCommentActivity",
+    "com.nivaroid.topfollow.ui.MenuActivity",
+    "com.nivaroid.topfollow.ui.UpgradeActivity",
+    "com.nivaroid.topfollow.ui.InstagramLoginActivity",
+    "com.nivaroid.topfollow.ui.InfoActivity",
+    "com.nivaroid.topfollow.ui.TopActivity",
+    "com.nivaroid.topfollow.ui.MainActivity",
+    "com.google.android.gms.common.api.GoogleApiActivity",
+    "com.nivaroid.topfollow.ui.InviteFriendsActivity",
+    "com.nivaroid.topfollow.ui.WebViewActivity",
+    "com.nivaroid.topfollow.ui.TwoFactorLoginActivity"
+  ],
+  "services": [
+    "com.google.firebase.messaging.FirebaseMessagingService",
+    "com.google.firebase.components.ComponentDiscoveryService",
+    "androidx.room.MultiInstanceInvalidationService",
+    "com.google.android.datatransport.runtime.backends.TransportBackendDiscovery",
+    "com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService",
+    "com.nivaroid.topfollow.application.DoTasksService"
+  ],
+  "receivers": [
+    "com.google.firebase.iid.FirebaseInstanceIdReceiver",
+    "androidx.profileinstaller.ProfileInstallReceiver",
+    "com.nivaroid.topfollow.application.TaskActionReceiver",
+    "com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+  ],
+  "providers": [
+    "com.google.firebase.provider.FirebaseInitProvider",
+    "androidx.startup.InitializationProvider"
+  ],
+  "main_activity": "com.nivaroid.topfollow.ui.TopActivity",
+  "libraries": [],
+  "signature_names": [],
+  "files_cert": null,
+  "cert_error": "'Certificate' object has no attribute 'md5_fingerprint'"
+}

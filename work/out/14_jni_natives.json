@@ -1,0 +1,182 @@
+{
+ "arm64-v8a": {},
+ "x86_64": {},
+ "x86": {
+  "x00105e9b": {
+   "slot_off": "0xd904c",
+   "slot_va": "0xdd04c",
+   "name": "x00105e9b",
+   "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+   "fn_va": "0x45d50",
+   "fn_off": "0x45d50"
+  },
+  "x0010e27f": {
+   "slot_off": "0xd90b8",
+   "slot_va": "0xdd0b8",
+   "name": "x0010e27f",
+   "signature": "()Ljava/lang/String;",
+   "fn_va": "0x58090",
+   "fn_off": "0x58090"
+  },
+  "x00113f7a": {
+   "slot_off": "0xd90c4",
+   "slot_va": "0xdd0c4",
+   "name": "x00113f7a",
+   "signature": "()Ljava/lang/String;",
+   "fn_va": "0x581a0",
+   "fn_off": "0x581a0"
+  },
+  "x0011a4c2": {
+   "slot_off": "0xd8fec",
+   "slot_va": "0xdcfec",
+   "name": "x0011a4c2",
+   "signature": "()J",
+   "fn_va": "0x39df0",
+   "fn_off": "0x39df0"
+  },
+  "x0011e28b": {
+   "slot_off": "0xd901c",
+   "slot_va": "0xdd01c",
+   "name": "x0011e28b",
+   "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+   "fn_va": "0x3a6d0",
+   "fn_off": "0x3a6d0"
+  },
+  "x0011f1a2": {
+   "slot_off": "0xd90a0",
+   "slot_va": "0xdd0a0",
+   "name": "x0011f1a2",
+   "signature": "(Lcom/nivaroid/topfollow/models/Order;)Ljava/lang/String;",
+   "fn_va": "0x51280",
+   "fn_off": "0x51280"
+  },
+  "x0011f42b": {
+   "slot_off": "0xd907c",
+   "slot_va": "0xdd07c",
+   "name": "x0011f42b",
+   "signature": "()Ljava/lang/String;",
+   "fn_va": "0x4e780",
+   "fn_off": "0x4e780"
+  },
+  "x00120b1e": {
+   "slot_off": "0xd9028",
+   "slot_va": "0xdd028",
+   "name": "x00120b1e",
+   "signature": "(Lcom/google/gson/JsonObject;Ljava/lang/String;)V",
+   "fn_va": "0x3aa50",
+   "fn_off": "0x3aa50"
+  },
+  "x00126f7c": {
+   "slot_off": "0xd90dc",
+   "slot_va": "0xdd0dc",
+   "name": "x00126f7c",
+   "signature": "(ZLjava/lang/String;)Lretrofit2/Retrofit;",
+   "fn_va": "0x58a00",
+   "fn_off": "0x58a00"
+  },
+  "x0012d3e0": {
+   "slot_off": "0xd9010",
+   "slot_va": "0xdd010",
+   "name": "x0012d3e0",
+   "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+   "fn_va": "0x3a3e0",
+   "fn_off": "0x3a3e0"
+  },
+  "x0012e5a1": {
+   "slot_off": "0xd9034",
+   "slot_va": "0xdd034",
+   "name": "x0012e5a1",
+   "signature": "(Lcom/google/gson/JsonObject;)V",
+   "fn_va": "0x3d0e0",
+   "fn_off": "0x3d0e0"
+  },
+  "x0012f5b7": {
+   "slot_off": "0xd9088",
+   "slot_va": "0xdd088",
+   "name": "x0012f5b7",
+   "signature": "()Ljava/lang/String;",
+   "fn_va": "0x4fc30",
+   "fn_off": "0x4fc30"
+  },
+  "x00135e2a": {
+   "slot_off": "0xd9040",
+   "slot_va": "0xdd040",
+   "name": "x00135e2a",
+   "signature": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Ljava/lang/String;)V",
+   "fn_va": "0x446e0",
+   "fn_off": "0x446e0"
+  },
+  "x0014b4f3": {
+   "slot_off": "0xd9094",
+   "slot_va": "0xdd094",
+   "name": "x0014b4f3",
+   "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+   "fn_va": "0x50a30",
+   "fn_off": "0x50a30"
+  },
+  "x0014c1f9": {
+   "slot_off": "0xd90d0",
+   "slot_va": "0xdd0d0",
+   "name": "x0014c1f9",
+   "signature": "(Lretrofit2/Response;)Ljava/lang/String;",
+   "fn_va": "0x582a0",
+   "fn_off": "0x582a0"
+  },
+  "x0014e2e9": {
+   "slot_off": "0xd8ff8",
+   "slot_va": "0xdcff8",
+   "name": "x0014e2e9",
+   "signature": "()Ljava/lang/String;",
+   "fn_va": "0x39ff0",
+   "fn_off": "0x39ff0"
+  },
+  "x0015a3b7": {
+   "slot_off": "0xd9064",
+   "slot_va": "0xdd064",
+   "name": "x0015a3b7",
+   "signature": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Lcom/nivaroid/topfollow/models/Order;)V",
+   "fn_va": "0x4b260",
+   "fn_off": "0x4b260"
+  },
+  "x0015b1e9": {
+   "slot_off": "0xd9058",
+   "slot_va": "0xdd058",
+   "name": "x0015b1e9",
+   "signature": "(Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)V",
+   "fn_va": "0x46090",
+   "fn_off": "0x46090"
+  },
+  "x0015e49c": {
+   "slot_off": "0xd90ac",
+   "slot_va": "0xdd0ac",
+   "name": "x0015e49c",
+   "signature": "(Lretrofit2/Response;Lcom/nivaroid/topfollow/models/Order;Lcom/nivaroid/topfollow/models/InstagramAccount;)Ljava/lang/String;",
+   "fn_va": "0x52640",
+   "fn_off": "0x52640"
+  },
+  "x0016d3b9": {
+   "slot_off": "0xd9004",
+   "slot_va": "0xdd004",
+   "name": "x0016d3b9",
+   "signature": "()Ljava/lang/String;",
+   "fn_va": "0x3a130",
+   "fn_off": "0x3a130"
+  },
+  "x0017b62c": {
+   "slot_off": "0xd9070",
+   "slot_va": "0xdd070",
+   "name": "x0017b62c",
+   "signature": "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+   "fn_va": "0x4d9f0",
+   "fn_off": "0x4d9f0"
+  },
+  "x0018d3f7": {
+   "slot_off": "0xd90e8",
+   "slot_va": "0xdd0e8",
+   "name": "x0018d3f7",
+   "signature": "(I)Lretrofit2/Retrofit;",
+   "fn_va": "0x5a080",
+   "fn_off": "0x5a080"
+  }
+ }
+}
