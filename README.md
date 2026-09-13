@@ -43,7 +43,7 @@ filterable data tables.
 | 8 | **`allowBackup=true` with completely empty exclusion rules** | The unencrypted credential DB lands in Google cloud backup |
 | 9 | **The "pin" is the APK signing-certificate digest**, and doubles as the tamper-check constant | Pins nothing about the server's TLS key |
 | 10 | **`libtopfollow.so` has no TLS stack and imports no crypto library** — pinning is executed via JNI in Java | One Frida hook on `CertificatePinner.check` defeats it |
-| 11 | **A real AES-256 lives in the native library** (S-box `0x128b0`, inv `0x139b0`, rcon `0x13b10`), proven by Unicorn: 14 rcon reads, a 240-byte FIPS-197 schedule | The key is derived at runtime from a **549-byte whitening table at `0x13b30`** + ctx state, and is **not** any byte window of the file — recoverable only from live memory (script 09) |
+| 11 | **The native library uses the genuine AES tables in an AES-256-*shaped* cipher** (S-box `0x128b0`, inv `0x139b0`, rcon `0x13b10`); Unicorn: 14 rcon reads, a 240-byte schedule | A functional test shows it is **not proven standard AES-256** — the schedule breaks FIPS-197 at `w[8]`, the block ciphers read the S-box only 32× (not ~160), and `decrypt(encrypt(pt))≠pt`. Modified/obfuscated variant, or live-only state. Key derived at runtime from a **549-byte whitening table at `0x13b30`** + ctx (script 09) |
 | 12 | **The native AES is not reachable from Java** — none of the 22 JNI natives is `([B)[B`; the one `digest([B)[B` bridge the library asks for does not exist in the DEX | A dead JNI bridge: `GetStaticMethodID` returns NULL → `NoSuchMethodError` (CRED-11) |
 | 13 | **Instagram password sealing uses RSA-PKCS1, not OAEP, with a public key supplied by the network and never validated** | Composes with the ServerCheck pin/URL injection: a MITM replaces the RSA key and reads every password (CRYP-11, CRYP-12) |
 
@@ -67,7 +67,7 @@ dynamic-lab/                         ← 11 Frida scripts (10 PoCs + shared help
   08_backend_traffic_and_servercheck.js  all 26 endpoints + pin/URL hijack
   09_native_aes_dump.js                locate AES S-box by content, Stalker the
                                        table-referencing code, recover any live
-                                       FIPS-197 round-key schedule + key
+                                       round-key-shaped schedule + key
   10_java_crypto_layer.js              q8.t1.f password encryptor dissection,
                                        Cipher.init raw-key dump, helper.T ECDSA,
                                        dead digest([B)[B bridge proof
@@ -144,8 +144,11 @@ so that was attacked instead:
    Python — without that the PLT stubs branch through a zeroed GOT to `PC=0`.
    Result: the routine returns after 89,148 instructions having read the S-box
    **112 times** and rcon **exactly 14 times** (= AES-256), and writes a
-   **240-byte** round-key schedule that obeys the FIPS-197 recurrence
-   (`SubWord(RotWord(RK0_w3)) = 0xae037e5b` at schedule `+0x4c`).
+**240-byte** round-key-<i>shaped</i> schedule. A follow-up functional test
+   (`work/unicorn_verify_cipher.py`) then showed it does **not** satisfy the strict
+   FIPS-197 recurrence (breaks at `w[8]`), the encrypt/decrypt blocks read the
+   S-box only 32× each (not the ~160 a 14-round AES needs) and do **not**
+   round-trip — so it is AES-*shaped* but **not proven standard AES-256**.
 7. **Brute-force the key** against the observed RK0 over every 16/24/32-byte
    window of the file — **5,416,128 candidates, zero hits**. The key is computed
    at runtime inside the OLLVM prologue, so it is only recoverable from live

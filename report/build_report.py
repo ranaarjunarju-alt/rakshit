@@ -107,7 +107,7 @@ AES_TABLES = [
 AES_ABSENT = [
     ("White-box AES tables", "4&#215;1&nbsp;KB T-box / 256&#215;16&nbsp;B per round",
      "<b>absent</b> &mdash; <code>.rodata</code> is only 37,547&nbsp;B in total",
-     "The key is not protected by a white-box transform; it is a normal AES-256 schedule (OBFU-02)"),
+     "The key is not protected by a white-box transform; the expansion is AES-256-shaped but non-standard (OBFU-02, and see 11.6)"),
     ("Te0 / Td0 T-tables", "<code>[c66363a5, f87c7c84, ee777799, f67b7b8d]</code>",
      "<b>absent</b> &mdash; only the byte value <code>71856</code> occurs incidentally",
      "The cipher is the compact S-box variant, not a space-time T-table variant"),
@@ -1070,7 +1070,7 @@ Retrofit r = helper.q.k(                       // native libtopfollow.so!x00126f
 <tr><td>Stack canary</td><td colspan="3">present</td></tr>
 <tr><td>FORTIFY</td><td colspan="3">present</td></tr>
 <tr><td>Crypto / TLS <i>imports</i></td><td colspan="3"><b>none</b> &mdash; <code>DT_NEEDED</code> is <code>libz, libandroid, liblog, libm, libdl, libc</code>; all 90 imported symbols are libc/pthread/locale/zlib. No <code>SSL_*</code>, no <code>EVP_*</code>, no <code>*crypt*</code> (CRYP-05)</td></tr>
-<tr><td>Crypto <i>implemented in-library</i></td><td colspan="3"><b>AES-256</b> &mdash; canonical S-box, inverse S-box and rcon present in all three ABIs; proven by Unicorn execution (14 rcon reads). See section 11 (CRYP-09, CRYP-10)</td></tr>
+<tr><td>Crypto <i>implemented in-library</i></td><td colspan="3"><b>AES tables + an AES-256-shaped expansion</b> &mdash; the canonical S-box, inverse S-box and rcon are present in all three ABIs and are genuinely read at runtime (Unicorn: 14 rcon reads). The block ciphers are <b>not</b> demonstrated to be standard 14-round AES (see the correction in section 11.6). CRYP-09, CRYP-10</td></tr>
 <tr><td>ARMv8 Crypto Extension</td><td colspan="3"><b>unused</b> &mdash; zero <code>aese/aesd/aesmc/aesimc/sha*</code> in 397,892 instructions; the AES is a compact table variant, so it is cache-timing exposed (CRYP-13)</td></tr>
 <tr><td>Packing</td><td colspan="3"><b>none</b> &mdash; <code>.text</code> entropy 6.8621, whole-file 6.7518, 1,090 well-formed <code>.eh_frame</code> FDEs. The obfuscation is OLLVM control-flow flattening only (OBFU-02)</td></tr>
 <tr><td>Control flow</td><td colspan="3">OLLVM flattening (state dispatcher) in all 22 functions (INTE-06)</td></tr>
@@ -1099,7 +1099,7 @@ mov   rax, [reg + off]   ; load a string pointer relative to that base</code></p
 <li>Reads <code>ANDROID_ID</code>, <code>Build.DEVICE</code>, <code>Build.HARDWARE</code>; populates <code>DeviceModel</code> (<code>setHash_key</code>, <code>setNonce</code>, <code>setHash_type</code>, <code>addDevice</code>).</li>
 <li>Calls <code>CertificatePinner$Builder.add(...)</code> and wires the OkHttp client.</li>
 </ul>
-<div class="callout warn"><b>Correction to a first-pass conclusion.</b> An earlier reading of this library reported &ldquo;no crypto in the <code>.so</code>&rdquo;. That was <b>wrong</b>, and the cause matters: the reference resolver discarded any <code>.rodata</code> target that was not &ge;92% printable, so the AES S-box, inverse S-box and rcon &mdash; high-entropy <em>binary</em> tables &mdash; were filtered out of every listing. Keeping binary references (<code>work/aes_forensics.py</code>, <code>work/aes_xref.py</code>) and then <em>executing</em> the code under Unicorn (<code>work/unicorn_aes.py</code>) established that a real AES-256 is present in all three ABIs. See section 11.</div>
+<div class="callout warn"><b>Correction to a first-pass conclusion.</b> An earlier reading of this library reported &ldquo;no crypto in the <code>.so</code>&rdquo;. That was <b>wrong</b>, and the cause matters: the reference resolver discarded any <code>.rodata</code> target that was not &ge;92% printable, so the AES S-box, inverse S-box and rcon &mdash; high-entropy <em>binary</em> tables &mdash; were filtered out of every listing. Keeping binary references (<code>work/aes_forensics.py</code>, <code>work/aes_xref.py</code>) and then <em>executing</em> the code under Unicorn (<code>work/unicorn_aes.py</code>) established that the genuine AES tables are present and used in all three ABIs. A later functional test then showed the cipher is <b>AES-shaped but not proven standard AES-256</b> &mdash; see the correction in section 11.6.</div>
 <div class="callout info"><b>What is still true.</b> The <em>protection</em> logic &mdash; signature verification, maps scanning, root probing, pin installation &mdash; is executed by calling back into Java, because the library has no TLS and no filesystem-scanning primitives of its own. That places the entire protection surface on the wrong side of the JNI boundary, where Frida operates natively. Script 01 defeats all of it without modifying a single byte of the <code>.so</code>. The AES is used internally by the request pipeline and is <b>not</b> reachable from Java: none of the 22 JNI signatures is <code>([B)[B</code> (CRYP-09).</div>
 </div>
 </section>
@@ -1163,31 +1163,37 @@ mov   rax, [reg + off]   ; load a string pointer relative to that base</code></p
 <p>The DSO was mapped at VA&nbsp;0 (its first <code>PT_LOAD</code> has vaddr 0, so VA equals file offset), with stack, heap and TLS regions, and <b>every GOT slot repointed at a unique trampoline</b> so that a <code>UC_HOOK_CODE</code> hook could service each libc call from Python. Without that, the PLT stubs branch through a zeroed GOT and the CPU jumps to <code>PC=0</code> &mdash; which is exactly how the first attempt failed.</p>
 <pre class="code"><code>{esc(UNICORN_LOG)}</code></pre>
 
-<h4>11.6 Reading the result</h4>
-<div class="grid2">
+<h4>11.6 Reading the result &mdash; and correcting an over-claim</h4>
 <div class="callout ok">
-<h4 style="margin-top:0">Proven</h4>
+<h4 style="margin-top:0">What the key-expansion run genuinely proves</h4>
 <ul>
-<li>The routine <b>returns normally</b> after 89,148 instructions &mdash; it is not dead code and it does not require a live JNI environment to run its crypto path.</li>
-<li>It reads the <b>S-box 112 times</b> and <b>rcon exactly 14 times</b>. Fourteen rounds is <b>AES-256</b>. (AES-128 reads rcon 10 times, AES-192 12 times.)</li>
-<li>It writes a <b>240-byte schedule</b> = 15 &times; 16 round keys, the exact AES-256 size.</li>
-<li>The schedule obeys the FIPS-197 recurrence. The observed write <code>0xae037e5b</code> at schedule offset <code>+0x4c</code> equals <code>SubWord(RotWord(RK0 word 3))</code>: <code>RotWord(71f1297a) = f1297a71</code>, <code>SubWord(f1297a71) = ae037e5b</code>. This is not a coincidence available to a non-AES routine.</li>
-<li><code>w3</code> and <code>w4</code> are both compared against <code>#0x20</code> = 32 &mdash; a 256-bit key length is being validated.</li>
-<li>The input buffer is loaded into AES <b>column-major state order</b>, confirming a real AES state matrix rather than a generic byte mixer.</li>
+<li>The routine <b>returns normally</b> after 89,148 instructions &mdash; it is not dead code and it does not need a live JNI environment to run its crypto path.</li>
+<li>It reads the <b>genuine AES forward S-box 112 times</b> and <b>rcon exactly 14 times</b>. Fourteen rcon reads is the AES-256 count (AES-128 uses 10, AES-192 uses 12), and it validates <code>w3 == w4 == 0x20</code> = a 256-bit length.</li>
+<li>It writes a <b>240-byte schedule</b> = 15 &times; 16 bytes, exactly the AES-256 round-key size.</li>
+<li>So the library <b>contains and uses</b> the real AES S-box, inverse S-box and rcon in an AES-256-<i>shaped</i> expansion. That much is solid.</li>
 </ul>
+</div>
+<div class="callout bad">
+<h4 style="margin-top:0">Correction: it is <u>not</u> a proven standard AES-256</h4>
+<p>An earlier revision of this report stated the schedule &ldquo;obeys the FIPS-197 recurrence&rdquo; and called the cipher proven AES-256. A functional test (<code>work/unicorn_verify_cipher.py</code>, <code>work/unicorn_roundtrip.py</code>) shows that was an <b>over-claim</b>:</p>
+<ul>
+<li><b>The 240-byte schedule does not satisfy the strict FIPS-197 recurrence.</b> Checked word-by-word, it breaks at <code>w[8]</code>: the routine produced <code>4c3ce189</code> where a real AES-256 expansion of the same first 32 bytes requires <code>e539061e</code>. The schedule's two 16-byte halves are also offset from where the routine's own schedule pointers (<code>ctx+0x438</code>/<code>0x458</code>) point &mdash; those buffers stayed zero.</li>
+<li><b>The block ciphers do not behave like 14-round AES.</b> Run standalone on the same <code>ctx</code>, the encrypt block <code>0x2fdcc</code> reads the forward S-box only <b>32 times</b> and the decrypt block <code>0x30f18</code> reads the inverse S-box only <b>32 times</b>. A genuine 14-round AES does ~160 SubBytes per block (16 bytes &times; 10 rounds).</li>
+<li><b>The round-trip fails.</b> <code>decrypt(encrypt(pt)) &ne; pt</code> for <code>pt = 000102&hellip;0f</code> (both directions are deterministic, so it is not random noise). Encrypt produced <code>f84c76c5&hellip;</code>, decrypt of that produced <code>b4ad5a66&hellip;</code>, not the original.</li>
+</ul>
+<p><b>Honest conclusion.</b> The AES tables are real and are genuinely referenced and read, and the expansion is AES-256-<i>shaped</i>. But under emulation the cipher is <b>not demonstrated to be working, standard AES-256</b>. Two explanations remain open and cannot be separated without a live process: (a) it is a <b>modified / obfuscated AES variant</b> (a non-standard schedule and reduced S-box passes are consistent with a tweaked or deliberately hobbled cipher), or (b) the block functions require a fully-initialised live <code>ctx</code> &mdash; a real key string, IV and GCM/CTR counter and mode state &mdash; that a standalone Unicorn call does not reproduce, so they execute only part of a round. <code>09_native_aes_dump.js</code> settles this on a device by capturing the schedule the running app actually uses and testing it against a reference AES.</p>
 </div>
 <div class="callout warn">
-<h4 style="margin-top:0">Not proven &mdash; and why</h4>
+<h4 style="margin-top:0">Still not recovered &mdash; the key</h4>
 <ul>
-<li><b>The key.</b> The run was given the FIPS-197 AES-256 test key in a caller buffer, laid out three ways (libc++ short-string, libc++ long-string, <code>{{ptr,len,cap}}</code> triple). All three runs were <b>byte-identical</b> &mdash; same instruction count, same table-read counts, same schedule. The expansion therefore does not depend on the caller's key.</li>
-<li>Brute force over <b>every 16-, 24- and 32-byte window</b> of the 1,805,400-byte file (5,416,128 candidates) found no window expanding to the observed RK0 <code>1742e227063cdfce2c2b4cbd71f1297a</code>. Simple derivations did not match either.</li>
-<li>So the key is <b>computed at runtime inside the OLLVM-flattened prologue</b>. Recovering it needs a live process, which is what script <code>09_native_aes_dump.js</code> is for: it recovers any valid schedule from writable memory by verifying the expansion recurrence, and prints the key.</li>
-<li><b>Which JNI function reaches it.</b> None of the 22 registered natives has a <code>([B)[B</code> signature, and no <code>com.nivaroid.topfollow</code> method in the DEX has that descriptor, so the AES is <b>not directly callable from Java</b>. On arm64 the <code>JNINativeMethod</code> table is materialised at runtime rather than stored as literal pointers, and <code>JNI_OnLoad</code> is control-flow flattened, so static attribution of the 22 function pointers was not achieved. Script <code>07_native_jni_dumper.js</code> intercepts <code>RegisterNatives</code> to settle it on a device.</li>
+<li>The run was given the FIPS-197 AES-256 test key in a caller buffer laid out three ways (libc++ short-string, long-string, <code>{{ptr,len,cap}}</code> triple). All three runs were <b>byte-identical</b> &mdash; same instruction count, same table reads, same schedule. The expansion does not use the caller's key; a read trace (11.9) shows the caller key buffer is never even read.</li>
+<li>Brute force over <b>every 16-, 24- and 32-byte window</b> of the 1,805,400-byte file (5,416,128 candidates) found no window expanding to the observed first round key <code>1742e227063cdfce2c2b4cbd71f1297a</code>.</li>
+<li><b>Which JNI function reaches it.</b> All 22 natives are named and mapped (11.10) and none has a <code>([B)[B</code> signature, so the cipher is <b>not exposed to Java as a byte-array primitive</b>. Which of the 22 calls it internally is not resolved statically (the x86 PIC resolver cannot attribute the table refs; arm64 materialises its table at runtime) &mdash; script <code>09</code> settles it live.</li>
 </ul>
 </div>
-</div>
 
-<h4>11.7 The observed round-key schedule</h4>
+<h4>11.7 The observed 240-byte schedule</h4>
+<p>Read straight out of emulated memory at <code>ctx+0x30</code> after the key-expansion run. It is AES-256-<i>sized</i> but, as 11.6 records, it does not satisfy the strict FIPS-197 recurrence, so it should be read as &ldquo;the routine's round-key-shaped output&rdquo;, not as a standard AES key schedule.</p>
 <pre class="code"><code>{esc(RK_TABLE)}</code></pre>
 
 <h4>11.8 A dead JNI bridge</h4>
@@ -1218,7 +1224,7 @@ mov   rax, [reg + off]   ; load a string pointer relative to that base</code></p
 {build_table(FOURTH_TABLE, ["Offset", "Table", "Bytes", "Entropy", "Role"], "tbl-fourth")}
 </div>
 <pre class="code"><code>{esc(KEY_TRACE)}</code></pre>
-<div class="callout warn"><b>Verdict, and it is now evidence-backed rather than inferred.</b> The observed round key <code>RK0 = 1742e227063cdfce2c2b4cbd71f1297a</code> appears in <b>no</b> file-backed region the routine reads, and in <b>no</b> byte window of the 1,805,400-byte file (5,416,128 candidates brute-forced). The key is therefore <b>computed at runtime</b> &mdash; the whitening table at <code>0x13b30</code> and the 16-byte constant at <code>0x13b1e</code> are folded together with the <code>ctx</code> state inside the OLLVM-flattened prologue to produce the actual AES-256 key. Static extraction is not possible; the key is recoverable only from live process memory, which is exactly what <code>09_native_aes_dump.js</code> does (CRYP-10).</div>
+<div class="callout warn"><b>Verdict, and it is now evidence-backed rather than inferred.</b> The observed round key <code>RK0 = 1742e227063cdfce2c2b4cbd71f1297a</code> appears in <b>no</b> file-backed region the routine reads, and in <b>no</b> byte window of the 1,805,400-byte file (5,416,128 candidates brute-forced). The key is therefore <b>computed at runtime</b> &mdash; the whitening table at <code>0x13b30</code> and the 16-byte constant at <code>0x13b1e</code> are folded together with the <code>ctx</code> state inside the OLLVM-flattened prologue to produce the cipher's runtime key. Static extraction is not possible; the key is recoverable only from live process memory, which is exactly what <code>09_native_aes_dump.js</code> does (CRYP-10).</div>
 
 <h4>11.10 JNI attribution &mdash; the 22 natives, independently verified</h4>
 <p>The report attributes all 22 native functions to their Java wrappers in section 10. That mapping was re-derived here from a completely independent direction and confirmed exactly. On the <b>x86</b> build the <code>JNINativeMethod</code> table is stored as literal virtual-address pointers at file offset <code>0xd8fec</code> (imagebase 0, so name/signature pointers index straight into <code>.rodata</code> and function pointers into <code>.text</code>). Parsing all 22 triples gives the registered name, JNI signature and entry offset for each; every name was then confirmed to be a declared <code>private static native</code> method of <code>com.nivaroid.topfollow.helper.q</code> in the DEX, and every one maps to a public wrapper <code>q.a()</code>&hellip;<code>q.v()</code>.</p>
@@ -1313,7 +1319,7 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 <tr><td><b>Native obfuscation</b></td><td>OLLVM CFF on all 22 functions; XOR 0x55/0x5A strings; nested base64; scrambled DEX <code>map_list</code>; JNI-only exports</td><td>Resolve the 943 PIC thunks and read the data references; brute-force 127 XOR keys; intercept <code>RegisterNatives</code></td><td><a href="#INTE-06">INTE-06</a>, <a href="#INTE-07">INTE-07</a>, <a href="#CRYP-07">CRYP-07</a></td></tr>
 <tr><td><b>Kill switches</b></td><td><code>System.exit</code>, <code>Process.killProcess</code>, <code>Runtime.exit</code></td><td>All three suppressed</td><td><a href="#INTE-01">INTE-01</a></td></tr>
 </tbody></table></div>
-<div class="callout info"><b>The common thread.</b> <code>libtopfollow.so</code> contains no TLS code and imports no crypto library (its own AES-256 is used only inside the request pipeline and is not reachable from Java &mdash; CRYP-09), so every &ldquo;native&rdquo; <em>protection</em> is executed by calling back into the Java framework. That puts the whole integrity story on the side of the JNI boundary where instrumentation frameworks already live. The obfuscation is competent and it did cost real effort &mdash; but it delays analysis rather than preventing tampering, and none of it changes what the server is willing to trust.</div>
+<div class="callout info"><b>The common thread.</b> <code>libtopfollow.so</code> contains no TLS code and imports no crypto library (its own AES-table cipher is used only inside the request pipeline and is not reachable from Java as a byte-array primitive &mdash; CRYP-09), so every &ldquo;native&rdquo; <em>protection</em> is executed by calling back into the Java framework. That puts the whole integrity story on the side of the JNI boundary where instrumentation frameworks already live. The obfuscation is competent and it did cost real effort &mdash; but it delays analysis rather than preventing tampering, and none of it changes what the server is willing to trust.</div>
 </div>
 </section>
 

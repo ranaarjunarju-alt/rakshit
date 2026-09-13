@@ -1,0 +1,95 @@
+=== FUNCTIONAL AES-256 VERIFICATION (arm64-v8a) ===
+
+[1] running key expansion 0x32158 ...
+
+==============================================================================
+RUN KEYEXP (capture schedule)
+    fn=0x32158  SBOX+RCON    (KEY EXPANSION; validates w3==w4==0x20)
+==============================================================================
+  insns executed   : 89,148
+  exit             : returned  PC=0xffff0000
+  x0               : 0x92f98e17
+  AES table reads  : {'SBOX': 112, 'RCON': 14}
+  rcon reads = 14  =>  key length verdict: AES-256
+  libc calls       : {'memcpy': 2}
+  WRITTEN pages    : [('0x7f3df000', 2716), ('0x8100000', 732)]
+  heap/other writes: ['0x8100000']
+
+[2] reading the schedule the routine left at CTX+0x30 ...
+    RK0  1742e227063cdfce2c2b4cbd71f1297a
+    RK1  71f1297a71f1297a71f1297a5b7e03ae
+    RK2  4c3ce1894a003e47662b72fa42006957
+    RK3  33f1402d4200695733f1402d83bda2a3
+    RK4  cf81432a85817d6de3aa0f9753ac1fdf
+    RK5  605d5ff2225d36a511ac7688473f3393
+    RK6  88be70b90d3f0dd4ee9502437b8668c5
+    RK7  1bdb373739860192282a771ae50bd676
+    RK8  6db5a6cf608aab1b8e1fa9586246bbaf
+    RK9  799d8c98401b8d0a6831fa102f4e117b
+    RK10 42fbb7b422711cafac6eb5f7f3d96ec7
+    RK11 8a44e25fca5f6f55a26e954541748e11
+    RK12 038f39a521fe250a8d9090fdaeb90e93
+    RK13 24fdeccceea283994ccc16dcc75dc5d6
+    RK14 c4d2fc73e52cd97968bc4984ebdc35cc
+    strict FIPS-197 AES-256 recurrence over all 60 words: False  (w[8]: got 4c3ce189 want e539061e)
+    first 32 bytes (would be the AES-256 key if standard): 1742e227063cdfce2c2b4cbd71f1297a71f1297a71f1297a71f1297a5b7e03ae
+    w[4..7] == w[0..3] ? False   (a standard AES-256 schedule
+        never repeats the key like this -- so this is NOT a textbook expansion)
+
+[3] running ENCRYPT block 0x2fdcc on pt = 000102...0f ...
+
+==============================================================================
+RUN ENCRYPT block
+    fn=0x2fdcc  SBOX user B  (ENCRYPT block)
+==============================================================================
+  insns executed   : 23,186
+  exit             : returned  PC=0xffff0000
+  x0               : 0x0
+  AES table reads  : {'SBOX': 32}
+  rcon reads = 0  =>  key length verdict: ?
+  libc calls       : {'memcpy': 15}
+  WRITTEN pages    : [('0x7f3df000', 427), ('0x8100000', 136), ('0x8600000', 32)]
+  heap/other writes: ['0x8100000', '0x8600000']
+    exit=returned insns=23,186
+    SBOX reads = 32   ISBOX reads = 0   schedule reads = 448
+    ciphertext block @OUT = f84c76c5850efb652957d9253f2c50c0
+
+[4] running DECRYPT block 0x30f18 on that ciphertext ...
+
+==============================================================================
+RUN DECRYPT block
+    fn=0x30f18  ISBOX user B (DECRYPT block)
+==============================================================================
+  insns executed   : 24,330
+  exit             : returned  PC=0xffff0000
+  x0               : 0x139b0
+  AES table reads  : {'ISBOX': 32}
+  rcon reads = 0  =>  key length verdict: ?
+  libc calls       : {'memcpy': 28}
+  WRITTEN pages    : [('0x7f3df000', 487), ('0x8100000', 136), ('0x8600000', 32)]
+  heap/other writes: ['0x8100000', '0x8600000']
+    exit=returned insns=24,330
+    SBOX reads = 0   ISBOX reads = 32
+    recovered block @OUT2 = b4ad5a661d13adba3ed93d80e88849f5
+    round-trip decrypt(encrypt(pt)) == pt ? False
+
+=== VERDICT (honest) ===
+  strict FIPS-197 AES-256 schedule from keyexp : False
+    -> a real AES-256 key schedule obeys the recurrence for all 60 words;
+       this one breaks at w[8]. So the 240-byte output is NOT a textbook
+       AES-256 schedule, and its first 32 bytes are NOT a standard key.
+  encrypt block: forward S-box read 32x, produced f84c76c5850efb652957d9253f2c50c0
+  decrypt block: inverse S-box read 32x, produced b4ad5a661d13adba3ed93d80e88849f5
+  a 14-round AES does ~160 SubBytes per block; 32 is far short.
+  round-trip decrypt(encrypt(pt)) == pt : False
+
+  CONCLUSION: the library unambiguously CONTAINS the genuine AES S-box,
+  inverse S-box and rcon, and the key-expansion routine reads rcon 14x
+  (AES-256-shaped). But under emulation the block functions do NOT behave
+  as standard 14-round AES-256: too few S-box accesses, a non-FIPS-197
+  schedule, and no encrypt/decrypt round-trip. Either the cipher is a
+  modified/obfuscated AES variant, or the block functions need live state
+  (a fully-initialised ctx: real key string, IV, GCM/CTR counter) that a
+  standalone Unicorn call does not reproduce. Claiming 'working AES-256
+  proven' would be an over-claim; the tables and shapes are proven, the
+  standard algorithm is NOT. Settling it needs a live process (script 09).
