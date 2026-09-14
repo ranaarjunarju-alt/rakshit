@@ -5,6 +5,17 @@
 **Backend:** `https://top.nivafollower.app/v840/` (server-rotatable at runtime)
 **Companion document:** [`TopFollow_Security_Analysis.html`](TopFollow_Security_Analysis.html) — full findings register, evidence and PoCs
 
+> **2026-09-14 merge note.** This threat model now reflects the evidence-verified
+> merge of two independent analyses (A = this repo's prior session, B =
+> `REPORT_libtopfollow_so.md` rev 7). Where the two differed, the binary decided:
+> maps scanning reads via `__open_2`+`read` (no `fopen`/`fgets` imports), the
+> `zygisk`/`lsposed` maps markers exist, the 9th root path is `/data/local/su`,
+> and the native crypto stack is LibTomCrypt AES (ECB literal-key / zero-key CBC /
+> ECB-decrypt) plus one runtime-key pipeline — see `MERGE_RECONCILIATION.md`.
+> The register stands at 79 findings; no threat in this document was removed by
+> the merge, three detection-mechanism rows were corrected, and six B-sourced
+> crypto findings were added.
+
 ---
 
 ## 1. System overview

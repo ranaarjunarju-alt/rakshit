@@ -540,3 +540,46 @@ v("OBFU-02", "OLLVM control-flow flattening only: .text entropy is 6.86, so the 
   "<code>work/out/30_aes_forensics_arm64.txt</code> sections 6-7 (per-section entropy, top entropy windows); instruction histogram of <code>0x34424</code>; <code>.rodata</code> = 37,547 B; 1,090 <code>.eh_frame</code> FDEs from <code>work/native_deep.py</code>; no white-box table at the claimed offsets",
   "07_native_jni_dumper.js, 09_native_aes_dump.js",
   "Obfuscation is not a control. Spend the budget on server-side verification and hardware-backed attestation; client-side flattening only raises analysis cost, it does not change what an attacker who finishes the analysis can do.")
+
+# ============================================ MERGE 2026-09-14 (Analysis B, binary-verified) ===
+v("CRYP-15", "Literal AES key <code>0123456789abcdef</code> stored in plaintext <code>.rodata</code>", "Critical", "Cryptography",
+  "The 16-byte ASCII string <code>0123456789abcdef</code> appears twice in <code>.rodata</code> (<code>0x161ca</code>, <code>0x17ae0</code>) and is fed verbatim as the key of <code>func#85</code> (AES-ECB + PKCS#7 &rarr; lowercase hex) by the certificate-pinner path <code>func#226</code>/<code>func#73</code> and the OkHttp Retrofit builders <code>func#71</code>/<code>func#72</code>. Re-verified 2026-09-14 by byte search and by re-executing the cipher under Unicorn (FIPS-197 KATs with this exact key, 27/27 matches).",
+  "Anyone who extracts 16 bytes from the APK can decrypt or forge every payload these pipelines protect. The key is identical on every install and every ABI.",
+  "<code>.rodata 0x161ca</code> / <code>0x17ae0</code>: <code>30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66</code>; <code>work/analysis/verify_all.txt</code> &sect;11.2 re-run",
+  "09_native_aes_dump.js, 07_native_jni_dumper.js",
+  "Derive per-install keys inside hardware-backed Keystore; never embed shared symmetric keys in the client.")
+
+v("CRYP-16", "All-zero AES-128-CBC key and IV hard-wired into <code>func#30</code> (7 of 22 JNI natives)", "Critical", "Cryptography",
+  "<code>func#30 @ 0x38fa4</code> encrypts with AES-128-CBC using key = 16 &times; 0x00 and IV = 16 &times; 0x00; the key argument is ignored (Unicorn: ciphertext is identical for every key argument passed). It backs 7 of the 22 JNI entry points, including the response handler <code>q.p</code> (<code>func#67</code>) and slots 5, 6, 8, 9, 10, 12. Re-verified 2026-09-14 (<code>verify_all.txt</code> &sect;11.3 re-run).",
+  "Anything these natives 'encrypt' is readable with a one-line script; ciphertexts are malleable (CBC bit-flipping) because there is no authentication.",
+  "<code>work/analysis/verify_all.txt</code> &sect;11.3 (re-run 2026-09-14): every keyarg &rarr; identical zero-key CBC ciphertext; <code>funcmap.json</code> call edges",
+  "09_native_aes_dump.js, 08_backend_traffic_and_servercheck.js",
+  "Replace with per-session negotiated keys (TLS already provides this); client-embedded constant keys are never acceptable.")
+
+v("CRYP-17", "Static AES-192 key and two fixed 12-byte nonces behind a single XOR byte", "Critical", "Cryptography",
+  "XOR-0x5A then Base64 blobs at <code>0x17428</code>/<code>0x17448</code>/<code>0x17458</code> decode to a 24-byte (AES-192) key <code>02df752315674526c5a695745313457544a7a654d6e4e34</code> and two 12-byte nonces <code>58c544c151b4d9e185955991</code> / <code>334544c151add1a549b908c5</code>; context builders <code>func#157</code>/<code>func#158</code> install them live (observed under emulation). Four more argument-independent 12-byte secrets come from getters <code>func#86/#159/#160/#161</code>. Re-verified 2026-09-14 (&sect;11.1, &sect;11.5, &sect;11.6 re-run).",
+  "A 12-byte value is meaningful only as a GCM nonce; a <b>fixed key + fixed nonce</b> reused across installs leaks the auth key and keystream outright. All material is recoverable from the APK in ~48 bytes of extraction.",
+  "<code>.rodata 0x17428/0x17448/0x17458</code> XOR-0x5A &rarr; Base64; <code>verify_all.txt</code> &sect;11.1/&sect;11.6 re-run",
+  "09_native_aes_dump.js, 10_java_crypto_layer.js",
+  "Generate a fresh key per install in Android Keystore and a fresh random nonce per message; ship no shared symmetric material.")
+
+v("CRYP-18", "<code>func#85</code> runs AES in ECB mode &mdash; block structure leaks", "Medium", "Cryptography",
+  "Known-answer tests executed against <code>func#85 @ 0x10c470</code> prove ECB + PKCS#7 + lowercase-hex output: encrypting 32 identical bytes yields two identical ciphertext blocks (<code>3bfd04cc&hellip;3bfd04cc&hellip;</code>), and the trailing pad block encrypts to a constant independent of prior plaintext. Re-verified 2026-09-14 (&sect;11.2 re-run).",
+  "ECB reveals plaintext structure and enables block reordering/splicing attacks on the JSON payloads these natives protect.",
+  "<code>verify_all.txt</code> &sect;11.2 ECB block-equality + constant-pad-block KATs (re-run)",
+  "09_native_aes_dump.js",
+  "Use an authenticated mode with a random IV (AES-GCM) and per-message keys.")
+
+v("CRYP-19", "<code>func#36</code>: padding-oracle-shaped AES-ECB decrypt reachable as <code>q.k</code>", "High", "Cryptography",
+  "<code>func#36 @ 0x3a838</code> hex-decodes input, AES-ECB-decrypts with an internally derived 32-byte key (key argument ignored &mdash; Unicorn: identical output for every key argument), strips PKCS#7, returns empty on non-hex and echoes lengths that are not multiples of 16. Reachable from Java via JNI slot 20 (<code>q.k</code>, OkHttp builder path) per the recovered call graph. Re-verified 2026-09-14 (&sect;11.4 re-run).",
+  "Observable accept/reject behaviour on attacker-supplied ciphertext is the classic padding-oracle shape; combined with the static keys (CRYP-15/16/17) it removes any residual confidentiality.",
+  "<code>verify_all.txt</code> &sect;11.4 re-run; JNI table slot 20 (<code>work/out/jni_table_verified.json</code>); <code>REPORT_libtopfollow_so.md</code> &sect;11.11",
+  "07_native_jni_dumper.js, 09_native_aes_dump.js",
+  "Never expose decrypt+unpad of client-supplied data without constant-time MAC verification first.")
+
+v("INTE-15", "<code>clock()</code>-based timing check reachable from 11 JNI natives", "Low", "Integrity",
+  "<code>func#98 @ 0x114fbc</code> reads <code>clock()</code> (imported; the only timing import &mdash; <code>clock_gettime</code> is absent) as a coarse instrumentation-overhead probe. It is called from 11 of the 22 JNI natives (slots 3,5,6,7,8,9,10,11,12,13,14,16 per the call map).",
+  "Weak anti-debug: trivially defeated by returning constant time, but it is a real detection the bypass set must account for.",
+  "LIEF import table (<code>clock</code> present, <code>clock_gettime</code> absent); <code>work/analysis/jni_final.json</code> call edges; <code>REPORT_libtopfollow_so.md</code> &sect;6.7",
+  "01_anti_tamper_killer.js",
+  "Timing probes against emulated/hooked clients are not a control; rely on server-side verification.")

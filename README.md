@@ -4,10 +4,25 @@ Complete reverse-engineering of `com.nivaroid.topfollow`, an Instagram
 follower-exchange manipulation app that advertises anti-tamper, anti-Frida,
 SSL pinning and Play Integrity protection.
 
-**Result: 73 vulnerabilities (11 Critical, 25 High, 25 Medium, 12 Low), 11 Frida
+**Result: 79 vulnerabilities (14 Critical, 26 High, 26 Medium, 13 Low), 11 Frida
 scripts (10 proof-of-concepts + a shared helper), every claimed protection
 located and defeated — including a native AES-256 that a first pass missed and
 that was then proven by executing the code under Unicorn.**
+
+> **2026-09-14 merge.** Two independent analyses of this APK (this repo's prior
+> session = *Analysis A*; an independent pass = *Analysis B*,
+> `REPORT_libtopfollow_so.md` rev 7) were merged under one rule: where they
+> differ, the binary decides. Every disagreement was re-adjudicated against the
+> bytes with LIEF/Capstone and by **re-executing both sides' Unicorn suites**.
+> The merge confirmed the core of both, corrected three of A's detection rows
+> (maps is read via `__open_2`+`read` — `fopen`/`fgets` are not imported; the
+> `zygisk`/`lsposed` markers DO exist; the 9th su path is `/data/local/su`),
+> promoted B's executed cipher proofs (AES-ECB literal key, all-zero CBC,
+> AES-192 key + fixed nonces, ECB leak, padding-oracle-shaped decrypt) into the
+> register as CRYP-15…19 + INTE-15, and threw out a list of fabricated claims
+> with byte-level disproofs. See **`MERGE_RECONCILIATION.md`** for the full
+> DIFF table and **§21 of the HTML report** for the summary. Runtime analysis
+> remains optional and device-only: see **`RUNBOOK.md`** and `device/`.
 
 ---
 
@@ -26,7 +41,7 @@ cryptographic analysis, the complete vulnerability register with evidence and
 remediation, and the source of all 11 Frida scripts.
 
 Interactive features: sticky table of contents with scroll-spy, a global
-search across all 73 findings, per-severity and per-category filters, and
+search across all 79 findings, per-severity and per-category filters, and
 filterable data tables.
 
 ## Headline findings
@@ -51,8 +66,16 @@ filterable data tables.
 
 ```
 TopFollow_Security_Analysis.html     ← the deliverable: single-file HTML report
+MERGE_RECONCILIATION.md              ← A × B DIFF table, byte-level verdicts,
+                                        disproven-claim register (2026-09-14)
 THREAT_MODEL.md                      ← standalone threat model (assets, actors,
                                         trust boundaries, attack trees)
+RUNBOOK.md                           ← real-device runtime pass, step by step
+device/                              ← real-device tooling (frida_server.sh,
+                                        frida_runner.py, README runbook)
+mitmproxy/topfollow_capture.py       ← LOGIN→COINS wire-capture addon
+REPORT_libtopfollow_so.md            ← Analysis B full report (rev 7)
+frida/                               ← Analysis B gadget/capture harness
 dynamic-lab/                         ← 11 Frida scripts (10 PoCs + shared helper)
   00_common.js                         helpers: class resolver, RegisterNatives
                                        capture, prefs dumper, overload tracer
@@ -73,13 +96,20 @@ dynamic-lab/                         ← 11 Frida scripts (10 PoCs + shared help
                                        dead digest([B)[B bridge proof
 report/
   build_report.py                    ← regenerates the HTML report
-  vulns_data.py                      ← the 73-finding register (source of truth)
+  vulns_data.py                      ← the 79-finding register (source of truth)
   cipher_poc.py                      ← Python re-implementation of glide.d.p()/q()
 work/
   README.md                          ← the RE toolchain, stage by stage,
                                         including the dead ends and why
-  *.py                               ← 20 analysis scripts (androguard, lief,
+  *.py                               ← 20+ analysis scripts (androguard, lief,
                                         capstone, raw DEX/ARSC/signing parsers)
+  unicorn_aes.py                     ← Unicorn AES key-expansion + KAT harness (A)
+  unicorn_key_trace.py               ← where the runtime key comes from (A)
+  unicorn_round_structure.py         ← period-14 S-box-read structure proof (A)
+  native_string_decrypt.py           ← XOR-0x55/0x5A + base64 string sweep (A)
+  analysis/                          ← Analysis B corpus: emu.py harness,
+                                        verify_all.py (KAT re-run), models,
+                                        all_decoded_strings.txt, jni_final.json
   out/                               ← curated evidence files backing findings
 ```
 

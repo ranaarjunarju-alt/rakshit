@@ -628,7 +628,7 @@ mark{{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px
     <div class="kpi h"><b>{SEV_COUNT['High']}</b><span>High</span></div>
     <div class="kpi m"><b>{SEV_COUNT['Medium']}</b><span>Medium</span></div>
     <div class="kpi l"><b>{SEV_COUNT['Low']}</b><span>Low</span></div>
-    <div class="kpi"><b>8</b><span>Frida PoCs</span></div>
+    <div class="kpi"><b>10</b><span>Frida PoCs (+1 helper)</span></div>
     <div class="kpi"><b>26</b><span>Backend endpoints</span></div>
     <div class="kpi"><b>22</b><span>Native JNI fns</span></div>
     <div class="kpi"><b>4,146</b><span>Classes decompiled</span></div>
@@ -665,7 +665,8 @@ mark{{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px
   <a href="#repro">18. Reproduction guide</a>
   <a href="#remediation">19. Remediation roadmap</a>
   <a href="#method">20. Methodology &amp; artefacts</a>
-  <a href="#legal">21. Scope &amp; ethics</a>
+  <a href="#merge">21. Merge reconciliation (A &times; B &times; binary)</a>
+  <a href="#legal">22. Scope &amp; ethics</a>
   </div>
 </nav>
 
@@ -1596,9 +1597,39 @@ frida -U -f com.nivaroid.topfollow \\
 </div>
 </section>
 
+<!-- ============================================ 21 MERGE RECONCILIATION -->
+<section id="merge">
+<h2>21. Merge reconciliation &mdash; two independent analyses, one binary</h2>
+<div class="card">
+<p>Two independent reverse-engineering passes were performed on this APK. <b>Analysis A</b> (this repository's prior session: static + Capstone + Unicorn key-expansion tracing, 73-finding register, 11-script Frida lab) and <b>Analysis B</b> (independent: <code>REPORT_libtopfollow_so.md</code> revision 7, Unicorn <i>execution</i> of the cipher functions with known-answer tests, 22-slot JNI call map). Both were merged in this revision, and every disagreement was re-adjudicated against the actual bytes on 2026-09-14 (LIEF + Capstone + re-executed Unicorn suites from both sides; see <code>MERGE_RECONCILIATION.md</code> for the full table and reproduction commands).</p>
+<table class="data">
+<thead><tr><th>Claim</th><th>Analysis A</th><th>Analysis B</th><th>Binary evidence (re-verified 2026-09-14)</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td><code>.so</code> size / <code>.rodata</code></td><td>1,805,400 B; AES tables <code>0x128b0</code>/<code>0x139b0</code>/<code>0x13b10</code></td><td>1,805,400 B; <code>.rodata</code> = 37,547 B; LibTomCrypt T-tables identified</td><td>LIEF section walk; FIPS-197 S-box bytes matched at A's offsets; T-tables regenerated bit-for-bit (B &sect;11.8 re-run)</td><td><b>both right</b></td></tr>
+<tr><td>Key expansion <code>0x32158</code></td><td>AES-256-shaped, 14 rcon reads, period-14, runtime-derived key</td><td>LibTomCrypt <code>rijndael_setup</code>, FIPS-197 schedules for 128/192/256</td><td>Unicorn re-run: 89,148 insns, SBOX&times;112, RCON&times;14; round keys at <code>ctx+0xc</code> stride 32 == FIPS-197 (11/13/15 rows)</td><td><b>both right</b>, same function</td></tr>
+<tr><td>Block-cipher mode</td><td>inconclusive statically</td><td><code>#85</code> = AES-ECB+PKCS#7&rarr;hex; <code>#30</code> = AES-128-CBC zero-key; <code>#36</code> = ECB-decrypt path</td><td>27/27 FIPS-197 KATs re-run &amp; matched; zero-key CBC identical for every key argument; ECB block-equality leak reproduced</td><td><b>B right</b> (executed proof); A's inconclusive superseded</td></tr>
+<tr><td><code>/proc/self/maps</code> read path</td><td><code>fopen</code>/<code>fgets</code></td><td><code>__open_2</code> + <code>read</code>/<code>__read_chk</code>; no <code>fopen</code>/<code>fgets</code>/<code>strstr</code> imported</td><td>88-entry import table checked: <code>fopen</code>/<code>fgets</code>/<code>strstr</code> <b>absent</b></td><td><b>B right; A disproven</b> on this row (bypass unaffected: it hooks <code>__open_2</code>/<code>read</code>)</td></tr>
+<tr><td>Zygisk / LSPosed markers</td><td>ABSENT</td><td>present (maps-scan tokens)</td><td>XOR-0x5A decode: <code>zygisk</code> @ <code>0x174bd</code>, <code>lsposed</code> @ <code>0x17485</code>; base64 copies @ <code>0x167a9</code>/<code>0x16f60</code></td><td><b>B right; A wrong</b></td></tr>
+<tr><td>9th su path</td><td><code>/su/bin/su</code></td><td><code>/data/local/su</code></td><td>pointer table <code>0x1b63a8</code> (9 relocations) &rarr; ptr <code>0x1741a</code> XOR-0x5A = <code>/data/local/su</code>; <code>/su/bin/su</code> absent under raw/0x55/0x5A</td><td><b>B right</b></td></tr>
+<tr><td>Instagram API bases</td><td><code>i.instagram.com/api/v1/</code>, <code>b.i.instagram.com/api/v1/</code> (XOR-0x55)</td><td><code>i.instagram.com/api/v2/</code>, <code>www.instagram.com/graphql/query</code> (nested b64)</td><td>all four literals decoded byte-for-byte; DEX corroborates</td><td><b>both right</b> &mdash; three bases coexist</td></tr>
+<tr><td>Native GCM</td><td>absent (no GHASH)</td><td>&ldquo;GCM proven native&rdquo; &rarr; final: mode inferred, not executed</td><td><code>func#191</code>: no <code>pmull</code>, no 0xE1 reduction constant, no table refs &rarr; not GHASH; key/nonce install by <code>#157/#158</code> re-verified</td><td><b>merged</b>: context + key material native (proven); GCM arithmetic not in the <code>.so</code> (A right); B's mode claim stays &ldquo;inferred&rdquo;</td></tr>
+<tr><td>Hardcoded symmetric secrets</td><td>not claimed</td><td><code>0123456789abcdef</code>; zero-key CBC; AES-192 key + two 12-B nonces; 12-B getter family</td><td>all byte-verified; KAT re-run</td><td><b>B right</b> &rarr; merged as CRYP-15&hellip;19</td></tr>
+<tr><td>Imports census</td><td>no TLS stack / crypto imports</td><td>&ldquo;92 imports&rdquo; vs &ldquo;88-symbol table&rdquo; (internal inconsistency)</td><td>88 unique imported names; 90 PLT stubs</td><td><b>A right</b>; B resolved to 88/90</td></tr>
+<tr><td>Timing check</td><td><code>clock_gettime</code> ABSENT</td><td><code>clock()</code> check <code>func#98</code> in 11 natives</td><td><code>clock</code> imported (1 site); <code>clock_gettime</code> absent</td><td><b>both right</b> (different symbols) &rarr; new INTE-15</td></tr>
+<tr><td>reCAPTCHA sitekey / backend / ServerCheck</td><td><code>6Ld3yDsp&hellip;jdQ</code> @ <code>0x1764b</code>; <code>top.nivafollower.app/v840/</code>; <code>topfollow_check.php</code></td><td>not claimed</td><td>XOR-0x55 decodes verified</td><td><b>A right</b></td></tr>
+<tr><td>Anti-replay UUID</td><td><code>bbeeba8e-beaa-4458-ac60-6d9a61b2be9e</code> &ldquo;&times;4&rdquo;</td><td>not claimed</td><td>exactly 1 XOR-0x55 copy @ <code>0x17673</code></td><td><b>A partly right</b> (value yes, multiplicity unproven)</td></tr>
+<tr><td>JNI surface</td><td>22 natives, none <code>([B)[B</code></td><td>22 = <code>func#51..#72</code> + slot&rarr;cipher&rarr;detection map</td><td>independent relocation walk reproduces all 22 fnPtrs; no <code>([B)[B</code> signature</td><td><b>both right</b>, cross-validated</td></tr>
+<tr><td>Pin blob</td><td>signing-cert digest constant</td><td>@ <code>0x15084</code>: Base64(Base64(hex)), 2 layers</td><td>decode chain reproduced</td><td><b>both right</b></td></tr>
+</tbody>
+</table>
+<div class="callout warn"><b>Disproven claims (kept out of the merged register, with proof).</b> 2 MB white-box AES table at <code>.rodata:0x9A000</code> (<code>.rodata</code> is only 37,547 B); 18 MB <code>.so</code> (file is 1,805,400 B); <code>sub_128A0</code> string decryptor (<code>0x128A0</code> is data 16 B before the S-box); 204 encrypted URLs (real corpus is small and enumerated); PBKDF2&rarr;white-box-AES-GCM&rarr;RSA-OAEP stack (none of the three exists); HMAC-SHA512 / ChaCha / native GCM arithmetic (no constants, no carry-less multiply); ptrace / TracerPid / property_get / hardware Play-Integrity / SVC anti-debug (imports and strings absent under raw/XOR-0x55/XOR-0x5A); &ldquo;Frida&rdquo; detection at <code>0x15e68</code> (the only match is <code>Friday</code>, the C++ locale weekday). Full table in <code>MERGE_RECONCILIATION.md</code> &sect;3.</div>
+<div class="callout ok"><b>Result of the merge.</b> The register grows from 73 to <b>{len(V)} findings</b> (the six B-sourced additions CRYP-15&hellip;19 and INTE-15, each independently re-verified). The merged detection set corrects three A rows (maps read path, Zygisk/LSPosed markers, 9th su path) and adds B's XOR-0x37 Frida blob and <code>clock()</code> timing check. Runtime mode of the 0x2fdcc/0x30f18 pipeline remains honestly inconclusive pending the optional device pass (script 09). No fabricated logs were produced or merged: Unicorn suites from both analyses were re-executed on 2026-09-14 and their outputs archived (<code>work/out/</code>, <code>work/analysis/verify_all.txt</code>).</div>
+</div>
+</section>
+
 <!-- ========================================================== 20 LEGAL -->
 <section id="legal">
-<h2>21. Scope, ethics &amp; responsible handling</h2>
+<h2>22. Scope, ethics &amp; responsible handling</h2>
 <div class="card">
 <h4>What this document is</h4>
 <p>A defensive security research report on a single APK file supplied for analysis. It documents vulnerabilities, explains their mechanisms, and provides instrumentation intended to let a defender reproduce and then fix them.</p>
