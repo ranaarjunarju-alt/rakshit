@@ -53,7 +53,7 @@
  The anti-analysis keyword list, de-obfuscated. These are the strings the
  bootstrap function string-matches against /proc/self/maps and the filesystem.
 
- su / root binary paths (9):
+ su / root binary paths (9) — via (ptr,len) table @ .data.rel.ro 0x1b63a8:
    /system/app/Superuser.apk
    /sbin/su
    /system/bin/su
@@ -62,12 +62,22 @@
    /data/local/bin/su
    /system/sd/xbin/su
    /system/bin/failsafe/su
-   /su/bin/su
- framework / hook markers:
-   edxposed        (EdXposed)
-   substrate       (Cydia Substrate)
-   riru            (Riru / LSPosed runtime)
+   /data/local/su    (merge-corrected 2026-09-14: was listed as /su/bin/su,
+                      which exists under no encoding; ptr 0x1741a verified)
+ framework / hook markers (XOR 0x5A blob @0x1746f + base64 layer):
    /proc/self/maps  (the maps file it scans)
+   xposed           (Xposed)
+   lsposed          (LSPosed)          <- merge-added (was wrongly ABSENT)
+   edxposed         (EdXposed)
+   riru             (Riru runtime)
+   substrate        (Cydia Substrate)
+   libcso_substrate (Substrate variant)
+   libbridge.so     (hook bridge)
+   zygisk           (Zygisk)           <- merge-added (was wrongly ABSENT)
+ anti-Frida markers (XOR 0x37 blob @0x17365, func#99):
+   gum-js-loop | libfrida-gadget | re.frida.server
+   (+ base64 layer: frida @0x15be1, rwxp @0x16336,
+      libart.so (deleted) @0x16b75, libc.so (deleted) @0x16f69)
 
 ----------------------------------------------------------------------------
  DETECTIONS THE PROMPT CLAIMS — TESTED AGAINST THE BINARY — *ABSENT*

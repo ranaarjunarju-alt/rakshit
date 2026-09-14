@@ -50,6 +50,112 @@
  *                                        -l 02_ssl_pinning_bypass.js -l 05_coin_economy_bypass.js
  * ==========================================================================*/
 'use strict';
+
+/* ===========================================================================
+ * SELF-ARMING DETECTION BYPASS (mandatory baseline - built into every script)
+ * ---------------------------------------------------------------------------
+ * TopFollow detects hooks at startup unless the anti-tamper killer is active:
+ *   - maps scanner reads /proc/self/maps via __open_2 + read()/__read_chk and
+ *     string-matches XOR-0x5A/base64 tokens (frida/xposed/riru/zygisk/substrate)
+ *   - 9 su-path probes via access()/open (func#169 @0x13ba30)
+ *   - OkHttp CertificatePinner (pin d845591e...6bec5e == signing-cert digest)
+ * If 01_anti_tamper_killer.js / 02_ssl_pinning_bypass.js were loaded first they
+ * set globalThis.__TF_BYPASS_ARMED and this block is a no-op; otherwise it
+ * installs the minimal bypass set so THIS script alone still works on device.
+ * =========================================================================*/
+(function selfArmBypass() {
+  if (globalThis.__TF_BYPASS_ARMED || globalThis.__TF_SELF_ARMED) return;
+  globalThis.__TF_SELF_ARMED = true;
+  var DENY = ['frida','gum-js','gadget','re.frida','xposed','lsposed','edxposed',
+              'riru','zygisk','substrate','libbridge','(deleted)','rwxp','magisk'];
+  var ROOT = ['/sbin/su','/system/bin/su','/system/xbin/su','/data/local/xbin/su',
+              '/data/local/bin/su','/system/sd/xbin/su','/system/bin/failsafe/su',
+              '/data/local/su','superuser.apk'];
+  function sus(p) {
+    if (!p) return false;
+    var l = p.toLowerCase();
+    if (l.indexOf('/proc/self/maps') !== -1) return 'maps';
+    for (var i = 0; i < ROOT.length; i++) if (l.indexOf(ROOT[i]) !== -1) return 'root';
+    return false;
+  }
+  ['open','open64','fopen','__open_2','openat','access','stat','lstat'].forEach(function (fn) {
+    var p = Module.findExportByName(null, fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) { try { this.p = a[0].readCString(); } catch (e) { this.p = null; } this.d = sus(this.p); },
+        onLeave: function (r) { if (this.d === 'root') r.replace(ptr(-1)); }
+      });
+    } catch (e) {}
+  });
+  function scrub(buf, n) {
+    if (n <= 0) return n;
+    var s; try { s = buf.readUtf8String(n); } catch (e) { return n; }
+    if (!s) return n;
+    var hit = false, low = s.toLowerCase();
+    for (var i = 0; i < DENY.length; i++) if (low.indexOf(DENY[i]) !== -1) { hit = true; break; }
+    if (!hit) return n;
+    var clean = s.split('\n').filter(function (l) {
+      var ll = l.toLowerCase();
+      for (var j = 0; j < DENY.length; j++) if (ll.indexOf(DENY[j]) !== -1) return false;
+      return true;
+    }).join('\n');
+    var cb = Memory.allocUtf8String(clean);
+    Memory.copy(buf, cb, Math.min(n, clean.length + 1));
+    return clean.length;
+  }
+  var rp = Module.findExportByName('libc.so', 'read');
+  if (rp) Interceptor.attach(rp, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n > 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  var rc = Module.findExportByName('libc.so', '__read_chk');
+  if (rc) Interceptor.attach(rc, {
+    onEnter: function (a) { this.b = a[1]; },
+    onLeave: function (r) { var n = r.toInt32(); if (n > 0) { var m = scrub(this.b, n); if (m !== n) r.replace(m); } }
+  });
+  ['strstr','strcmp','strncmp'].forEach(function (fn) {
+    var p = Module.findExportByName('libc.so', fn);
+    if (!p) return;
+    try {
+      Interceptor.attach(p, {
+        onEnter: function (a) {
+          this.hit = false;
+          try {
+            var s1 = a[0].readCString() || '', s2 = a[1].readCString() || '';
+            var l = (s1 + '|' + s2).toLowerCase();
+            for (var i = 0; i < DENY.length; i++) if (l.indexOf(DENY[i]) !== -1) { this.hit = true; break; }
+          } catch (e) {}
+        },
+        onLeave: function (r) { if (this.hit) r.replace(ptr(0)); }
+      });
+    } catch (e) {}
+  });
+  Java.perform(function () {
+    try {
+      var CP = Java.use('okhttp3.CertificatePinner');
+      CP.check.overload('java.lang.String', 'java.util.List').implementation = function () {};
+      try { CP.check.overload('java.lang.String', '[Ljava.security.cert.Certificate;').implementation = function () {}; } catch (e) {}
+    } catch (e) {}
+    try {
+      var SSLContext = Java.use('javax.net.ssl.SSLContext');
+      var TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+      var EmptyTM = Java.registerClass({
+        name: 'com.tf.lab.EmptyTrustManager' + Date.now(),
+        implements: [TrustManager],
+        methods: {
+          checkClientTrusted: function () {},
+          checkServerTrusted: function () {},
+          getAcceptedIssuers: function () { return []; }
+        }
+      }).$new();
+      var ctx = SSLContext.getInstance('TLS');
+      ctx.init(null, [EmptyTM], null);
+    } catch (e) {}
+  });
+  console.log('[bypass] self-arming minimal anti-tamper/SSL bypass installed (load 01+02 for the full set)');
+})();
+
 const H = (typeof module !== 'undefined' && module.exports) ? module.exports : H;
 
 const FAKE_COIN = 999999999;

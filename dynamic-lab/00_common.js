@@ -8,7 +8,9 @@
  *                      all methods of com.nivaroid.topfollow.helper.q)
  *   backend base URL : https://top.nivafollower.app/v840/   (server-rotatable
  *                      via SharedPreferences "Pin"/"PinActive" + ServerCheckModel)
- *   IG private API   : https://b.i.instagram.com/api/v1/ , https://i.instagram.com/api/v2/
+ *   IG private API   : https://i.instagram.com/api/v1/  (native XOR-0x55 @0x1762c)
+ *                      https://b.i.instagram.com/api/v1/ (native XOR-0x55 @0x17700)
+ *                      https://i.instagram.com/api/v2/   (native 4-layer b64 @0x159ec)
  *   IG graphql/web   : https://www.instagram.com/graphql/query , https://www.instagram.com/
  *   self-cert SHA-256: d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e
  *                      (== SHA-256 of the APK signing cert, CN=Maryam Ahmadi/O=NivaRoid)

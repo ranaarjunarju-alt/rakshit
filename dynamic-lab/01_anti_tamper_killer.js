@@ -267,3 +267,5 @@ Java.perform(function () {
 H.hr('anti-tamper killer ARMED');
 console.log('Blocked open()/access() denials will accumulate; check with:');
 console.log('   blockedOpens =', JSON.stringify(blockedOpens));
+
+globalThis.__TF_BYPASS_ARMED = true;  // full baseline loaded: downstream scripts skip self-arm

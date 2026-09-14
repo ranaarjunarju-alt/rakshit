@@ -1,5 +1,6 @@
 # ---------------------------------------------------------------------------
 # TopFollow reverse-engineering engagement - repository hygiene
+# (merged from Analysis A and Analysis B .gitignore rules)
 #
 # Keep:   deliverables (HTML report, Frida lab, threat model, docs),
 #         the analysis tooling that produced them, and the small curated
@@ -14,6 +15,7 @@
 venv/
 __pycache__/
 *.py[cod]
+*.pyc
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
@@ -27,6 +29,7 @@ Thumbs.db
 
 # Extracted APK payload (regenerate with: unzip "<apk>" -d work/apk)
 work/apk/
+work/apk_extracted/
 
 # Bulk decompilation intermediates
 work/out/all/
@@ -34,6 +37,13 @@ work/out/smali/
 work/out/xref/
 work/out/dex_full.log
 work/out/*.err
+
+# Raw Capstone dumps (regenerate with work/analysis/disasm.py)
+work/analysis/annotated_arm64.txt
+work/analysis/full_disasm_arm64.txt
+
+# Bulky machine-readable index (regenerate with work/analysis/funcmap.py)
+work/analysis/funcmap.json
 
 # Node (if the Frida lab is ever npm-packaged)
 node_modules/
