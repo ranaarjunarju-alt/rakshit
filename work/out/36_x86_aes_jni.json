@@ -1,0 +1,13 @@
+{
+  "abi": "x86",
+  "eh_frame_functions": 1069,
+  "table_refs": {
+    "SBOX": [],
+    "ISBOX": [],
+    "RCON": []
+  },
+  "aes_functions": [],
+  "ancestors": [],
+  "jni_reaching_aes": [],
+  "ref_detail": {}
+}

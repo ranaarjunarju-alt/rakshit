@@ -1,0 +1,385 @@
+{
+ "x0011a4c2": {
+  "va": "0x39df0",
+  "size": 512,
+  "sig": "()J",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 10
+ },
+ "x0014e2e9": {
+  "va": "0x39ff0",
+  "size": 320,
+  "sig": "()Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 8
+ },
+ "x0016d3b9": {
+  "va": "0x3a130",
+  "size": 688,
+  "sig": "()Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 10
+ },
+ "x0012d3e0": {
+  "va": "0x3a3e0",
+  "size": 752,
+  "sig": "(Ljava/lang/String;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 31
+ },
+ "x0011e28b": {
+  "va": "0x3a6d0",
+  "size": 896,
+  "sig": "(Ljava/lang/String;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 32
+ },
+ "x00120b1e": {
+  "va": "0x3aa50",
+  "size": 9872,
+  "sig": "(Lcom/google/gson/JsonObject;Ljava/lang/String;)V",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 185
+ },
+ "x0012e5a1": {
+  "va": "0x3d0e0",
+  "size": 24576,
+  "sig": "(Lcom/google/gson/JsonObject;)V",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 506
+ },
+ "x00135e2a": {
+  "va": "0x446e0",
+  "size": 5744,
+  "sig": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Ljava/lang/String;)V",
+  "rodata_refs_imm": [
+   [
+    "0x45222",
+    "cmp",
+    "dword ptr [esp + 0x18], 0xced9",
+    "0xced9",
+    "_num_getIcEE"
+   ]
+  ],
+  "rodata_refs_got": [],
+  "num_calls": 143
+ },
+ "x00105e9b": {
+  "va": "0x45d50",
+  "size": 832,
+  "sig": "(Ljava/lang/String;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 31
+ },
+ "x0015b1e9": {
+  "va": "0x46090",
+  "size": 20944,
+  "sig": "(Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)V",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [
+   [
+    "0x462f1",
+    "lea",
+    "ebp, [esi - 0xd4cfc]",
+    "0xaf50",
+    "m/PackageManager;"
+   ],
+   [
+    "0x462fb",
+    "lea",
+    "ecx, [esi - 0xd5528]",
+    "0xa724",
+    "P_deref_size with bad size"
+   ],
+   [
+    "0x46326",
+    "lea",
+    "ecx, [esi - 0xd620a]",
+    "0x9a42",
+    "lete[]"
+   ],
+   [
+    "0x4634b",
+    "lea",
+    "ecx, [esi - 0xd52c0]",
+    "0xa98c",
+    "ator="
+   ],
+   [
+    "0x463be",
+    "lea",
+    "ecx, [esi - 0xd64b1]",
+    "0x979b",
+    "efghijklmnopqrstuvwxyz0123456789+/"
+   ],
+   [
+    "0x463e7",
+    "lea",
+    "ecx, [esi - 0xd5b8e]",
+    "0xa0be",
+    "U1IWlpXRUp3VEROWmVVeDNQVDA9"
+   ],
+   [
+    "0x4640c",
+    "lea",
+    "ecx, [esi - 0xd583e]",
+    "0xa40e",
+    "orted"
+   ],
+   [
+    "0x46431",
+    "lea",
+    "ecx, [esi - 0xd61ee]",
+    "0x9a5e",
+    "g/String;"
+   ],
+   [
+    "0x4645a",
+    "lea",
+    "ecx, [esi - 0xd50f1]",
+    "0xab5b",
+    "d"
+   ],
+   [
+    "0x4647f",
+    "lea",
+    "ecx, [esi - 0xd4c22]",
+    "0xb02a",
+    "ed_sf DWARF unwind, reg too big\n"
+   ],
+   [
+    "0x464a4",
+    "lea",
+    "ecx, [esi - 0xd53fc]",
+    "0xa850",
+    "l"
+   ]
+  ],
+  "num_calls": 548
+ },
+ "x0015a3b7": {
+  "va": "0x4b260",
+  "size": 10128,
+  "sig": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Lcom/nivaroid/topfollow/models/Order;)V",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [
+   [
+    "0x4cb1c",
+    "lea",
+    "ecx, [esi - 0xd61d4]",
+    "0x9a78",
+    "text"
+   ]
+  ],
+  "num_calls": 217
+ },
+ "x0017b62c": {
+  "va": "0x4d9f0",
+  "size": 3472,
+  "sig": "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 104
+ },
+ "x0011f42b": {
+  "va": "0x4e780",
+  "size": 5296,
+  "sig": "()Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 112
+ },
+ "x0012f5b7": {
+  "va": "0x4fc30",
+  "size": 3584,
+  "sig": "()Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 118
+ },
+ "x0014b4f3": {
+  "va": "0x50a30",
+  "size": 2128,
+  "sig": "(Ljava/lang/String;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 57
+ },
+ "x0011f1a2": {
+  "va": "0x51280",
+  "size": 5056,
+  "sig": "(Lcom/nivaroid/topfollow/models/Order;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 115
+ },
+ "x0015e49c": {
+  "va": "0x52640",
+  "size": 23120,
+  "sig": "(Lretrofit2/Response;Lcom/nivaroid/topfollow/models/Order;Lcom/nivaroid/topfollow/models/InstagramAccount;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 416
+ },
+ "x0010e27f": {
+  "va": "0x58090",
+  "size": 272,
+  "sig": "()Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 10
+ },
+ "x00113f7a": {
+  "va": "0x581a0",
+  "size": 256,
+  "sig": "()Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 9
+ },
+ "x0014c1f9": {
+  "va": "0x582a0",
+  "size": 1888,
+  "sig": "(Lretrofit2/Response;)Ljava/lang/String;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 40
+ },
+ "x00126f7c": {
+  "va": "0x58a00",
+  "size": 5760,
+  "sig": "(ZLjava/lang/String;)Lretrofit2/Retrofit;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [],
+  "num_calls": 78
+ },
+ "x0018d3f7": {
+  "va": "0x5a080",
+  "size": 16384,
+  "sig": "(I)Lretrofit2/Retrofit;",
+  "rodata_refs_imm": [],
+  "rodata_refs_got": [
+   [
+    "0x5a0a9",
+    "lea",
+    "ecx, [esi - 0xd4f70]",
+    "0xacdc",
+    "(I)Lretrofit2/Retrofit;"
+   ],
+   [
+    "0x5a286",
+    "lea",
+    "ecx, [esi - 0xd58f2]",
+    "0xa35a",
+    "r 3"
+   ],
+   [
+    "0x5a28c",
+    "lea",
+    "edx, [esi - 0xd6862]",
+    "0x93ea",
+    "xa_guard_release"
+   ],
+   [
+    "0x5a392",
+    "lea",
+    "ecx, [esi - 0xd58f2]",
+    "0xa35a",
+    "r 3"
+   ],
+   [
+    "0x5a398",
+    "lea",
+    "edx, [esi - 0xd6862]",
+    "0x93ea",
+    "xa_guard_release"
+   ],
+   [
+    "0x5a4e9",
+    "lea",
+    "ecx, [esi - 0xd5aae]",
+    "0xa19e",
+    "WARF unwind, reg too big\n"
+   ],
+   [
+    "0x5a4ef",
+    "lea",
+    "edx, [esi - 0xd637b]",
+    "0x98d1",
+    "day"
+   ],
+   [
+    "0x5a552",
+    "lea",
+    "ecx, [esi - 0xd4f53]",
+    "0xacf9",
+    "security/MessageDigest"
+   ],
+   [
+    "0x5a5fc",
+    "lea",
+    "ecx, [esi - 0xd50d1]",
+    "0xab7b",
+    "nner"
+   ],
+   [
+    "0x5a663",
+    "lea",
+    "ecx, [esi - 0xd50d1]",
+    "0xab7b",
+    "nner"
+   ],
+   [
+    "0x5a694",
+    "lea",
+    "ecx, [esi - 0xd54e4]",
+    "0xa768",
+    "U0dKR01FNW9OV3h3"
+   ],
+   [
+    "0x5a69a",
+    "lea",
+    "edx, [esi - 0xd529e]",
+    "0xa9ae",
+    " registers"
+   ],
+   [
+    "0x5a8b6",
+    "lea",
+    "ecx, [esi - 0xd67a9]",
+    "0x94a3",
+    "ibunwind: malformed DW_CFA_register DWARF unwind, reg2 too big\n"
+   ],
+   [
+    "0x5a8bc",
+    "lea",
+    "edx, [esi - 0xd53d8]",
+    "0xa874",
+    "nwind: malformed DW_CFA_expression DWARF unwind, reg too big\n"
+   ],
+   [
+    "0x5a990",
+    "lea",
+    "ecx, [esi - 0xd67a9]",
+    "0x94a3",
+    "ibunwind: malformed DW_CFA_register DWARF unwind, reg2 too big\n"
+   ],
+   [
+    "0x5a996",
+    "lea",
+    "edx, [esi - 0xd5d25]",
+    "0x9f27",
+    "guard_acquire detected recursive initialization"
+   ]
+  ],
+  "num_calls": 141
+ }
+}

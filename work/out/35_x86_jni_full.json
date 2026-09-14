@@ -1,0 +1,112 @@
+[
+  {
+    "name": "x0011a4c2",
+    "signature": "()J",
+    "fn_va": "0x39df0"
+  },
+  {
+    "name": "x0014e2e9",
+    "signature": "()Ljava/lang/String;",
+    "fn_va": "0x39ff0"
+  },
+  {
+    "name": "x0016d3b9",
+    "signature": "()Ljava/lang/String;",
+    "fn_va": "0x3a130"
+  },
+  {
+    "name": "x0012d3e0",
+    "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+    "fn_va": "0x3a3e0"
+  },
+  {
+    "name": "x0011e28b",
+    "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+    "fn_va": "0x3a6d0"
+  },
+  {
+    "name": "x00120b1e",
+    "signature": "(Lcom/google/gson/JsonObject;Ljava/lang/String;)V",
+    "fn_va": "0x3aa50"
+  },
+  {
+    "name": "x0012e5a1",
+    "signature": "(Lcom/google/gson/JsonObject;)V",
+    "fn_va": "0x3d0e0"
+  },
+  {
+    "name": "x00135e2a",
+    "signature": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Ljava/lang/String;)V",
+    "fn_va": "0x446e0"
+  },
+  {
+    "name": "x00105e9b",
+    "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+    "fn_va": "0x45d50"
+  },
+  {
+    "name": "x0015b1e9",
+    "signature": "(Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)V",
+    "fn_va": "0x46090"
+  },
+  {
+    "name": "x0015a3b7",
+    "signature": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Lcom/nivaroid/topfollow/models/Order;)V",
+    "fn_va": "0x4b260"
+  },
+  {
+    "name": "x0017b62c",
+    "signature": "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+    "fn_va": "0x4d9f0"
+  },
+  {
+    "name": "x0011f42b",
+    "signature": "()Ljava/lang/String;",
+    "fn_va": "0x4e780"
+  },
+  {
+    "name": "x0012f5b7",
+    "signature": "()Ljava/lang/String;",
+    "fn_va": "0x4fc30"
+  },
+  {
+    "name": "x0014b4f3",
+    "signature": "(Ljava/lang/String;)Ljava/lang/String;",
+    "fn_va": "0x50a30"
+  },
+  {
+    "name": "x0011f1a2",
+    "signature": "(Lcom/nivaroid/topfollow/models/Order;)Ljava/lang/String;",
+    "fn_va": "0x51280"
+  },
+  {
+    "name": "x0015e49c",
+    "signature": "(Lretrofit2/Response;Lcom/nivaroid/topfollow/models/Order;Lcom/nivaroid/topfollow/models/InstagramAccount;)Ljava/lang/String;",
+    "fn_va": "0x52640"
+  },
+  {
+    "name": "x0010e27f",
+    "signature": "()Ljava/lang/String;",
+    "fn_va": "0x58090"
+  },
+  {
+    "name": "x00113f7a",
+    "signature": "()Ljava/lang/String;",
+    "fn_va": "0x581a0"
+  },
+  {
+    "name": "x0014c1f9",
+    "signature": "(Lretrofit2/Response;)Ljava/lang/String;",
+    "fn_va": "0x582a0"
+  },
+  {
+    "name": "x00126f7c",
+    "signature": "(ZLjava/lang/String;)Lretrofit2/Retrofit;",
+    "fn_va": "0x58a00"
+  },
+  {
+    "name": "x0018d3f7",
+    "signature": "(I)Lretrofit2/Retrofit;",
+    "fn_va": "0x5a080"
+  }
+]

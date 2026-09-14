@@ -1,0 +1,156 @@
+[
+  {
+    "native": "x0011a4c2",
+    "x86_fn_va": "0x39df0",
+    "jni_sig": "()J",
+    "java_wrapper": "helper.q.j()",
+    "returns": "long"
+  },
+  {
+    "native": "x0014e2e9",
+    "x86_fn_va": "0x39ff0",
+    "jni_sig": "()Ljava/lang/String;",
+    "java_wrapper": "helper.q.e()",
+    "returns": "String"
+  },
+  {
+    "native": "x0016d3b9",
+    "x86_fn_va": "0x3a130",
+    "jni_sig": "()Ljava/lang/String;",
+    "java_wrapper": "helper.q.d()",
+    "returns": "String"
+  },
+  {
+    "native": "x0012d3e0",
+    "x86_fn_va": "0x3a3e0",
+    "jni_sig": "(Ljava/lang/String;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.o(String p0)",
+    "returns": "String"
+  },
+  {
+    "native": "x0011e28b",
+    "x86_fn_va": "0x3a6d0",
+    "jni_sig": "(Ljava/lang/String;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.n(String p0)",
+    "returns": "String"
+  },
+  {
+    "native": "x00120b1e",
+    "x86_fn_va": "0x3aa50",
+    "jni_sig": "(Lcom/google/gson/JsonObject;Ljava/lang/String;)V",
+    "java_wrapper": "helper.q.i(com.google.gson.JsonObject p0, String p1)",
+    "returns": "void"
+  },
+  {
+    "native": "x0012e5a1",
+    "x86_fn_va": "0x3d0e0",
+    "jni_sig": "(Lcom/google/gson/JsonObject;)V",
+    "java_wrapper": "helper.q.v(com.google.gson.JsonObject p0)",
+    "returns": "void"
+  },
+  {
+    "native": "x00135e2a",
+    "x86_fn_va": "0x446e0",
+    "jni_sig": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Ljava/lang/String;)V",
+    "java_wrapper": "helper.q.u(com.google.gson.JsonObject p0, com.nivaroid.topfollow.models.InstagramAccount p1, String p2)",
+    "returns": "void"
+  },
+  {
+    "native": "x00105e9b",
+    "x86_fn_va": "0x45d50",
+    "jni_sig": "(Ljava/lang/String;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.c(String p0)",
+    "returns": "String"
+  },
+  {
+    "native": "x0015b1e9",
+    "x86_fn_va": "0x46090",
+    "jni_sig": "(Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)V",
+    "java_wrapper": "helper.q.r(com.google.gson.JsonObject p0, String p1, String p2)",
+    "returns": "void"
+  },
+  {
+    "native": "x0015a3b7",
+    "x86_fn_va": "0x4b260",
+    "jni_sig": "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Lcom/nivaroid/topfollow/models/Order;)V",
+    "java_wrapper": "helper.q.t(com.google.gson.JsonObject p0, com.nivaroid.topfollow.models.InstagramAccount p1, com.nivaroid.topfollow.models.Order p2)",
+    "returns": "void"
+  },
+  {
+    "native": "x0017b62c",
+    "x86_fn_va": "0x4d9f0",
+    "jni_sig": "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.s(String p0, String p1, String p2)",
+    "returns": "String"
+  },
+  {
+    "native": "x0011f42b",
+    "x86_fn_va": "0x4e780",
+    "jni_sig": "()Ljava/lang/String;",
+    "java_wrapper": "helper.q.m()",
+    "returns": "String"
+  },
+  {
+    "native": "x0012f5b7",
+    "x86_fn_va": "0x4fc30",
+    "jni_sig": "()Ljava/lang/String;",
+    "java_wrapper": "helper.q.b()",
+    "returns": "String"
+  },
+  {
+    "native": "x0014b4f3",
+    "x86_fn_va": "0x50a30",
+    "jni_sig": "(Ljava/lang/String;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.a(String p0)",
+    "returns": "String"
+  },
+  {
+    "native": "x0011f1a2",
+    "x86_fn_va": "0x51280",
+    "jni_sig": "(Lcom/nivaroid/topfollow/models/Order;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.h(com.nivaroid.topfollow.models.Order p0)",
+    "returns": "String"
+  },
+  {
+    "native": "x0015e49c",
+    "x86_fn_va": "0x52640",
+    "jni_sig": "(Lretrofit2/Response;Lcom/nivaroid/topfollow/models/Order;Lcom/nivaroid/topfollow/models/InstagramAccount;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.p(retrofit2.Response p0, com.nivaroid.topfollow.models.Order p1, com.nivaroid.topfollow.models.InstagramAccount p2)",
+    "returns": "String"
+  },
+  {
+    "native": "x0010e27f",
+    "x86_fn_va": "0x58090",
+    "jni_sig": "()Ljava/lang/String;",
+    "java_wrapper": "helper.q.f()",
+    "returns": "String"
+  },
+  {
+    "native": "x00113f7a",
+    "x86_fn_va": "0x581a0",
+    "jni_sig": "()Ljava/lang/String;",
+    "java_wrapper": "helper.q.g()",
+    "returns": "String"
+  },
+  {
+    "native": "x0014c1f9",
+    "x86_fn_va": "0x582a0",
+    "jni_sig": "(Lretrofit2/Response;)Ljava/lang/String;",
+    "java_wrapper": "helper.q.q(retrofit2.Response p0)",
+    "returns": "String"
+  },
+  {
+    "native": "x00126f7c",
+    "x86_fn_va": "0x58a00",
+    "jni_sig": "(ZLjava/lang/String;)Lretrofit2/Retrofit;",
+    "java_wrapper": "helper.q.k(String p0, boolean p1)",
+    "returns": "retrofit2.Retrofit"
+  },
+  {
+    "native": "x0018d3f7",
+    "x86_fn_va": "0x5a080",
+    "jni_sig": "(I)Lretrofit2/Retrofit;",
+    "java_wrapper": "helper.q.l(int p0)",
+    "returns": "retrofit2.Retrofit"
+  }
+]

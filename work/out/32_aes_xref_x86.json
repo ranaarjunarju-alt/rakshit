@@ -1,0 +1,18 @@
+{
+  "abi": "x86",
+  "size": 902720,
+  "tables": {
+    "SBOX": [
+      "0x7070"
+    ],
+    "ISBOX": [
+      "0x8170"
+    ],
+    "RCON": [
+      "0x82d0"
+    ]
+  },
+  "aes_functions": {},
+  "reachability": {},
+  "function_count": 1069
+}

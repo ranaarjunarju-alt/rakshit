@@ -1,0 +1,49 @@
+=== work/apk/lib/arm64-v8a/libtopfollow.so ===
+size 1,805,400  .text VA 0x2d2ac size 1,591,568
+
+--- 1. function boundaries from .eh_frame: 1090 FDEs ---
+    first: 0x2d2ac (+16)   last: 0x1b1a64 (+44)
+    size total 1,591,096  max 179,828  median 208
+
+--- 2. AES table locations ---
+    forward S-box    VA 0x128b0  file off 0x128b0  bytes 63 7c 77 7b f2 6b 6f c5 30 01 67 2b fe d7 ab 76
+    inverse S-box    VA 0x139b0  file off 0x139b0  bytes 52 09 6a d5 30 36 a5 38 bf 40 a3 9e 81 f3 d7 fb
+    rcon             VA 0x13b10  file off 0x13b10  bytes 01 02 04 08 10 20 40 80 1b 36 6c d8 ab 4d 9a 2f
+
+--- 3. code that references the AES tables ---
+    ISBOX: 2 direct ADRP+ADD references
+      0x2ec5c  add x4, x4, #0x9b0  [fn 0x2eb94+4664]
+      0x31aa8  add x0, x0, #0x9b0  [fn 0x30f18+4672]
+    RCON: 1 direct ADRP+ADD references
+      0x338cc  add x15, x15, #0xb10  [fn 0x32158+8908]
+    SBOX: 4 direct ADRP+ADD references
+      0x2dc9c  add x6, x6, #0x8b0  [fn 0x2dc00+3988]
+      0x307ec  add x1, x1, #0x8b0  [fn 0x2fdcc+4428]
+      0x32834  add x17, x17, #0x8b0  [fn 0x32158+8908]
+      0x33834  add x17, x17, #0x8b0  [fn 0x32158+8908]
+
+--- 4. functions that touch the AES tables ---
+    fn 0x2dc00 size 3988  refs={'SBOX': 1}
+    fn 0x2eb94 size 4664  refs={'ISBOX': 1}
+    fn 0x2fdcc size 4428  refs={'SBOX': 1}
+    fn 0x30f18 size 4672  refs={'ISBOX': 1}
+    fn 0x32158 size 8908  refs={'RCON': 1, 'SBOX': 2}
+
+--- 5. RegisterNatives table recovered from JNI_OnLoad ---
+    JNI_OnLoad VA 0x3e1d4  fn range (254420, 2272)
+    ADRP+ADD data pointers inside JNI_OnLoad: 3
+    candidate quadruples: 0
+    VALIDATED JNINativeMethod entries: 0
+
+    wrote work/out/31_arm64_jni_and_aes.json
+
+--- 6. callers of the AES functions ---
+    direct branch callers: 8
+      fn 0x2fdcc -> ['0x2dc00']
+      fn 0x30f18 -> ['0x2eb94']
+      fn 0x34424 -> ['0x2fdcc']
+      fn 0x35518 -> ['0x2fdcc', '0x30f18']
+      fn 0x38fa4 -> ['0x32158']
+      fn 0x3a838 -> ['0x32158']
+      fn 0x10c470 -> ['0x32158']
+      fn 0x110b70 -> ['0x32158']

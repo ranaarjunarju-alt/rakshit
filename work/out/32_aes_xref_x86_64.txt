@@ -1,0 +1,17 @@
+=== AES XREF: work/apk/lib/x86_64/libtopfollow.so  (1,408,192 bytes, x86_64) ===
+  SBOX   256 B  file offsets ['0xdb80']
+  ISBOX  256 B  file offsets ['0xec80']
+  RCON    14 B  file offsets ['0xede0']
+
+  functions from .eh_frame: 1080
+  disassembled 320,007 instructions
+
+--- 4. functions referencing AES tables: 0 ---
+
+--- 5. call graph into the AES functions ---
+
+--- 6. JNI RegisterNatives mapping ---
+    no literal JNI table for x86_64 (64-bit builds materialise it at runtime)
+    -> use dynamic-lab/07_native_jni_dumper.js to intercept RegisterNatives
+
+    wrote work/out/32_aes_xref_x86_64.json

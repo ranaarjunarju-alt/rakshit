@@ -1,0 +1,148 @@
+============================================================================
+ libtopfollow.so (arm64-v8a) — NATIVE STRING DECRYPTION, RUN FOR REAL
+============================================================================
+ Target : work/apk/lib/arm64-v8a/libtopfollow.so  (1,805,400 bytes = 1.72 MiB)
+ SHA-256: a60bcf064d0907072712a16398968d2f50c6802fc0d56fb60139030a98701a04 (APK)
+ Method : the strings are NOT protected by a native "sub_128A0 blob decryptor".
+          They are protected by a single-byte XOR applied at each reference site
+          (keys 0x55 and 0x5A), plus nested base64 for a handful. This file is
+          produced by work/native_string_decrypt.py sweeping both keys over the
+          whole image and keeping the meaningful runs in the .rodata string
+          region [0x118b0, 0x1ab5b). No device is required; this is the actual
+          set of strings the app de-obfuscates at runtime.
+
+----------------------------------------------------------------------------
+ WHY THERE IS NO sub_128A0 STRING DECRYPTOR (the claim, tested)
+----------------------------------------------------------------------------
+ Claim : "native decryptor at sub_128A0 takes encrypted blob + key, called 200+
+          times in JNI_OnLoad, decrypts 204 URLs."
+ Reality: 0x128A0 is NOT code. Section map of this .so:
+            .text    VA [0x2d2ac, 0x1b1bbc)   <- executable code starts here
+            .rodata  VA [0x118b0, 0x1ab5b)    <- read-only DATA
+          0x128A0 lies inside .rodata, exactly 16 bytes before the AES forward
+          S-box at 0x128B0. The bytes there are:
+            0x128a0: 7b cb b0 b0 a8 fc 54 54 6d d6 bb bb 2c 3a 16 16
+            0x128b0: 63 7c 77 7b f2 6b 6f c5 30 01 67 2b fe d7 ab 76   <- S-box
+          i.e. 0x128A0 is table data, not an instruction. There is no function
+          there to hook, and no 204 encrypted URLs. The real URL count is small
+          (enumerated below) and they are XOR-obfuscated, not blob-encrypted.
+
+----------------------------------------------------------------------------
+ GENUINE DECRYPTED SECRETS  (XOR key 0x55)
+----------------------------------------------------------------------------
+ category                 offset       decrypted value
+ -----------------------  ----------   ------------------------------------------------
+ backend base URL         0x176de      https://top.nivafollower.app/v840/
+ ServerCheck endpoint     0x172d0      https://nivafollower-app.com/api-v3/topfollow_check.php
+ Instagram API v1 base    0x1762c      https://i.instagram.com/api/v1/
+ Instagram "b" host       0x17700      https://b.i.instagram.com/api/v1/
+ reCAPTCHA site key       0x1764b      6Ld3yDspAAAAAH_yYoClNySU6O_dpbyXSXAujdQ
+ hash tag                 0x17697      sha256
+ IG action path           0x17604      friendships/create
+ IG action path                        media//like/
+ IG action path                        /comment/
+ anti-replay UUID (x4)                 bbeeba8e-beaa-4458-ac60-6d9a61b2be9e
+
+ NOTE: the Instagram "signed_body" key id / hash and the three IG action paths
+ are stored contiguously (length-packed) around 0x17604..0x17740; the values
+ above are split out of that blob.
+
+----------------------------------------------------------------------------
+ GENUINE DETECTION KEYWORDS  (XOR key 0x5A)
+----------------------------------------------------------------------------
+ The anti-analysis keyword list, de-obfuscated. These are the strings the
+ bootstrap function string-matches against /proc/self/maps and the filesystem.
+
+ su / root binary paths (9):
+   /system/app/Superuser.apk
+   /sbin/su
+   /system/bin/su
+   /system/xbin/su
+   /data/local/xbin/su
+   /data/local/bin/su
+   /system/sd/xbin/su
+   /system/bin/failsafe/su
+   /su/bin/su
+ framework / hook markers:
+   edxposed        (EdXposed)
+   substrate       (Cydia Substrate)
+   riru            (Riru / LSPosed runtime)
+   /proc/self/maps  (the maps file it scans)
+
+----------------------------------------------------------------------------
+ DETECTIONS THE PROMPT CLAIMS — TESTED AGAINST THE BINARY — *ABSENT*
+----------------------------------------------------------------------------
+ Each of these was searched for as raw bytes, as XOR-0x55 and as XOR-0x5A.
+ claim                          status     evidence
+ -----------------------------  ---------  -------------------------------------
+ Magisk / magisk                ABSENT     no bytes under any of the 3 encodings
+ Zygisk                         ABSENT     "
+ Shamiko                        ABSENT     "
+ ptrace                         ABSENT     not imported, not a string
+ TracerPid                      ABSENT     no /proc/self/status TracerPid parse
+ property_get / __system_prop.. ABSENT     not imported
+ clock_gettime (timing attack)  ABSENT     not imported
+ emulator props (goldfish/qemu/ ABSENT     no such strings
+   nox/genymotion/vbox)
+ isDebuggerConnected            ABSENT     no such symbol/string
+ SafetyNet / PlayIntegrity /    ABSENT     no such strings; the "Play" gate is a
+   StrongBox / DroidGuard                   Java-side installer-package check,
+                                            not native hardware attestation
+ inline-hook / SVC detection    ABSENT     no SVC-based hook-integrity check
+ 27042 (frida default port)     ABSENT     no such string/constant
+
+ The ONLY anti-analysis actually present is: read /proc/self/maps + string-match
+ the markers above, probe the 9 su paths, and match a small set of base64 Frida
+ markers. That is file-read + string-compare — not syscall hooking, not ptrace,
+ not hardware attestation. (Report finding INTE-14.)
+
+----------------------------------------------------------------------------
+ CRYPTO THE PROMPT CLAIMS — TESTED — *ABSENT FROM THE NATIVE LIBRARY*
+----------------------------------------------------------------------------
+ claim                                    status    evidence
+ ---------------------------------------  --------  ---------------------------
+ white-box AES, 2 MB table in .rodata     ABSENT    .rodata is 37,547 bytes TOTAL
+                                                    (0.036 MiB); only 3 high-entropy
+                                                    4 KiB windows exist (the two
+                                                    S-box pages + the 549-byte
+                                                    whitening table @0x13b30). A
+                                                    2 MB T-box table is impossible.
+ custom ChaCha / Salsa20                  ABSENT    no "expand 32-byte k" constant,
+                                                    no 61707865/3320646e sigma words
+ PBKDF2-HMAC-SHA512 (native)              ABSENT    no "PBKDF2"/"HmacSHA"/"sha512"
+ RSA-OAEP, pubkey @ .rodata:0xE1000        ABSENT    no DER 30 82 sequence, no
+                                                    "OAEP"/"RSA" string; 0xE1000 is
+                                                    ordinary .rodata, RSA lives only
+                                                    in Java q8.t1 (PKCS#1 v1.5)
+ AES-GCM (native)                          ABSENT    no GHASH/H-table; GCM is Java-only
+ "18 MB" file                              FALSE     the file is 1,805,400 B = 1.72 MiB
+
+ What IS genuinely in the native library: the real AES forward S-box (0x128b0),
+ inverse S-box (0x139b0), rcon (0x13b10), a 549-byte key-derivation/whitening
+ table (0x13b30), and an AES-256-shaped key expansion (0x32158, rcon read 14x).
+ See report section 11 and findings CRYP-09 / CRYP-10.
+
+----------------------------------------------------------------------------
+ THE REAL TRIPLE-LAYER STORY (vs the claimed one)
+----------------------------------------------------------------------------
+ There is no Layer1(native PBKDF2) -> Layer2(native white-box AES-GCM) ->
+ Layer3(native RSA-OAEP) stack. The actual protection is:
+
+  * Local storage cipher (com.bumptech.glide.d.p()/q()): XOR 0x6C -> rotate-left
+    3 -> reverse -> XOR (i*37)^0xA5. KEYLESS. Round-trips in Python
+    (report/cipher_poc.py). This "encrypts" the on-device Instagram password and
+    2FA seed. (CRYP-01..04.)
+  * Instagram password transport (q8.t1.f, JAVA not native): AES-256-GCM with a
+    random 12-byte IV; the AES key is wrapped with RSA/ECB/PKCS1Padding (v1.5,
+    NOT OAEP) under a public key supplied by the network header
+    Ig-Set-Password-Encryption-Pub-Key and never validated. Produces the
+    #PWD_INSTAGRAM:4:<ts>:<base64> envelope. (CRYP-11, CRYP-12.)
+  * Native AES-table cipher: used inside the request/signature pipeline, not
+    reachable from Java (no ([B)[B JNI method). Key runtime-derived. (CRYP-09/10.)
+  * Backend transport: HTTPS to top.nivafollower.app with OkHttp certificate
+    pinning whose pin is downloaded at runtime from ServerCheck. (TRAN-02.)
+
+============================================================================
+ Reproduce: .venv/bin/python work/native_string_decrypt.py
+ Cross-refs: work/out/43_native_decrypted_strings.json
+============================================================================

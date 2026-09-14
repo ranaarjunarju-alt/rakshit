@@ -1,0 +1,15 @@
+=== CLEAN ROUND-TRIP TEST (native block ciphers, arm64) ===
+keyexp: insns=89,148 SBOX=112 RCON=14
+ctx+0x438 schedule-ptr target first16 = 00000000000000000000000000000000  (zeros => keyexp did NOT fill it)
+schedule @CTX+0x30 RK0 = 1742e227063cdfce2c2b4cbd71f1297a
+
+encrypt 0x2fdcc: pt=000102030405060708090a0b0c0d0e0f -> ct=f84c76c5850efb652957d9253f2c50c0  SBOX reads=32  insns=23,186
+decrypt 0x30f18: ct=f84c76c5850efb652957d9253f2c50c0 -> out=b4ad5a661d13adba3ed93d80e88849f5  ISBOX reads=32  insns=24,330
+
+round-trip decrypt(encrypt(pt)) == pt ? False
+S-box usage: enc=32 dec=32  (a 14-round AES needs ~160 per block)
+
+VERDICT: genuine AES tables are present and used, but the block functions
+do NOT behave as standard 14-round AES-256 under emulation (too few S-box
+reads, non-FIPS-197 schedule, no round-trip). Modified/obfuscated variant,
+or live-only state. NOT proven to be working standard AES-256.

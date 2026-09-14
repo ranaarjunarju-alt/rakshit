@@ -1,0 +1,66 @@
+=== UNICORN AArch64 AES HARNESS ===
+  target: work/apk/lib/arm64-v8a/libtopfollow.so
+  FIPS-197 AES-256 reference schedule computed: 240 bytes (15 round keys)
+    RK0 = 603deb1015ca71be2b73aef0857d7781
+    RK1 = 1f352c073b6108d72d9810a30914dff4
+    RK14= fe4890d1e6188d0b046df344706c631e
+
+  image 1,806,336 B mapped at VA 0
+  S-box  @ 0x128b0: 63 7c 77 7b f2 6b 6f c5 30 01 67 2b fe d7 ab 76
+  invbox @ 0x139b0: 52 09 6a d5 30 36 a5 38 bf 40 a3 9e 81 f3 d7 fb
+  rcon   @ 0x13b10: 01 02 04 08 10 20 40 80 1b 36 6c d8 ab 4d
+
+  FIPS-197 vector: key=603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
+                   pt =6bc1bee22e409f96e93d7e117393172a
+                   ct =f3eed1bdb5d2a03c064b5a7e3db181f8
+
+==============================================================================
+RUN KEY EXPANSION  ctx layout = libc++ short-string
+    fn=0x32158  SBOX+RCON    (KEY EXPANSION; validates w3==w4==0x20)
+==============================================================================
+  insns executed   : 89,148
+  exit             : returned  PC=0xffff0000
+  x0               : 0x92f98e17
+  AES table reads  : {'SBOX': 112, 'RCON': 14}
+  rcon reads = 14  =>  key length verdict: AES-256
+  libc calls       : {'memcpy': 2}
+  WRITTEN pages    : [('0x7f3df000', 2716), ('0x8100000', 732)]
+  heap/other writes: ['0x8100000']
+  scan FIPS-197 RK0 (16 B): 1 hit(s) -> ['0x8400000(heap)']
+  scan FIPS-197 RK14 (16 B): 0 hit(s) -> []
+  scan FULL 240-byte schedule: 0 hit(s) -> []
+  scan the raw key bytes: 1 hit(s) -> ['0x8400000(heap)']
+
+==============================================================================
+RUN KEY EXPANSION  ctx layout = libc++ long-string
+    fn=0x32158  SBOX+RCON    (KEY EXPANSION; validates w3==w4==0x20)
+==============================================================================
+  insns executed   : 89,148
+  exit             : returned  PC=0xffff0000
+  x0               : 0x92f98e17
+  AES table reads  : {'SBOX': 112, 'RCON': 14}
+  rcon reads = 14  =>  key length verdict: AES-256
+  libc calls       : {'memcpy': 4}
+  WRITTEN pages    : [('0x7f3df000', 2716), ('0x8100000', 732)]
+  heap/other writes: ['0x8100000']
+  scan FIPS-197 RK0 (16 B): 1 hit(s) -> ['0x8400000(heap)']
+  scan FIPS-197 RK14 (16 B): 0 hit(s) -> []
+  scan FULL 240-byte schedule: 0 hit(s) -> []
+  scan the raw key bytes: 1 hit(s) -> ['0x8400000(heap)']
+
+==============================================================================
+RUN KEY EXPANSION  ctx layout = {ptr,len,cap} triple
+    fn=0x32158  SBOX+RCON    (KEY EXPANSION; validates w3==w4==0x20)
+==============================================================================
+  insns executed   : 89,148
+  exit             : returned  PC=0xffff0000
+  x0               : 0x92f98e17
+  AES table reads  : {'SBOX': 112, 'RCON': 14}
+  rcon reads = 14  =>  key length verdict: AES-256
+  libc calls       : {'memcpy': 6}
+  WRITTEN pages    : [('0x7f3df000', 2716), ('0x8100000', 732)]
+  heap/other writes: ['0x8100000']
+  scan FIPS-197 RK0 (16 B): 1 hit(s) -> ['0x8400000(heap)']
+  scan FIPS-197 RK14 (16 B): 0 hit(s) -> []
+  scan FULL 240-byte schedule: 0 hit(s) -> []
+  scan the raw key bytes: 1 hit(s) -> ['0x8400000(heap)']

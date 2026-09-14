@@ -1,0 +1,42 @@
+=== AES XREF: work/apk/lib/arm64-v8a/libtopfollow.so  (1,805,400 bytes, arm64-v8a) ===
+  SBOX   256 B  file offsets ['0x128b0']
+  ISBOX  256 B  file offsets ['0x139b0']
+  RCON    14 B  file offsets ['0x13b10']
+
+  functions from .eh_frame: 1090
+  disassembled 397,892 instructions
+
+--- 4. functions referencing AES tables: 5 ---
+    fn 0x02dc00 size     3988  tables=['SBOX']  offsets=['0x128b0']
+    fn 0x02eb94 size     4664  tables=['ISBOX']  offsets=['0x139b0']
+    fn 0x02fdcc size     4428  tables=['SBOX']  offsets=['0x128b0']
+    fn 0x030f18 size     4672  tables=['ISBOX']  offsets=['0x139b0']
+    fn 0x032158 size     8908  tables=['RCON', 'SBOX']  offsets=['0x128b0', '0x13b10']
+
+--- 5. call graph into the AES functions ---
+    0x02dc00: BFS fan-in per level = [1, 1, 2, 4, 16, 1]  total ancestors 25
+        L1: ['0x2fdcc']
+        L2: ['0x34424', '0x35518']
+        L3: ['0x38fa4', '0x3a838', '0x10c470', '0x110b70']
+    0x02eb94: BFS fan-in per level = [1, 1, 1, 2, 4, 4]  total ancestors 13
+        L1: ['0x30f18']
+        L2: ['0x35518']
+        L3: ['0x3a838', '0x110b70']
+    0x02fdcc: BFS fan-in per level = [1, 2, 4, 16, 1]  total ancestors 24
+        L1: ['0x34424', '0x35518']
+        L2: ['0x38fa4', '0x3a838', '0x10c470', '0x110b70']
+        L3: ['0x3f688', '0x4110c', '0x435b8', '0x4f078', '0x76508', '0x7f82c', '0x81c58', '0xadacc', '0xbf7fc', '0xc67a4', '0xd46a8', '0xe01e4'] ...
+    0x030f18: BFS fan-in per level = [1, 1, 2, 4, 4]  total ancestors 12
+        L1: ['0x35518']
+        L2: ['0x3a838', '0x110b70']
+        L3: ['0x4110c', '0x435b8', '0x127034', '0x171884']
+    0x032158: BFS fan-in per level = [1, 4, 16, 1]  total ancestors 22
+        L1: ['0x38fa4', '0x3a838', '0x10c470', '0x110b70']
+        L2: ['0x3f688', '0x4110c', '0x435b8', '0x4f078', '0x76508', '0x7f82c', '0x81c58', '0xadacc', '0xbf7fc', '0xc67a4', '0xd46a8', '0xe01e4'] ...
+        L3: ['0xfe268']
+
+--- 6. JNI RegisterNatives mapping ---
+    no literal JNI table for arm64-v8a (64-bit builds materialise it at runtime)
+    -> use dynamic-lab/07_native_jni_dumper.js to intercept RegisterNatives
+
+    wrote work/out/32_aes_xref_arm64-v8a.json

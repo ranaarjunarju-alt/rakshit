@@ -1,0 +1,12 @@
+======================================================================
+resource id 0x7f160000
+  get_resource err: 'ARSCParser' object has no attribute 'get_resource'
+  config <ARSCResTableConfig ''=(0, 0, 0, 0, 0, 0, 0, 0, 0)> -> value res/Qq.xml
+  --- res/Qq.xml (132 bytes) ---
+b'<full-backup-content/>'
+======================================================================
+resource id 0x7f160001
+  get_resource err: 'ARSCParser' object has no attribute 'get_resource'
+  config <ARSCResTableConfig ''=(0, 0, 0, 0, 0, 0, 0, 0, 0)> -> value res/4j.xml
+  --- res/4j.xml (212 bytes) ---
+b'<data-extraction-rules><cloud-backup/></data-extraction-rules>'

@@ -1,0 +1,20 @@
+APK SIGNING CERTIFICATE (parsed from APK Signature Scheme v2 block, no apksigner/JDK needed)
+  signing block      : magic 'APK Sig Block 42' @ 0x9d1608 ; v2 pair @ 0x9ce620 (u64 len=1514, id=0x7109871a)
+  central directory  : @ 0x9d1618
+  certificate DER    : 864 bytes
+  serial             : 1 (0x1)
+  subject            : Common Name: Maryam Ahmadi, Organizational Unit: Android Developer, Organization: NivaRoid, Locality: Shiraz, State/Province: Fars, Country: IR
+  issuer             : Common Name: Maryam Ahmadi, Organizational Unit: Android Developer, Organization: NivaRoid, Locality: Shiraz, State/Province: Fars, Country: IR
+  self-signed        : True
+  not valid before   : 2023-12-15 17:44:33+00:00
+  not valid after    : 2048-12-08 17:44:33+00:00
+  signature algo     : rsassa_pkcs1v15 (hash sha256)
+  public key         : rsa 2048 bits
+  cert SHA-256       : d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e
+  cert SHA-1         : d6dd5ad1a3e314637a8617cbcf3eb2db8ba6c63f
+  cert MD5           : 8883fa259930537ea2dc867d814b71c9
+  SPKI pin (OkHttp)  : sha256/4xnmMuV3jXL9RYz2ZVYtWWrkkv/6wSuz8SkHAHAV5Uo=
+  AOSP debug key?    : False
+Traceback (most recent call last):
+  File "<stdin>", line 27, in <module>
+TypeError: 'int' object is not iterable

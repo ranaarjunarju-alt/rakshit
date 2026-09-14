@@ -1,0 +1,74 @@
+
+==============================================================================
+RUN capture
+    fn=0x32158  SBOX+RCON    (KEY EXPANSION; validates w3==w4==0x20)
+==============================================================================
+  insns executed   : 89,148
+  exit             : returned  PC=0xffff0000
+  x0               : 0x92f98e17
+  AES table reads  : {'SBOX': 112, 'RCON': 14}
+  rcon reads = 14  =>  key length verdict: AES-256
+  libc calls       : {'memcpy': 2}
+  WRITTEN pages    : [('0x7f3df000', 2716), ('0x8100000', 732)]
+  heap/other writes: ['0x8100000']
+
+=== OBSERVED round keys (from the function's own output) ===
+  RK0  = 1742e227063cdfce2c2b4cbd71f1297a
+  RK1  = 71f1297a71f1297a71f1297a5b7e03ae
+  RK2  = 4c3ce1894a003e47662b72fa42006957
+  RK3  = 33f1402d4200695733f1402d83bda2a3
+  RK4  = cf81432a85817d6de3aa0f9753ac1fdf
+  RK5  = 605d5ff2225d36a511ac7688473f3393
+  RK6  = 88be70b90d3f0dd4ee9502437b8668c5
+  RK7  = 1bdb373739860192282a771ae50bd676
+  RK8  = 6db5a6cf608aab1b8e1fa9586246bbaf
+  RK9  = 799d8c98401b8d0a6831fa102f4e117b
+  RK10 = 42fbb7b422711cafac6eb5f7f3d96ec7
+  RK11 = 8a44e25fca5f6f55a26e954541748e11
+  RK12 = 038f39a521fe250a8d9090fdaeb90e93
+  RK13 = 24fdeccceea283994ccc16dcc75dc5d6
+  RK14 = c4d2fc73e52cd97968bc4984ebdc35cc
+
+  state block @+0x08 = 01000000e2bec16b969f402e117e3de9   (my PT was 6bc1bee22e409f96e93d7e117393172a)
+  -> state is the PT in AES column-major order: False
+
+=== BRUTE FORCE: which 16/24/32-byte window of the binary is the key? ===
+  keylen=32: scanned 1,805,368 windows -> no match
+  keylen=24: scanned 1,805,376 windows -> no match
+  keylen=16: scanned 1,805,384 windows -> no match
+
+  No raw contiguous window of the file expands to RK0.
+  -> the key is COMPUTED at runtime, not stored verbatim. Checking simple transforms...
+  (none of the simple transforms matched either)
+
+=== CONCLUSION ===
+  The routine IS AES-256 key expansion (14 rcon reads, 240-byte schedule).
+  The key it expands is NOT taken from the caller's buffers and is NOT a
+  verbatim byte window of the file -> it is derived at runtime inside the
+  OLLVM-flattened prologue. Recovering it needs the write-trace, below.
+
+=== first 24 writes that build the schedule ===
+  0x8100030 size=4 value=0x0
+  0x8100030 size=4 value=0x27e24217
+  0x8100034 size=4 value=0x0
+  0x8100034 size=4 value=0xcedf3c06
+  0x8100038 size=4 value=0x0
+  0x8100038 size=4 value=0xbd4c2b2c
+  0x810003c size=4 value=0x0
+  0x810003c size=4 value=0x7a29f171
+  0x8100040 size=4 value=0x0
+  0x8100040 size=4 value=0x7a29f171
+  0x8100044 size=4 value=0x0
+  0x8100044 size=4 value=0x7a29f171
+  0x8100048 size=4 value=0x0
+  0x8100048 size=4 value=0x7a29f171
+  0x810004c size=4 value=0x0
+  0x810004c size=4 value=0xae037e5b
+  0x8100050 size=4 value=0x0
+  0x8100050 size=4 value=0x89e13c4c
+  0x8100054 size=4 value=0x0
+  0x8100054 size=4 value=0x473e004a
+  0x8100058 size=4 value=0x0
+  0x8100058 size=4 value=0xfa722b66
+  0x810005c size=4 value=0x0
+  0x810005c size=4 value=0x57690042
