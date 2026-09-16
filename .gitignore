@@ -47,3 +47,8 @@ work/analysis/funcmap.json
 
 # Node (if the Frida lab is ever npm-packaged)
 node_modules/
+work/repack/keys/research_key.pem
+work/repack/unsigned.apk
+.npmtools/
+.venv/
+work/apk/
