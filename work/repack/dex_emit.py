@@ -169,12 +169,15 @@ class Emitter:
         for i in range(ntype):
             desc = [k for k, v in self.tidx.items() if v == i][0]
             struct.pack_into('<I', out, t_ids + 4 * i, self.sidx[desc])
-        # proto ids
+        # proto ids — params type-list offsets are patched AFTER the data
+        # region layout is final (dialect order: code FIRST, then lists).
+        proto_param_lists = []
         for old in range(nproto):
             i = self.pidx[old]
             ret, params, shorty = d.protos[old]
             struct.pack_into('<III', out, p_ids + 12 * i,
-                             self.sidx[shorty], self.tidx[ret], tlist(params))
+                             self.sidx[shorty], self.tidx[ret], 0)
+            proto_param_lists.append((i, params))
         # field ids
         for old in range(nfield):
             i = self.fidx[old]
@@ -189,11 +192,9 @@ class Emitter:
             struct.pack_into('<HHI', out, m_ids + 8 * i,
                              self.tidx[cls], self.pidx[d.proto_map[pk]], self.sidx[name])
 
-        # interface type-lists now, so ALL type_lists stay contiguous
-        for c in d.classes:
-            tlist(c['interfaces'])
-
-        # ---- ALL code items first, contiguous (map reads them sequentially)
+        # ---- Dialect data-region order (matches stock classes.dex):
+        #      code items FIRST at data_off, then type-lists, then
+        #      string-data, then class-data, then the map.
         u = self.unwrap
         code_off_of = {}
         for c in d.classes:
@@ -205,7 +206,26 @@ class Emitter:
                 code_offs.append(co)
                 code_off_of[k] = co
 
-        # ---- then class_data items
+        # ---- ALL type-lists (proto params + interfaces) after code
+        for i, params in proto_param_lists:
+            tlist(params)
+        for c in d.classes:
+            tlist(c['interfaces'])
+        for i, params in proto_param_lists:
+            struct.pack_into('<I', out, p_ids + 12 * i + 8, tlist(params))
+        while (doff + len(data)) % 4:  # keep next region 4-aligned (stock layout)
+            data.append(0)
+
+        # ---- string data
+        sd_offs = []
+        for s in self.strings:
+            sd_offs.append(put(uleb(len(s)) + s.encode('utf-8') + b'\x00', align4=False))
+        while (doff + len(data)) % 4:
+            data.append(0)
+        for i, off in enumerate(sd_offs):
+            struct.pack_into('<I', out, s_ids + 4 * i, off)
+
+        # ---- class_data items (after string data, per stock layout)
         for c in d.classes:
             sf = sorted((self.fidx[d.field_map[u(k)]], u(k), ac) for (k, ac) in c['statics'])
             iff = sorted((self.fidx[d.field_map[u(k)]], u(k), ac) for (k, ac) in c['instances'])
@@ -232,15 +252,6 @@ class Emitter:
                              self.tidx[c['desc']], c['access'],
                              self.tidx[c['super']] if c['super'] else NO_INDEX,
                              tlist(c['interfaces']), NO_INDEX, 0, cdata_offs[i], 0)
-
-        # string data
-        sd_offs = []
-        for s in self.strings:
-            sd_offs.append(put(uleb(len(s)) + s.encode('utf-8') + b'\x00', align4=False))
-        while (doff + len(data)) % 4:
-            data.append(0)
-        for i, off in enumerate(sd_offs):
-            struct.pack_into('<I', out, s_ids + 4 * i, off)
 
         # map
         map_off = doff + len(data)
