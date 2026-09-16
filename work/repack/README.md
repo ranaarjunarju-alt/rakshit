@@ -1,10 +1,21 @@
 # TopFollow v8.4.5-Beta — instrumented repack (no Frida, non-rooted)
 
 **Artifact:** `TopFollow_v845-Beta_RE-logger.apk`
-SHA-256 `a76452bf68b66ef0239bb44768f43910f62e7a023ff121b8ce3f33c3803415c2` (10,373,325 B)
+SHA-256 `786994bbb16cb146f5f0e992d3232246aa86ceacf3fed611820ea50054ca2480` (10,373,342 B)
 Signed: APK Signature Scheme **v2**, RSA-2048 PKCS#1v1.5-SHA256, research cert
 `CN=TopFollow RE Logger / OU=Security Research / O=RE / C=IN`
-(cert SHA-256 `363224ab7b3bc1c77b1b4f0647150fa86a74a418118865be232136d02fb214c3`)
+(cert SHA-256 `348f02d7d9bc76d2dcd76360085e37a67a5d1b84c8f810ca2f5dedcfcc62a774`)
+
+> **Revision 2026-09-16 (dex dialect fix):** the first build's `classes2.dex` was
+> rejected by the device runtime at class-load time — the dex magic was
+> `dex\n035` while this app's runtime dialect requires `dex\n037` (the stock
+> `classes.dex` in the app is `037`; the map list in this dialect uses
+> 12-byte entries `[u32 type][u32 size][u32 off]`, proto items are 12 bytes,
+> type-lists carry a u32 size, and 35C invokes list BOTH registers of a wide
+> argument). The dex emitter was fixed (magic `037`; 12-byte map entries) and
+> the pin blobs were re-patched for the regenerated research key pair, so the
+> **signature changed again — uninstall the previous repack before installing**.
+> All code/tables are otherwise byte-identical to the first build.
 
 Built 100 % offline in pure Python (no Java/apktool/apksigner available in the
 sandbox). Everything below is byte-level verified, nothing assumed.

@@ -256,13 +256,13 @@ class Emitter:
         items.append((0x1000, 1, map_off))
         mb = struct.pack('<I', len(items))
         for ty, sz, off in sorted(items, key=lambda x: x[2]):
-            mb += struct.pack('<HHII', ty, 0, sz, off)
+            mb += struct.pack('<III', ty, sz, off)  # dialect: 12-byte map items [u32 type][u32 size][u32 off]
         data.extend(mb)
 
         file_size = doff + len(data)
         full = bytes(out) + bytes(data)
         hdr_b = struct.pack('<8sI20sIIIIIIIIIIIIIIIIIIII',
-                            b'dex\n035\x00', 0, b'\x00' * 20, file_size, 0x70,
+                            b'dex\n037\x00', 0, b'\x00' * 20, file_size, 0x70,
                             0x12345678, 0, 0, map_off,
                             nstr, s_ids, ntype, t_ids, nproto, p_ids,
                             nfield, fd_ids, nmethod, m_ids, nclass, c_ids,
