@@ -618,7 +618,7 @@ def build():
     a.try_catch_all('s0', 's1', 's1')          # swallow InterruptedException
     a.try_catch_all('loop', 's0', 'loop')
     a.try_catch_all('s1', 'lend', 'loop')
-    cm[M_P_RUN] = (4, 1, 2, a)
+    cm[M_P_RUN] = (4, 1, 3, a)
 
     # ---- query/insert/update/delete/getType stubs
     a = Asm(); a.const4(0, 0); a.ret_object(0)
