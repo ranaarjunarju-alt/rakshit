@@ -83,7 +83,6 @@ class Dex:
 
     def mid(self, cls, name, ret, params):
         self.tid(cls); self.sid(name); self.proto(ret, params)
-        self.sid('(' + ''.join(params) + ')' + ret)   # method descriptor (debug info)
         k = (cls, name, ret, tuple(params))
         if k not in self.method_map:
             self.method_map[k] = len(self.methods)
@@ -119,13 +118,10 @@ class Asm:
         return self
 
     # ---- 11x
-    # DIALLECT: move-result family is 2 units [op][vA u8][unused u8]
-    # (validated by decoding stock code items: 12x/1-unit forms give
-    #  impossible register values in stock, 8-bit forms decode cleanly)
-    def move_result(self, r):         return self.raw([0x0a | r << 8, 0])
-    def move_result_wide(self, r):    return self.raw([0x0b | r << 8, 0])
-    def move_result_object(self, r):  return self.raw([0x0c | r << 8, 0])
-    def move_exception(self, r):      return self.raw([0x0d | r << 8, 0])
+    def move_result(self, r):         return self.raw([0x0a | r << 8])
+    def move_result_wide(self, r):    return self.raw([0x0b | r << 8])
+    def move_result_object(self, r):  return self.raw([0x0c | r << 8])
+    def move_exception(self, r):      return self.raw([0x0d | r << 8])
     def ret_void(self):               return self.raw([0x0e])
     def ret(self, r):                 return self.raw([0x0f | r << 8])
     def ret_wide(self, r):            return self.raw([0x10 | r << 8])
@@ -136,9 +132,8 @@ class Asm:
 
     # ---- 12x
     def move(self, a, b):             return self.raw([0x01 | a << 8 | b << 12])
-    # DIALLECT: move-wide/move-object are 2 units [op][vA u8][vB u8]
-    def move_wide(self, a, b):        return self.raw([0x02 | a << 8, b])
-    def move_object(self, a, b):      return self.raw([0x03 | a << 8, b])
+    def move_wide(self, a, b):        return self.raw([0x02 | a << 8 | b << 12])
+    def move_object(self, a, b):      return self.raw([0x03 | a << 8 | b << 12])
     def array_length(self, a, b):     return self.raw([0x21 | a << 8 | b << 12])
     def cmp_long(self, a, b, c):      return self.raw([0x31 | a << 8, b | c << 8])
     def add_long_2(self, a, b):       return self.raw([0xbb | a << 8 | b << 12])
@@ -204,10 +199,7 @@ class Asm:
         return self
 
     def _inv_range(self, op, mref, start, cnt):
-        # DIALLECT 3rc: [op][cnt | start<<4][mi16][0] — byte1 low nibble = count,
-        # high nibble = start (validated on stock: standard start|cnt reading
-        # gives cnt=0 in 3 of 4 samples; cnt|start reading is consistent)
-        self.raw([op | cnt << 8 | start << 12, ('m', mref), 0])
+        self.raw([op | cnt << 12, ('m', mref), start])
         return self
 
     def inv_virtual(self, mref, *regs):   return self._inv(0x6e, mref, regs)

@@ -196,11 +196,10 @@ def build():
     a = Asm()
     a.inv_direct(M_OBJ_I, 0)
     a.ret_void()
-    cm[M_RTINIT] = (1, 1, 0, a)
+    cm[M_RTINIT] = (1, 1, 1, a)
 
     # ---- log(String level, String tag, String msg)   regs 15, params @12..14
     a = Asm()
-    a.move(12, 0); a.move(13, 1); a.move(14, 2)   # params @v0-v2 -> v12-v14
     a.L('t0')
     a.sget_object(0, F_OUT)
     a.if_eqz(0, 'end')
@@ -234,7 +233,10 @@ def build():
     a.inv_virtual(M_OS_C, 10)
     a.L('end')
     a.ret_void()
-    cm[M_LOG] = (15, 3, 0, a)
+    a.L('hdl')
+    a.ret_void()
+    a.try_catch_all('t0', 'end', 'hdl')
+    cm[M_LOG] = (15, 3, 3, a)
 
     # ---- fmtNow()   regs 6
     a = Asm()
@@ -250,11 +252,14 @@ def build():
     a.move_result_object(1)
     a.L('ok')
     a.ret_object(1)
-    cm[M_FMTNOW] = (6, 0, 1, a)
+    a.L('hdl')
+    cstr(a, 0, '00-00 00:00:00.000')
+    a.ret_object(0)
+    a.try_catch_all('t0', 'ok', 'hdl')
+    cm[M_FMTNOW] = (6, 0, 3, a)
 
     # ---- init(Context)   regs 5, ctx @v4
     a = Asm()
-    a.move(4, 0)                                   # ctx param @v0 -> v4
     a.L('t0')
     a.sget_object(0, F_OUT)
     a.if_nez(0, 'done')
@@ -282,11 +287,13 @@ def build():
     log3(a, 2, 'I', 'RTLog', 1)
     a.L('done')
     a.ret_void()
-    cm[M_INIT] = (5, 1, 0, a)
+    a.L('hdl')
+    a.ret_void()
+    a.try_catch_all('t0', 'done', 'hdl')
+    cm[M_INIT] = (5, 1, 3, a)
 
-    # ---- boot(Context)   regs 8, ctx @v7 (param arrives @v0 — copy)
+    # ---- boot(Context)   regs 8, ctx @v7
     a = Asm()
-    a.move(7, 0)
     a.L('t0')
     log3_ = None
     cstr(a, 0, 'I'); cstr(a, 1, 'RTLog')
@@ -376,11 +383,13 @@ def build():
     a.move_result_object(5)
     a.inv_static(M_LOG, 0, 1, 5)
     a.ret_void()
-    cm[M_BOOT] = (8, 1, 0, a)
+    a.L('hdl')
+    a.ret_void()
+    a.try_catch_all('t0', 'hdl', 'hdl')
+    cm[M_BOOT] = (8, 1, 3, a)
 
-    # ---- requestAllFiles(Context)   regs 5, ctx @v4 (param arrives @v0 — copy)
+    # ---- requestAllFiles(Context)   regs 5, ctx @v4
     a = Asm()
-    a.move(4, 0)
     a.L('t0')
     a.sget(0, F_SDK)
     a.const16(1, 30)
@@ -397,7 +406,11 @@ def build():
     loglit(a, 1, 'I', 'RTLog', 'requested all-files-access (settings page opened)')
     a.L('end')
     a.ret_void()
-    cm[M_REQALL] = (5, 1, 0, a)
+    a.L('hdl')
+    loglit(a, 0, 'W', 'RTLog', 'all-files-access request failed')
+    a.ret_void()
+    a.try_catch_all('t0', 'end', 'hdl')
+    cm[M_REQALL] = (5, 1, 3, a)
 
     # ---- installCrashHandlers()   regs 3
     a = Asm()
@@ -409,11 +422,13 @@ def build():
     a.inv_static(M_TH_SD, 1)
     loglit(a, 0, 'I', 'RTLog', 'crash handler installed')
     a.ret_void()
-    cm[M_CRASH] = (3, 0, 0, a)
+    a.L('hdl')
+    a.ret_void()
+    a.try_catch_all('t0', 'hdl', 'hdl')
+    cm[M_CRASH] = (3, 0, 3, a)
 
-    # ---- j(String[])   regs 5, arr @v4 (param arrives @v0 — copy)
+    # ---- j(String[])   regs 5, arr @v4
     a = Asm()
-    a.move(4, 0)
     a.L('t0')
     a.if_eqz(4, 'lnull')
     a.array_length(0, 4)
@@ -434,7 +449,11 @@ def build():
     a.L('lnull')
     cstr(a, 0, '(null)')
     a.ret_object(0)
-    cm[M_J] = (5, 1, 1, a)
+    a.L('hdl')
+    cstr(a, 0, '(join-err)')
+    a.ret_object(0)
+    a.try_catch_all('t0', 'done', 'hdl')
+    cm[M_J] = (5, 1, 2, a)
 
     # ---- logTraffic()   regs 6
     a = Asm()
@@ -462,7 +481,10 @@ def build():
     a.move_result_object(0)
     log3(a, 1, 'I', 'NET', 0)
     a.ret_void()
-    cm[M_NET] = (6, 0, 0, a)
+    a.L('hdl')
+    a.ret_void()
+    a.try_catch_all('t0', 'hdl', 'hdl')
+    cm[M_NET] = (6, 0, 3, a)
 
     # ---- dbProbe()   regs 12
     a = Asm()
@@ -541,42 +563,50 @@ def build():
     a.inv_virtual(M_SQL_CL, 5)
     a.L('end')
     a.ret_void()
-    cm[M_DBPROBE] = (12, 0, 0, a)
+    a.L('hdl')
+    loglit(a, 0, 'W', 'DB', 'probe failed')
+    a.ret_void()
+    a.try_catch_all('t0', 'end', 'hdl')
+    cm[M_DBPROBE] = (12, 0, 3, a)
 
     # ===================================================== RTLogProvider
     a = Asm()
     a.inv_direct(M_CP_I, 0)
     a.ret_void()
-    cm[M_P_I] = (1, 1, 0, a)
+    cm[M_P_I] = (1, 1, 1, a)
 
-    # ---- onCreate   regs 4, this @v3   (NO try: only thread start;
-    #      ContentProvider.onCreate is abstract — no super call)
+    # ---- onCreate   regs 4, this @v3
     a = Asm()
-    a.inv_virtual(M_CP_CTX, 0)
-    a.move_result_object(0)
-    a.new_instance(1, THREAD)
-    a.inv_direct(M_TH_I, 1, 0)                 # Thread(this /* Runnable */)
-    cstr(a, 2, 'RTLog-bg')
-    a.inv_virtual(M_TH_SN, 1, 2)
-    a.inv_virtual(M_TH_ST, 1)
-    a.const4(0, 1)
-    a.ret(0)
-    cm[M_P_CR] = (4, 1, 1, a)
-
-    # ---- run   regs 4, this @v3   (NO try: thread IS the exception
-    #      boundary — app survives if this thread dies, logcat shows why)
-    a = Asm()
-    a.inv_virtual(M_CP_CTX, 0)
+    a.L('t0')
+    a.inv_virtual(M_CP_CTX, 3)
     a.move_result_object(0)
     a.inv_static(M_INIT, 0)
     a.inv_static(M_BOOT, 0)
     a.inv_static(M_REQALL, 0)
     a.inv_static(M_CRASH)
+    a.new_instance(1, THREAD)
+    a.inv_direct(M_TH_I, 1, 3)                 # Thread(this /* Runnable */)
+    cstr(a, 2, 'RTLog-bg')
+    a.inv_virtual(M_TH_SN, 1, 2)
+    a.inv_virtual(M_TH_ST, 1)
+    a.const4(0, 1)
+    a.L('ok')
+    a.ret(0)
+    a.L('hdl')
+    a.const4(0, 1)
+    a.ret(0)
+    a.try_catch_all('t0', 'ok', 'hdl')
+    cm[M_P_CR] = (4, 1, 2, a)
+
+    # ---- run   regs 4, this @v3
+    a = Asm()
     loglit(a, 0, 'I', 'RTLog', 'background thread up')
     a.const4(0, 0)                             # tick counter
     a.L('loop')
     a.constw16(1, 5000)
+    a.L('s0')
     a.inv_static(M_TH_SL, 1, 2)                # sleep(J): regs {v1/v2} wide
+    a.L('s1')
     a.inv_static(M_NET)
     a.add_int_lit8(0, 0, 1)
     a.const16(1, 12)
@@ -585,31 +615,32 @@ def build():
     a.inv_static(M_DBPROBE)
     a.goto('loop')
     a.L('lend')
-    a.ret_void()
-    cm[M_P_RUN] = (4, 1, 0, a)
+    a.try_catch_all('s0', 's1', 's1')          # swallow InterruptedException
+    a.try_catch_all('loop', 's0', 'loop')
+    a.try_catch_all('s1', 'lend', 'loop')
+    cm[M_P_RUN] = (4, 1, 3, a)
 
     # ---- query/insert/update/delete/getType stubs
     a = Asm(); a.const4(0, 0); a.ret_object(0)
-    cm[M_P_Q] = (7, 6, 1, a)
+    cm[M_P_Q] = (7, 6, 0, a)
     a = Asm(); a.const4(0, 0); a.ret_object(0)
-    cm[M_P_INS] = (4, 3, 1, a)
+    cm[M_P_INS] = (4, 3, 0, a)
     a = Asm(); a.const4(0, 0); a.ret(0)
-    cm[M_P_UPD] = (6, 5, 1, a)
+    cm[M_P_UPD] = (6, 5, 0, a)
     a = Asm(); a.const4(0, 0); a.ret(0)
-    cm[M_P_DEL] = (5, 4, 1, a)
+    cm[M_P_DEL] = (5, 4, 0, a)
     a = Asm(); a.const4(0, 0); a.ret_object(0)
-    cm[M_P_TYP] = (3, 2, 1, a)
+    cm[M_P_TYP] = (3, 2, 0, a)
 
     # ===================================================== CrashH
     a = Asm()
     a.inv_direct(M_OBJ_I, 0)
     a.iput_object(1, 0, F_PREV)
     a.ret_void()
-    cm[M_H_I] = (2, 2, 0, a)
+    cm[M_H_I] = (2, 2, 1, a)
 
     # ---- uncaughtException(Thread, Throwable)  regs 6, this v3, p0 v4, p1 v5
     a = Asm()
-    a.move(3, 0); a.move(4, 1); a.move(5, 2)   # params @v0-v2 -> v3-v5
     a.L('t0')
     cstr(a, 0, 'FATAL')
     sb_new(a, 1)
@@ -631,7 +662,10 @@ def build():
     a.inv_interface(M_UEH_U, 0, 4, 5)
     a.L('end')
     a.ret_void()
-    cm[M_H_U] = (6, 3, 0, a)
+    a.L('hdl')
+    a.goto('chain')
+    a.try_catch_all('t0', 'chain', 'hdl')
+    cm[M_H_U] = (6, 3, 3, a)
 
     # ===================================================== classes
     d.add_class(R, 0x21, O, [],
