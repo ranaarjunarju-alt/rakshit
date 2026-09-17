@@ -96,13 +96,14 @@ class Emitter:
                 elif k == 'm':
                     units[p + j] = self.midx[self.dex.method_map[v]]
                 elif k == 'rel':
-                    # standard 21t/22t: B = target - (insn_start + insn_size)
-                    off = labels[t[1]] - (p + len(pay))
+                    # ROM dialect branch convention A (stock-walk validated):
+                    # target = insn unit start + off  (NOT next-insn + off)
+                    off = labels[t[1]] - p
                     assert -32768 <= off <= 32767, t
                     units[p + j] = off & 0xFFFF
                 elif k == 'g8':
-                    # standard 10t: B = target - (insn_start + insn_size)
-                    off = labels[t[1]] - (p + len(pay))
+                    # ROM dialect goto/8: target = insn unit start + off
+                    off = labels[t[1]] - p
                     assert -128 <= off <= 127, (t, off)
                     units[p + j] = 0x28 | (off & 0xFF) << 8
                 else:
