@@ -182,18 +182,23 @@ def write_apk(entries, out_path):
         # alignment: pad inside the local-header extra field so that the FILE
         # DATA starts on a multiple of `align`. This is exactly what
         # `zipalign -p 4` does.
+        # .so entries: 4096 (extractNativeLibs path). Every OTHER STORED entry
+        # (in particular resources.arsc): 4 bytes — PMS rejects targetSdk 30+
+        # APKs whose resources.arsc is not stored + 4-byte aligned
+        # (install failure -124).
         extra = b''
-        if e.align:
+        if e.align or e.method == 0:
+            al = e.align or 4
             hdr = 30 + len(name_b)
-            need = (-(offset + hdr)) % e.align
+            need = (-(offset + hdr)) % al
             if need:
                 # 0xd935 = "alignment" extra field id used by zipalign
                 pad = need - 4
                 if pad < 0:
-                    pad += e.align
+                    pad += al
                     need = pad + 4
                 extra = struct.pack('<HH', 0xd935, pad) + b'\x00' * pad
-            assert (offset + 30 + len(name_b) + len(extra)) % e.align == 0, \
+            assert (offset + 30 + len(name_b) + len(extra)) % al == 0, \
                 'alignment failed for ' + e.name
 
         out += struct.pack('<IHHHHHIIIHH', LFH_SIG, 20, e.flags, e.method,
