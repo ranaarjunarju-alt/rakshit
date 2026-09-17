@@ -132,14 +132,14 @@ class Asm:
 
     # ---- 12x
     def move(self, a, b):             return self.raw([0x01 | a << 8 | b << 12])
-    def move_wide(self, a, b):        return self.raw([0x02 | a << 8 | b << 12])
-    def move_object(self, a, b):      return self.raw([0x03 | a << 8 | b << 12])
+    def move_wide(self, a, b):        return self.raw([0x04 | a << 8 | b << 12])
+    def move_object(self, a, b):      return self.raw([0x07 | a << 8 | b << 12])
     def array_length(self, a, b):     return self.raw([0x21 | a << 8 | b << 12])
     def cmp_long(self, a, b, c):      return self.raw([0x31 | a << 8, b | c << 8])
     def add_long_2(self, a, b):       return self.raw([0xbb | a << 8 | b << 12])
     def sub_long_2(self, a, b):       return self.raw([0xbc | a << 8 | b << 12])
     def int_to_long(self, a, b):      return self.raw([0x81 | a << 8 | b << 12])
-    def neg_long(self, a, b):         return self.raw([0x7e | a << 8 | b << 12])
+    def neg_long(self, a, b):         return self.raw([0x7d | a << 8 | b << 12])
 
     # ---- 11n / 21s / 31i / wide
     def const4(self, r, v):           return self.raw([0x12 | r << 8 | (v & 0xF) << 12])

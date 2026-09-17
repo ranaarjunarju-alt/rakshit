@@ -96,11 +96,13 @@ class Emitter:
                 elif k == 'm':
                     units[p + j] = self.midx[self.dex.method_map[v]]
                 elif k == 'rel':
-                    off = labels[t[1]] - (p + j)
+                    # standard 21t/22t: B = target - (insn_start + insn_size)
+                    off = labels[t[1]] - (p + len(pay))
                     assert -32768 <= off <= 32767, t
                     units[p + j] = off & 0xFFFF
                 elif k == 'g8':
-                    off = labels[t[1]] - (p + j)
+                    # standard 10t: B = target - (insn_start + insn_size)
+                    off = labels[t[1]] - (p + len(pay))
                     assert -128 <= off <= 127, (t, off)
                     units[p + j] = 0x28 | (off & 0xFF) << 8
                 else:
@@ -246,12 +248,15 @@ class Emitter:
                 cd += uleb(gi - prev) + uleb(ac) + uleb(code_off_of[k]); prev = gi
             cdata_offs.append(put(cd, align4=False))
 
-        # class defs
+        # class defs (standard 32-byte class_def_item, 035-038 layout:
+        # [class_idx][access][super][interfaces_off][source_file_idx]
+        # [annotations_off][class_data_off][static_values_off])
         for i, c in enumerate(d.classes):
             struct.pack_into('<IIIIIIII', out, c_ids + 32 * i,
                              self.tidx[c['desc']], c['access'],
                              self.tidx[c['super']] if c['super'] else NO_INDEX,
-                             tlist(c['interfaces']), NO_INDEX, 0, cdata_offs[i], 0)
+                             tlist(c['interfaces']), NO_INDEX, 0,
+                             cdata_offs[i], 0)
 
         # map
         map_off = doff + len(data)
@@ -267,13 +272,16 @@ class Emitter:
         items.append((0x1000, 1, map_off))
         mb = struct.pack('<I', len(items))
         for ty, sz, off in sorted(items, key=lambda x: x[2]):
-            mb += struct.pack('<III', ty, sz, off)  # dialect: 12-byte map items [u32 type][u32 size][u32 off]
+            mb += struct.pack('<HHII', ty, 0, sz, off)  # standard 8-byte map_item: [u16 type][u16 unused][u32 size][u32 offset]
         data.extend(mb)
 
         file_size = doff + len(data)
         full = bytes(out) + bytes(data)
+        # standard 112-byte header:
+        # magic, checksum, sha1, file_size, header_size(0x70), endian_tag,
+        # link_size=0, link_off=0, map_off, 6x (size,off), data_size, data_off
         hdr_b = struct.pack('<8sI20sIIIIIIIIIIIIIIIIIIII',
-                            b'dex\n037\x00', 0, b'\x00' * 20, file_size, 0x70,
+                            b'dex\n035\x00', 0, b'\x00' * 20, file_size, 0x70,
                             0x12345678, 0, 0, map_off,
                             nstr, s_ids, ntype, t_ids, nproto, p_ids,
                             nfield, fd_ids, nmethod, m_ids, nclass, c_ids,
