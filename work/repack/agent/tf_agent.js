@@ -416,7 +416,7 @@ const B64_BLOBS = {
 };
 
 /* The signature pin, so a captured digest can be labelled on sight. */
-const SIGNATURE_PIN_SHA256 = 'a06725e83277def99982a3aa3c1daee7acb4bca0afe6920d717c96a9b62a7375'; /* RE-KEYED build: pin blob at 0x15084 holds THIS (our v2 cert) */
+const SIGNATURE_PIN_SHA256 = 'a2903ea6ab2f95ef7aafb6b3b0964fc2fad6099822eac54f9c325458090f75f2'; /* RE-KEYED build: pin blob at 0x15084 holds THIS (our v2 cert) */
 
 /* ===================================================================== *
  * 2. SMALL UTILITIES
