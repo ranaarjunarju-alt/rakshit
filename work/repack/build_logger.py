@@ -125,6 +125,7 @@ def build():
     M_TH_GD   = d.mid(THREAD, 'getDefaultUncaughtExceptionHandler', UEH, [])
     M_TH_SD   = d.mid(THREAD, 'setDefaultUncaughtExceptionHandler', 'V', [UEH])
     M_LOG_STK = d.mid(LOG, 'getStackTraceString', STR, [THROW])
+    M_SYS_LL  = d.mid(JL + 'System;', 'loadLibrary', 'V', [STR])
     M_UID     = d.mid(PROC, 'myUid', 'I', [])
     M_PID     = d.mid(PROC, 'myPid', 'I', [])
     M_TS_TX   = d.mid(TSTATS, 'getUidTxBytes', 'J', ['I'])
@@ -576,8 +577,17 @@ def build():
     cm[M_P_I] = (1, 1, 1, a)
 
     # ---- onCreate   regs 4, this @v3
+    # Gadget loads HERE (provider runs after MyApp.<clinit> has already
+    # loadLibrary("topfollow") and passed its one-shot JNI_OnLoad checks
+    # on a clean environment — exactly the proven state — but BEFORE any
+    # Activity/network code, so every later detection call hits the stubs
+    # and every request passes under the hooks).
     a = Asm()
     a.L('t0')
+    a.L('g0')
+    cstr(a, 0, 'gadget')
+    a.inv_static(M_SYS_LL, 0)                  # System.loadLibrary("gadget")
+    a.L('g1')
     a.inv_virtual(M_CP_CTX, 3)
     a.move_result_object(0)
     a.inv_static(M_INIT, 0)
@@ -595,7 +605,12 @@ def build():
     a.L('hdl')
     a.const4(0, 1)
     a.ret(0)
+    a.L('ghdl')
+    loglit(a, 0, 'W', 'RTLog', 'gadget load failed - capture disabled')
+    a.const4(0, 1)
+    a.ret(0)
     a.try_catch_all('t0', 'ok', 'hdl')
+    a.try_catch_all('g0', 'g1', 'ghdl')
     cm[M_P_CR] = (4, 1, 2, a)
 
     # ---- run   regs 4, this @v3
