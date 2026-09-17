@@ -96,11 +96,14 @@ class Emitter:
                 elif k == 'm':
                     units[p + j] = self.midx[self.dex.method_map[v]]
                 elif k == 'rel':
-                    off = labels[t[1]] - (p + j)
+                    # Dalvik 11n: target = insn START + off (verified against
+                    # stock: 2839 A-only vs 184 B-only branch targets)
+                    off = labels[t[1]] - p
                     assert -32768 <= off <= 32767, t
                     units[p + j] = off & 0xFFFF
                 elif k == 'g8':
-                    off = labels[t[1]] - (p + j)
+                    # goto/8 (1 unit): target = insn start + off
+                    off = labels[t[1]] - p
                     assert -128 <= off <= 127, (t, off)
                     units[p + j] = 0x28 | (off & 0xFF) << 8
                 else:
@@ -197,6 +200,7 @@ class Emitter:
         #      string-data, then class-data, then the map.
         u = self.unwrap
         code_off_of = {}
+        code_dbg = []
         for c in d.classes:
             for (k, ac) in list(c['directs']) + list(c['virtuals']):
                 k = u(k)
@@ -205,8 +209,22 @@ class Emitter:
                                      len(insns) // 2) + insns + tries)
                 code_offs.append(co)
                 code_off_of[k] = co
+                code_dbg.append((k, co))
 
-        # ---- ALL type-lists (proto params + interfaces) after code
+        # ---- debug items (minimal but well-formed; stock dbg is never 0 —
+        #      placed after code, before type-lists, per stock region order)
+        dbg_off_of = {}
+        for (k, co) in code_dbg:
+            (mcls, mname, mret, mparams) = k
+            body = (uleb(1) + b'\x00'                      # seq=1, DW_END
+                    + uleb(self.sidx[mname])
+                    + uleb(self.sidx['(' + ''.join(mparams) + ')' + mret])
+                    + uleb(0))                              # source_file=0
+            dbg_off_of[k] = put(body, align4=False)
+        for (k, co) in code_dbg:
+            struct.pack_into('<I', data, co - data0 + 8, dbg_off_of[k])
+
+        # ---- ALL type-lists (proto params + interfaces) after debug
         for i, params in proto_param_lists:
             tlist(params)
         for c in d.classes:
@@ -232,16 +250,15 @@ class Emitter:
             dm = sorted((self.midx[d.method_map[u(k)]], u(k), ac) for (k, ac) in c['directs'])
             vm = sorted((self.midx[d.method_map[u(k)]], u(k), ac) for (k, ac) in c['virtuals'])
             cd = uleb(len(sf)) + uleb(len(iff)) + uleb(len(dm)) + uleb(len(vm))
+            # standard DEX: one continuous diff chain across all four sections
+            # (first iff diff from last sf, first dm from last iff, first vm from last dm)
             prev = 0
             for gi, k, ac in sf:
                 cd += uleb(gi - prev) + uleb(ac); prev = gi
-            prev = 0
             for gi, k, ac in iff:
                 cd += uleb(gi - prev) + uleb(ac); prev = gi
-            prev = 0
             for gi, k, ac in dm:
                 cd += uleb(gi - prev) + uleb(ac) + uleb(code_off_of[k]); prev = gi
-            prev = 0
             for gi, k, ac in vm:
                 cd += uleb(gi - prev) + uleb(ac) + uleb(code_off_of[k]); prev = gi
             cdata_offs.append(put(cd, align4=False))
@@ -260,10 +277,12 @@ class Emitter:
                  (0x0005, nmethod, m_ids), (0x0006, nclass, c_ids)]
         if type_list_offs:
             items.append((0x1001, len(type_list_offs), min(type_list_offs.values())))
-        items.append((0x2000, nclass, min(cdata_offs)))
+        items.append((0x2003, nclass, min(cdata_offs)))    # CLASS_DATA
         if code_offs:
-            items.append((0x2001, len(code_offs), min(code_offs)))
-        items.append((0x2002, nstr, sd_offs[0]))
+            items.append((0x2000, len(code_offs), min(code_offs)))  # CODE
+        items.append((0x2001, nstr, sd_offs[0]))           # STRING_DATA
+        if dbg_off_of:
+            items.append((0x2002, len(dbg_off_of), min(dbg_off_of.values())))  # DEBUG
         items.append((0x1000, 1, map_off))
         mb = struct.pack('<I', len(items))
         for ty, sz, off in sorted(items, key=lambda x: x[2]):

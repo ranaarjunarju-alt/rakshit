@@ -52,3 +52,4 @@ work/repack/unsigned.apk
 .npmtools/
 .venv/
 work/apk/
+work/repack/keys/_params.json
