@@ -616,7 +616,13 @@ def build():
     # and its handler (ghdl) does the same return, so behavior is unchanged.
     a.try_catch_all('g1', 'ok', 'hdl')
     a.try_catch_all('g0', 'g1', 'ghdl')
-    cm[M_P_CR] = (4, 1, 2, a)
+    # ROM dialect verifier rule (proven on-device, build #4 crash log 09-18
+    # 15:17: "onCreate(): [0x2C] invalid argument count (3) exceeds outsSize
+    # (2)"): a non-range invoke's argument count must be <= the method's
+    # outs_size. The ghdl block calls RTLog.log(v0,v1,v2) (n=3), so onCreate
+    # needs outs=3. (f346842 got away with (4,1,2) only because its onCreate
+    # never had an n=3 invoke.) regs 4 = ins 1 + outs 3.
+    cm[M_P_CR] = (4, 1, 3, a)
 
     # ---- run   regs 4, this @v3
     a = Asm()
