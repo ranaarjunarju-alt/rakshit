@@ -553,6 +553,7 @@ function keyLabel(hexStr) {
 
 const SINK = {
     fd: -1,
+    fds: [],        /* every writable sink, mirrored (build #7) */
     path: null,
     tried: [],
     ring: [],
@@ -589,54 +590,65 @@ function sinkOpen(path, truncate) {
     const flags = O_WRONLY | O_CREAT | O_APPEND | (truncate ? O_TRUNC : 0);
     const fd = _open(buf, flags, 0x1a4).valueOf();   /* 0644 */
     if (fd < 0) { SINK.tried.push([path, 'open() -> ' + fd]); return -1; }
-    SINK.fd = fd;
-    SINK.path = path;
+    if (SINK.fds.some(f => f.path === path)) { try { _close(fd); } catch (e) {} return -1; }
+    SINK.fds.push({ fd: fd, path: path });           /* build #7: mirror, don't stop at first */
+    if (SINK.fd < 0) { SINK.fd = fd; SINK.path = path; }
     return fd;
 }
 
 function sinkInit() {
     if (!sinkBindLibc()) {
         SINK.tried.push(['<libc>', 'open/write unavailable — ring-buffer-only capture']);
+        try { console.log('[tf-agent] SINK DIAG: libc bind FAILED — ring-buffer-only'); } catch (e) {}
         return;
     }
-    /* Prefer the app-writable dir; fall back through the list. */
+    /* Build #7: open EVERY writable candidate (mirror), not just the first.
+       The internal files dir goes first: it is the ONE path the app can always
+       write (its own private dir, no permission, present from process start),
+       so the capture works even when every visible path fails. The visible
+       paths (/sdcard, the external files dir) are still opened as mirrors so
+       the user can `ls`/`cat` the capture without root. */
     const candidates = [];
-    if (CFG.path) candidates.push(CFG.path);
-    CFG.pathFallbacks.forEach(p => { if (candidates.indexOf(p) < 0) candidates.push(p); });
+    const addc = (p) => { if (p && candidates.indexOf(p) < 0) candidates.push(p); };
+    addc('/data/data/' + PKG + '/files/topfollow_capture.jsonl');
+    if (CFG.path) addc(CFG.path);
+    CFG.pathFallbacks.forEach(addc);
     try {
         if (Java.available) {
             Java.perform(() => {
                 try {
                     const AT = Java.use('android.app.ActivityThread');
                     const ctx = AT.currentApplication().getApplicationContext();
-                    const f = Java.use('java.io.File');
                     const dir = ctx.getExternalFilesDir(null);
-                    if (dir !== null) {
-                        candidates.unshift(dir.getAbsolutePath() + '/topfollow_capture.jsonl');
-                    }
-                    candidates.push(ctx.getFilesDir().getAbsolutePath() + '/topfollow_capture.jsonl');
+                    if (dir !== null) addc(dir.getAbsolutePath() + '/topfollow_capture.jsonl');
+                    addc(ctx.getFilesDir().getAbsolutePath() + '/topfollow_capture.jsonl');
                 } catch (e) { /* no context yet — the static list is enough */ }
             });
         }
     } catch (e) {}
-    for (const p of candidates) {
-        if (sinkOpen(p, false) >= 0) break;
-    }
+    for (const p of candidates) sinkOpen(p, false);
     if (SINK.fd < 0) {
         sinkLog('warn', { what: 'no writable capture path — events stay in the ring only',
                           tried: SINK.tried });
     }
+    try {
+        console.log('[tf-agent] SINK DIAG: open=' + JSON.stringify(SINK.fds.map(f => f.path))
+                  + ' failures=' + JSON.stringify(SINK.tried));
+    } catch (e) {}
 }
 
 function sinkWrite(line) {
-    if (SINK.fd < 0) return false;
+    if (!SINK.fds.length) return false;
+    let ok = false;
     try {
         const buf = Memory.allocUtf8String(line);
-        const n = _write(SINK.fd, buf, line.length).valueOf();
-        if (n < 0) { SINK.writeErrors++; return false; }
-        SINK.bytesWritten += n;
-        return true;
-    } catch (e) { SINK.writeErrors++; return false; }
+        for (const f of SINK.fds) {
+            try { if (_write(f.fd, buf, line.length).valueOf() >= 0) ok = true; else SINK.writeErrors++; }
+            catch (e) { SINK.writeErrors++; }
+        }
+        if (ok) SINK.bytesWritten += line.length;
+    } catch (e) { SINK.writeErrors++; }
+    return ok;
 }
 
 function sinkClose() { if (_close && SINK.fd >= 0) { try { _close(SINK.fd); } catch (e) {} SINK.fd = -1; } }
@@ -2700,6 +2712,14 @@ function install() {
         tip: BYPASS_ON() ? 'rpc.exports.stats() then rpc.exports.events("bypass", 50)'
                        : 'rpc.exports.stats() then rpc.exports.keys() then rpc.exports.net(20)'
     });
+
+    /* Build #7: host-console proof that install() completed (module found,
+       calibrated, hooks armed) — visible in logcat with the "Frida" tag. */
+    try {
+        console.log('[tf-agent] capture ready: calOk=' + cal.ok
+                  + ' jniSlots=' + (cal.jniGood === null ? '?' : cal.jniGood + '/22')
+                  + ' sinks=' + JSON.stringify(SINK.fds.map(f => f.path)));
+    } catch (e) {}
 }
 
 sinkInit();
@@ -2712,6 +2732,16 @@ emit('boot', {
     sinkPath: SINK.path, sinkTried: SINK.tried,
     mode: 'CAPTURE ONLY — no bypass, no spoofing, no hiding, no patching'
 });
+
+/* Build #7: one line to the host console (logcat "Frida" tag) as PROOF that
+   the script executed at all. If this line never appears in logcat, the
+   script did not run — sink problems and script problems are then separated
+   without root access. */
+try {
+    console.log('[tf-agent] script started, pid=' + Process.id
+              + ' java=' + Java.available
+              + ' sinks=' + JSON.stringify(SINK.fds.map(f => f.path)));
+} catch (e) {}
 
 /* Set TOPFOLLOW_CAPTURE_NO_AUTOBOOT=1 to define everything without arming
    (that is what a Node test harness wants). */
