@@ -609,7 +609,12 @@ def build():
     loglit(a, 0, 'W', 'RTLog', 'gadget load failed - capture disabled')
     a.const4(0, 1)
     a.ret(0)
-    a.try_catch_all('t0', 'ok', 'hdl')
+    # NOTE: try1 starts at g1 (NOT t0). t0 and g0 sit at the same code offset
+    # (0); two try_items with the same start_addr make the ROM verifier fail
+    # the whole dex ("Out-of_order try_item with start_addr: 0" -> provider
+    # ClassNotFoundException -> launch crash). [t0,g1) is try2's territory
+    # and its handler (ghdl) does the same return, so behavior is unchanged.
+    a.try_catch_all('g1', 'ok', 'hdl')
     a.try_catch_all('g0', 'g1', 'ghdl')
     cm[M_P_CR] = (4, 1, 2, a)
 
