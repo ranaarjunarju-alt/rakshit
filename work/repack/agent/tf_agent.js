@@ -155,7 +155,8 @@ const DEFAULT_CFG = {
                0x172460/0x173c40 #253/#254 — TLS pinning; that blocks a MITM proxy,
                         not app startup, so it stays out of the default set      */
         },
-        spoofSignature: false,  /* OFF for THIS build: pin blob was re-keyed to our v2 cert, so PackageManager must return the REAL (our) cert */
+        spoofSignature: false,  /* OFF for THIS build: pin blob was re-keyed to our v2 cert, so
+                                   PackageManager must return the REAL (our) cert —
                                    PackageManager.getPackageInfo — the repacked
                                    APK then passes func#226/#73 with no native
                                    patch at all (§6.5, §10 item 31)            */
