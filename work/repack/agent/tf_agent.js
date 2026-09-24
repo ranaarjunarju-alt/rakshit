@@ -67,6 +67,22 @@
  *       find('order_id')           grep the whole capture
  *       tail(20)                   last 20 events of any kind
  *       flush()                    force the ring out to the JSONL file
+ *
+ *   BUILD LOG (embedded builds)
+ *   ---------------------------
+ *   #7 (9bc281e): dual-sink mirror + console.log diagnostics. Device result:
+ *       diagnostics invisible — the 17.18.0 gadget routes console.log to
+ *       process stdout (gadget.vala try_handle_log_message -> print()), which
+ *       an embedded app process never hooks to logcat. No capture file:
+ *       sinkInit ran once on the gadget thread, before the Application (and
+ *       often before /data/data/<pkg>/files even exists), every open()
+ *       failed, and nothing ever retried.
+ *   #8: 1) jstatus() — milestone lines written with the app's own Java
+ *       (java.io.FileWriter) to tf_agent_status.txt in the internal +
+ *       external files dirs: the only diagnostic channel visible without
+ *       root. 2) sink retry — candidates are re-collected (Java dirs create
+ *       themselves) and re-opened every 1.5 s until one succeeds (max 6 min).
+ *       3) first detect/bypass event mirrored to the status file.
  * ===================================================================== */
 'use strict';
 
@@ -565,11 +581,51 @@ const SINK = {
     endpoints: {},     /* url  -> count */
     natives: {},       /* name -> {calls, lastRet, totalMs} */
     detections: {},    /* fn   -> {calls, returns: {value: count}} */
-    started: Date.now()
+    started: Date.now(),
+    detectReported: false  /* build #8: first detect event also goes to the status file */
 };
 
 const O_WRONLY = 1, O_CREAT = 0x40, O_APPEND = 0x400, O_TRUNC = 0x200;
 let _open = null, _write = null, _close = null;
+
+/* =====================================================================
+ * BUILD #8 — the "tf_agent_status.txt" channel.
+ * Why this exists: the frida 17.18.0 gadget routes the script's console.log to
+ * the process's STDOUT (gadget.vala try_handle_log_message -> print()). In an
+ * embedded app process stdout goes nowhere the user can see — NOT logcat.
+ * (Verified in frida-core 17.18.0 source: only g_warning/g_info, i.e. the
+ *  "Failed to load ..." errors, reach logcat via GLib's android backend.)
+ * So logcat can never prove our script ran. The ONLY channel that is visible
+ * without root is a file the app's own Java writes — exactly what RTLog does
+ * with runtime_logs.txt. jstatus() appends milestone lines to
+ *   /sdcard/Android/data/<pkg>/files/tf_agent_status.txt
+ * and the internal files dir, using java.io (proven-writable on this device).
+ * ===================================================================== */
+function jstatus(tag, extra) {
+    const line = '[' + new Date().toISOString() + '] ' + tag + (extra ? ' | ' + extra : '');
+    try {
+        if (!Java.available) return;
+        Java.perform(() => {
+            const AT = Java.use('android.app.ActivityThread');
+            const app = AT.currentApplication();
+            if (app === null) return;   /* not booted yet; next milestone retries */
+            const ctx = app.getApplicationContext();
+            const dirs = [];
+            try { const d = ctx.getExternalFilesDir(null); if (d !== null) dirs.push(d.getAbsolutePath()); } catch (e) {}
+            try { dirs.push(ctx.getFilesDir().getAbsolutePath()); } catch (e) {}
+            for (const d of dirs) {
+                try {
+                    const f = Java.use('java.io.File').alloc(d + '/tf_agent_status.txt');
+                    const fw = Java.use('java.io.FileWriter').$new(f, true);
+                    fw.write(line + '\n');
+                    fw.flush();
+                    fw.close();
+                } catch (e) { /* best effort — the other dir may still work */ }
+            }
+        });
+    } catch (e) { /* diagnostics must never kill the agent */ }
+}
+
 function sinkBindLibc() {
     /* Bound lazily and defensively: if any of these is missing the capture
        degrades to ring-buffer-only instead of throwing at load time. */
@@ -596,18 +652,13 @@ function sinkOpen(path, truncate) {
     return fd;
 }
 
-function sinkInit() {
-    if (!sinkBindLibc()) {
-        SINK.tried.push(['<libc>', 'open/write unavailable — ring-buffer-only capture']);
-        try { console.log('[tf-agent] SINK DIAG: libc bind FAILED — ring-buffer-only'); } catch (e) {}
-        return;
-    }
-    /* Build #7: open EVERY writable candidate (mirror), not just the first.
-       The internal files dir goes first: it is the ONE path the app can always
-       write (its own private dir, no permission, present from process start),
-       so the capture works even when every visible path fails. The visible
-       paths (/sdcard, the external files dir) are still opened as mirrors so
-       the user can `ls`/`cat` the capture without root. */
+/* Build #8: candidate list is rebuilt on EVERY attempt (init + retries),
+   because Java is only useful once the Application exists, and
+   getFilesDir()/getExternalFilesDir() also CREATE the directories if missing
+   (the app's /data/data/<pkg>/files does NOT exist until first use — that is
+   why the build-#7 sink, opened once at gadget-thread start, silently had
+   zero fds forever). */
+function collectSinkCandidates() {
     const candidates = [];
     const addc = (p) => { if (p && candidates.indexOf(p) < 0) candidates.push(p); };
     addc('/data/data/' + PKG + '/files/topfollow_capture.jsonl');
@@ -616,25 +667,73 @@ function sinkInit() {
     try {
         if (Java.available) {
             Java.perform(() => {
+                const AT = Java.use('android.app.ActivityThread');
+                const app = AT.currentApplication();
+                if (app === null) return;
+                const ctx = app.getApplicationContext();
                 try {
-                    const AT = Java.use('android.app.ActivityThread');
-                    const ctx = AT.currentApplication().getApplicationContext();
                     const dir = ctx.getExternalFilesDir(null);
                     if (dir !== null) addc(dir.getAbsolutePath() + '/topfollow_capture.jsonl');
-                    addc(ctx.getFilesDir().getAbsolutePath() + '/topfollow_capture.jsonl');
-                } catch (e) { /* no context yet — the static list is enough */ }
+                } catch (e) {}
+                try { addc(ctx.getFilesDir().getAbsolutePath() + '/topfollow_capture.jsonl'); } catch (e) {}
             });
         }
     } catch (e) {}
+    return candidates;
+}
+
+let sinkRetryTimer = null, sinkRetryCount = 0;
+const SINK_RETRY_INTERVAL_MS = 1500;
+const SINK_RETRY_MAX = 240;   /* 6-minute window covering any app boot */
+
+function sinkAttempt(reason) {
+    const candidates = collectSinkCandidates();
     for (const p of candidates) sinkOpen(p, false);
-    if (SINK.fd < 0) {
-        sinkLog('warn', { what: 'no writable capture path — events stay in the ring only',
-                          tried: SINK.tried });
+    const open = SINK.fds.map(f => f.path);
+    const fail = SINK.tried.slice(-6).map(x => x[0] + ':' + x[1]);
+    /* the user-visible proof of life — survives even if every console path is dead */
+    jstatus('SINK ' + (open.length ? 'OPEN' : 'RETRY') + ' [' + reason + ']',
+            'open=[' + open.join(' , ') + '] fail=[' + fail.join(' , ') + ']');
+    if (open.length) {
+        emit('boot', { what: 'capture sink ready (' + reason + ')',
+                       open: open, failures: SINK.tried });
+        try {
+            console.log('[tf-agent] SINK DIAG: open=' + JSON.stringify(open)
+                      + ' failures=' + JSON.stringify(SINK.tried));
+        } catch (e) {}
+        if (sinkRetryTimer) { clearInterval(sinkRetryTimer); sinkRetryTimer = null; }
     }
-    try {
-        console.log('[tf-agent] SINK DIAG: open=' + JSON.stringify(SINK.fds.map(f => f.path))
-                  + ' failures=' + JSON.stringify(SINK.tried));
-    } catch (e) {}
+}
+
+function sinkInit() {
+    if (!sinkBindLibc()) {
+        SINK.tried.push(['<libc>', 'open/write unavailable — ring-buffer-only capture']);
+        try { console.log('[tf-agent] SINK DIAG: libc bind FAILED — ring-buffer-only'); } catch (e) {}
+        jstatus('SINK INIT', 'libc bind FAILED — ring-buffer-only capture');
+        return;
+    }
+    /* First attempt at gadget-thread start (usually too early — no Application,
+       no files/ dir yet). The retry timer keeps trying every 1.5 s until the
+       app has booted, then the Java-resolved dirs exist and one of the opens
+       will succeed. This is the fix for "capture file never appears". */
+    sinkAttempt('init');
+    if (SINK.fds.length === 0) {
+        sinkLog('warn', { what: 'no writable capture path yet — events stay in the ring until a retry opens one',
+                          tried: SINK.tried });
+        sinkRetryTimer = setInterval(() => {
+            if (SINK.fds.length > 0) {
+                if (sinkRetryTimer) { clearInterval(sinkRetryTimer); sinkRetryTimer = null; }
+                return;
+            }
+            sinkRetryCount++;
+            if (sinkRetryCount >= SINK_RETRY_MAX) {
+                if (sinkRetryTimer) { clearInterval(sinkRetryTimer); sinkRetryTimer = null; }
+                jstatus('SINK GIVE UP', 'no writable path after ' + sinkRetryCount + ' tries — ring-only');
+                return;
+            }
+            sinkAttempt('retry#' + sinkRetryCount);
+        }, SINK_RETRY_INTERVAL_MS);
+    }
 }
 
 function sinkWrite(line) {
@@ -666,6 +765,14 @@ function emit(kind, obj) {
     SINK.ring.push(ev);
     if (SINK.ring.length > CFG.ringSize) SINK.ring.splice(0, SINK.ring.length - CFG.ringSize);
     SINK.byKind[kind] = (SINK.byKind[kind] || 0) + 1;
+
+    /* Build #8: the FIRST detection/bypass event is mirrored to the status
+       file — so "did a scanner fire?" is answerable even while the jsonl
+       sink is still opening. */
+    if ((kind === 'detect' || kind === 'bypass') && !SINK.detectReported) {
+        SINK.detectReported = true;
+        try { jstatus('FIRST ' + kind.toUpperCase() + ' EVENT', JSON.stringify(obj).slice(0, 400)); } catch (e) {}
+    }
 
     let line;
     try { line = JSON.stringify(ev); } catch (e) { line = '{"s":' + ev.s + ',"k":"' + kind + ',"d":{"jsonError":"' + e + '"}}'; }
@@ -709,10 +816,11 @@ function findModule() {
 
 function waitForModule(cb) {
     MOD = findModule();
-    if (MOD) { cb(MOD); return; }
+    if (MOD) { jstatus('MODULE FOUND', MODULE + ' base=' + MOD.base.toString() + ' size=' + MOD.size); cb(MOD); return; }
 
     emit('boot', { what: 'waiting for ' + MODULE, pid: Process.id, arch: Process.arch,
                    frida: Frida.version, platform: Process.platform });
+    jstatus('MODULE WAIT', 'waiting for ' + MODULE);
 
     /* (a) the loader hooks: catch the module the instant it is mapped */
     ['android_dlopen_ext', 'dlopen', '__loader_android_dlopen_ext', '__loader_dlopen']
@@ -726,7 +834,7 @@ function waitForModule(cb) {
                     onLeave() {
                         if (!MOD && this.path && this.path.indexOf('topfollow') >= 0) {
                             const m = findModule();
-                            if (m) { MOD = m; emit('boot', { what: MODULE + ' mapped via ' + fn, base: m.base.toString(), size: m.size }); cb(m); }
+                            if (m) { MOD = m; jstatus('MODULE FOUND', MODULE + ' mapped via ' + fn + ' base=' + m.base.toString()); emit('boot', { what: MODULE + ' mapped via ' + fn, base: m.base.toString(), size: m.size }); cb(m); }
                         }
                     }
                 });
@@ -736,7 +844,7 @@ function waitForModule(cb) {
     /* (b) polling as a backstop */
     const iv = setInterval(() => {
         const m = findModule();
-        if (m) { clearInterval(iv); if (!MOD) { MOD = m; cb(m); } }
+        if (m) { clearInterval(iv); if (!MOD) { MOD = m; jstatus('MODULE FOUND', MODULE + ' (poll) base=' + m.base.toString()); cb(m); } }
     }, 25);
 }
 
@@ -2713,13 +2821,19 @@ function install() {
                        : 'rpc.exports.stats() then rpc.exports.keys() then rpc.exports.net(20)'
     });
 
-    /* Build #7: host-console proof that install() completed (module found,
-       calibrated, hooks armed) — visible in logcat with the "Frida" tag. */
+    /* Build #7: host-console proof that install() completed. */
     try {
         console.log('[tf-agent] capture ready: calOk=' + cal.ok
                   + ' jniSlots=' + (cal.jniGood === null ? '?' : cal.jniGood + '/22')
                   + ' sinks=' + JSON.stringify(SINK.fds.map(f => f.path)));
     } catch (e) {}
+    /* Build #8: same fact on the channel that IS visible on Android.
+       If this line appears, the bypass + all hooks are armed and the
+       capture file must exist (see the SINK OPEN line). */
+    jstatus('INSTALL DONE', 'calOk=' + cal.ok
+          + ' jni=' + (cal.jniGood === null ? '?' : cal.jniGood + '/22')
+          + ' bypass=' + (BYPASS_ON() ? 'ON' : 'off')
+          + ' sinks=[' + SINK.fds.map(f => f.path).join(' , ') + ']');
 }
 
 sinkInit();
@@ -2742,6 +2856,12 @@ try {
               + ' java=' + Java.available
               + ' sinks=' + JSON.stringify(SINK.fds.map(f => f.path)));
 } catch (e) {}
+/* Build #8: the file-based proof that the script executed at all — the line
+   logcat can never show. If this file's first line never appears, the script
+   did not run (gadget/config problem). If it does, everything below is
+   answerable from the same file. */
+jstatus('SCRIPT STARTED', 'pid=' + Process.id + ' java=' + Java.available
+      + ' frida=' + Frida.version + ' sinks=[' + SINK.fds.map(f => f.path).join(' , ') + ']');
 
 /* Set TOPFOLLOW_CAPTURE_NO_AUTOBOOT=1 to define everything without arming
    (that is what a Node test harness wants). */
