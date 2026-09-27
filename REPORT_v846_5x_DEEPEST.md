@@ -610,3 +610,188 @@ work/v846/notes/v846_jni_natives.json       22 natives exact
 work/v846/notes/v846_native_profile.json    native ranges
 REPORT_libtopfollow_so.md (1,168L) + REPORT_libtopfollow_v846_deep3.html (prior rounds)
 ```
+
+---
+# PART B — APK / SMALI DEEP ANALYSIS (v846, pure-Python: androguard 4.1.4 dex+axml parse)
+
+## 13. APK STRUCTURE
+```
+v846_new.apk — 9,231,182 B — 1,238 zip entries — sha256 ac0b993e…
+  classes.dex            3,866,132 B   (SINGLE dex: 4,050 classes / 26,618 methods / 21,729 strings)
+  AndroidManifest.xml    17,924 B      (binary AXML)
+  resources.arsc         2,181,552 B
+  lib/  (3 ABIs: arm64-v8a, x86, x86_64)
+      libtopfollow.so              1,101,352 B  (= analyzed .so, sha 2b2a9eed…)
+      libdatastore_shared_counter.so   7,112 B  (androidx.datastore native — NOT app code)
+  assets/coin_anim.json  21,892 B     (Lottie coin animation)
+  assets/dexopt/baseline.prof/.profm (ART profile)
+  res/                   1,111 entries
+  META-INF/              NO MANIFEST.MF / .SF / .RSA — NO APK signature block (v2/v3) —
+                         file in workspace is the UNSIGNED pipeline artifact.
+                         (The .so's pin blob 0x14ce4 still holds the ORIGINAL signer hash
+                          d845591e…ea6bec5e → B6 rewrite mandatory on every rebuild.)
+```
+
+## 14. MANIFEST (complete)
+```
+package=com.nivaroid.topfollow  versionCode=0x34e (846)  versionName=8.4.6
+compileSdk=36  minSdk=24  targetSdk=35  platformBuild=0x10
+permissions: INTERNET, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SPECIAL_USE,
+             POST_NOTIFICATIONS, ACCESS_NETWORK_STATE, WAKE_LOCK, c2dm.RECEIVE
+application: name=MyApp  allowBackup=false  extractNativeLibs=false (original value;
+             build #9 flips → true)  usesCleartextTraffic=false  supportsRtl=false
+LAUNCHER = TopActivity (NOT MainActivity)
+activities (all exported=false): WebViewActivity, TwoFactorLoginActivity, RequestSaveActivity,
+  RequestRepostActivity, CoinMinersActivity, LeaderBoardActivity, ShowFragmentActivity,
+  OrdersActivity, DailyRewardActivity, CouponActivity, InviteFriendsActivity,
+  RequestLikeActivity, RequestCommentActivity, MenuActivity, UpgradeActivity,
+  InstagramLoginActivity, InfoActivity, TopActivity(LAUNCHER), MainActivity
+service: DoTasksService (exported=false, foregroundServiceType=specialUse)
+receiver: TaskActionReceiver (broadcast "task.service.receiver")
+Firebase: FCM (FirebaseMessagingService + FirebaseInstanceIdReceiver), Crashlytics,
+  Installations, Sessions, DataTransport; GoogleApiActivity; FirebaseInitProvider
+```
+
+## 15. DEX / SMALI INVENTORY
+- **173 app classes** (`com.nivaroid.topfollow.*`): application(3), db(2 Room), helper(3: **T, q, a0**), listeners(23), models(75), ui(19), views(58 incl. cardview/slidingpanel/tuto), + obfuscated packages (i9, y9, z9, ca, ba, gc, m5, u7, s7, t2, w0, aa, r3, e0, da, a8, i6, lb, wa, ma, n9, yb, w5, ja, gb, lb…)
+- Dependency stack visible in dex: **Jetpack Compose** (UI), Room, Retrofit2+OkHttp, Gson, DataStore(+native), Firebase/FCM/Crashlytics, **Play Integrity + SafetyNet**, **reCAPTCHA v3 + hCaptcha**, Coroutines, Lottie.
+- **Root/xposed strings in dex: ZERO** (su paths, /proc/self/maps, xposed tokens — none in Java) → **all environment detection is 100% native-side** (Java layer is clean; only native checks).
+
+## 16. NATIVE BRIDGE — `com.nivaroid.topfollow.helper.q`
+22 × `private static native` methods (exact names x00…) + 22 × `public static` **pass-through wrappers** (zero logic — pure `invoke-static` + return):
+```
+q.a(String)=x0014b4f3   q.b()=x0012f5b7       q.c(String)=x00105e9b
+q.d()=x0016d3b9         q.e()=x0014e2e9       q.f()=x0010e27f
+q.g()=x00113f7a         q.h(Order)=x0011f1a2  q.i(JsonObject,String)=x00120b1e
+q.j()J=x0011a4c2        q.k(String,Z)=x00126f7c  q.l(I)=x0018d3f7
+q.m()=x0011f42b         q.n(String)=x0011e28b   q.o(String)=x0012d3e0
+q.p(Response,Order,Account)=x0015e49c  q.q(Response)=x0014c1f9
+q.r(JsonObject,String,String)=x0015b1e9  q.s(String,String,String)=x0017b62c
+q.t(JsonObject,Account,Order)=x0015a3b7  q.u(JsonObject,Account,String)=x00135e2a
+q.v(JsonObject)=x0012e5a1
+```
+**Load point:** `MyApp.<clinit>` (3 instructions): `System.loadLibrary("topfollow")` — runs at Application class init, before any activity. (Other 2 loadLibrary sites = `loadLibrary("datastore_shared_counter")` — androidx, unrelated.)
+
+## 17. `helper.T` — KEYSTORE ECDSA DEVICE IDENTITY (NEW — native calls into Java!)
+```
+m5/h.v(bytes)  — key creation (once, synchronized):
+    if AndroidKeyStore.containsAlias("top_key_4286") return
+    KeyPairGenerator("EC", "AndroidKeyStore")
+      .initialize(KeyGenParameterSpec("top_key_4286", PURPOSE_SIGN)
+          .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+          .setDigests("SHA-256")
+          .setUserAuthenticationRequired(false)
+          .setAttestationChallenge(bytes))   ← challenge = input (hex-decoded by m5/h.x)
+      .generateKeyPair()
+T.o(String hex)  — full attestation blob:
+    data = hex→bytes
+    ks = AndroidKeyStore; cert = ks.getCertificate("top_key_4286")  (null → "null")
+    sig  = SHA256withECDSA.sign(data)
+    return Base64( sig + "#" + Base64(pubKey.encoded) + "#" + JSONArray[Base64(chain certs)] )
+T.sd(String)  — signature only: Base64(SHA256withECDSA.sign(UTF8(input))) or "null"
+```
+Native `x00120b1e` does `FindClass("com/nivaroid/topfollow/helper/T") + NewObject + GetMethodID((String)String) + Call` → **the .so calls T.o/T.sd over JNI**: every request JSON gets an **attestation-signed payload** (secp256r1, key attestation chain, alias `top_key_4286`). Server side can verify the key is device-bound (keystore, non-exportable) and the challenge binding.
+
+## 18. MAIN ORCHESTRATOR — `i9/m.k(Account, JsonObject, JsonCallback)` (203 insns)
+```
+device = MyDatabase.getDevice()
+if device: q.v(json)                     ; ← native MAIN SIGN (frida_scan + apksha inside)
+prefs = getSharedPreferences("TOPNU_Shared", MODE_PRIVATE)
+deviceId = decode(prefs["DeviceId"])     ; gc/l.j = Base64 decode ("null"→"")
+if empty: deviceId = encode(UUID.randomUUID()) → save     ; gc/l.k = Base64 encode
+q.u(json, account, deviceId)             ; ← account JSON native
+if prefs["SND"]:                          ; send-mode gate
+    if prefs["RID"] == 3850153:           ; magic server-check id
+        playIntegrity:
+            vendor  = Play Integrity (com.android.play.core.integrity IIntegrityService)
+            check   = "com.android.vending" installed + enabled + u7/f.a(signatures) + versionCode ≥ 82380000
+            nonce   = q.j() + 877665803231   ; ← native init token + constant
+            rd      = decode(prefs["RD"])   ; base64 → bytes (attestation challenge)
+            IntegrityTokenRequest{nonce=nonce, integrity token, rd-challenge}
+            "requestIntegrityToken(%s)" log; async via Handler
+        json.addProperty("x2", encode("x2"))
+        prefs["AIT"] → decode → encode("x2") → property "x2"
+        RIT (request integrity ts) expiry = 21,600,000 ms = 6 HOURS
+callback.onReady(json)                    ; → y9/a.onReady → q.a (transform+frida) → request out
+```
+**Play Integrity + SafetyNet both wired** (u7/*, s7/* wrappers; `ISafetyNetService` strings present) — integrity token ratchets with the 6h RIT window.
+
+## 19. BACKGROUND ROBOT — `DoTasksService` + `TaskActionReceiver`
+```
+onStartCommand(intent):
+    action="stop"   → cancel all aa/i tasks, stopSelf
+    action="enable" → aa/i(account=MyDatabase.p(id), ctx, scheduler) → task list
+    action=<uid>    → disable task for that account id
+    default        → notification channel via aa/a, startForeground(1, "Auto Robot Running")
+                     broadcast "task.service.receiver" (pkg com.nivaroid.topfollow, extra "start")
+TaskActionReceiver.onReceive: "task.service.receiver" → type "stop"/"stoping" → service stop
+```
+**The app auto-runs Instagram actions (like/comment/follow) per-account in a foreground service** — "Auto Robot Running" — this is the product's core automation loop (coins economy: users earn coins via MinerRequests, spend on orders).
+
+## 20. CAPTCHA FLOW — `CaptchaRequest`
+```
+showRobotDetectionDialog()  → "Suspicious activity detected… prove you are not a robot"
+showReCaptcha()             → reCAPTCHA v3 SDK (verifyWithRecaptcha, site-key)
+showHCaptcha()              → hCaptcha SDK (WebView js.hcaptcha.com/1/api.js, site-key meta-data)
+verifyCaptcha(token)        → JsonObject{"request_id": …} + token → i9/m + JsonCallback
+                              (token goes to C2 for server-side verification)
+```
+C2 verifies captcha server-side; native `q.f()`/`q.g()` (pin getter / 36-char token) are called from the captcha path.
+
+## 21. C2 API SURFACE (all .php endpoints found in dex — base from native: `https://nivafollower` + host)
+```
+account/addCoupon.php            account/getCoupons.php           account/getCoupon...
+account/changeMinerRequest.php   account/checkDailyGift.php       account/getDailyItems.php
+account/getGiftCodeReward.php    account/getInviteData.php        account/getLeaderBoard.php
+account/getMinerRequests.php     account/getQuestions.php         account/getSecretKey.php
+account/getUpgradeStatus.php     account/requestDigitCode.php     account/setInviteCode.php
+account/upgradeAccountToVip.php  order/getDefaultComment.php      order/getSelfOrders.php
+order/syncOrder.php              get_image.php
+```
+Other URLs: `https://b.i.instagram.com/` (IG web-login API), `https://i.instagram.com/` (+ `/rupload_igphoto/`), `https://nivafollower-app.com/instagram_info/ic_2fa_1..5.jpg` + `suspicious_login_img_1..4.jpg`, `https://topfollow-apk.org/` (site), `tg://resolve?domain=followland` (Telegram), `market://details`, `googlechrome://navigate?url=instagram.com/accounts/emailsignup|password/reset`.
+
+## 22. STORAGE MAP
+```
+SharedPreferences "TOPNU_Shared": DeviceId (base64 UUID), RD (base64 integrity challenge),
+    AIT (base64 auth token), RID (int 3850153), RIT (long, 6h expiry), SND (bool)
+    — ALL values Base64'd via gc/l.j (decode) / gc/l.k (encode)
+Room DB (MyDatabase, MyDatabase_Impl): accounts (InstagramAccount: u_id, username,
+    fbid_v2, interop fbid, follower/following counts…), orders (Order: order_id, media_id,
+    action), device (DeviceModel)
+DataStore (androidx, native counter lib): shared counters
+Keystore: EC secp256r1 "top_key_4286" (attested, sign-only, no user-auth)
+```
+
+## 23. JAVA→NATIVE CALL GRAPH (complete, from full dex scan)
+```
+q.j  (init/APKSHA)          ← i9/m.k
+q.v  (MAIN sign+sanitize)   ← i9/m.k
+q.u  (account JSON)         ← i9/m.k
+q.t  (payload JSON)         ← y9/a.onReady
+q.a  (transform+frida_scan) ← y9/a.onReady
+q.r  (xposed scan+setup)    ← y9/b.onReady
+q.s  (string combine)       ← y9/b.onReady
+q.h  (URL builder)          ← aa/i.b (robot task), ba/f.success
+q.k  (C2 Retrofit)          ← y9/h.<init>, y9/h.e
+q.l  (IG Retrofit)          ← z9/q.w
+q.p  (response handler)     ← ba/h.onResponse, ba/m.onResponse, z9/m.onResponse, z9/n.onResponse
+q.q  (response parse)       ← ba/f.onResponse, ba/q.onResponse, r3/c.onResponse, y9/e.onResponse, y9/f.onResponse
+q.b  (fingerprint)          ← gc/d.o (per request map build)
+q.n/q.o (hash variants)     ← gc/l.j, gc/l.k (prefs codec helpers — actually hash natives called by codec wrappers)
+q.d  (C2 endpoint path)     ← y9/d.onReady
+q.e  (string token)         ← y9/i.<init>
+q.f  (pin getter)           ← CaptchaRequest.showReCaptcha
+q.g  (36-char token)        ← CaptchaRequest.showHCaptcha
+q.m  (state JSON)           ← ca/i.onReady
+q.i  (helper T JSON)        ← ca/i.onReady
+```
+(Complete machine-readable: notes/v846_q_callers.json)
+
+## 24. SMALI-SIDE CONCLUSIONS FOR THE AGENT
+1. **No smali-level detection to bypass** — Java layer contains zero root/frida/xposed checks (all in .so).
+2. **Play Integrity token** — agent cannot forge; but hooks can log token requests/results (u7/r, s7/d) to see when integrity runs.
+3. **Keystore key `top_key_4286`** — non-exportable; T.o/T.sd results visible only as strings — hook `T.o`/`T.sd` to log attestation blobs (Java-level, trivial).
+4. **All secrets live in native** — dex strings contain no AES keys, no signing secrets, no C2 auth tokens (the 36-char token + pin are decoded in .so).
+5. **FCM + Crashlytics embedded** — the app phones home via Firebase (project `topfollow-74c69` / `topfollow-74c69.appspot.com`); agent should log FCM messages (push = server commands to the robot).
+6. **extractNativeLibs=false (original)** — our build flips to true (frida gadget + minizip fix, per prior decision).
+7. **targetSdk=35** — 16KB page alignment NOT required (<10000? targetSdk 35 < 36 → no 16KB page requirement yet).

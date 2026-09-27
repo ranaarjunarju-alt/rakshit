@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TopFollow v846 — 5× Deepest Complete Analysis (.so + APK/Smali)</title>
+<style>
+:root{
+  --bg:#0a0e17; --bg2:#0f1523; --card:#121a2b; --card2:#16203a;
+  --tx:#dce4f2; --dim:#8fa0bd; --acc:#22d3ee; --acc2:#a78bfa; --grn:#34d399;
+  --red:#f87171; --amb:#fbbf24; --line:#1f2c49;
+  --mono:'JetBrains Mono','Cascadia Code',Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:15px/1.65 -apple-system,'Segoe UI',Roboto,sans-serif;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(900px 500px at 85% -10%,rgba(167,139,250,.10),transparent 60%),
+  radial-gradient(800px 500px at -10% 30%,rgba(34,211,238,.08),transparent 60%);
+  pointer-events:none;z-index:0}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(10,14,23,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;align-items:center;height:52px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav a{color:var(--dim);text-decoration:none;font-size:12.5px;padding:6px 11px;border-radius:8px;white-space:nowrap;transition:.2s}
+nav a:hover{color:var(--tx);background:var(--card)}
+nav .logo{font-weight:800;font-size:13px;color:var(--acc);margin-right:10px;letter-spacing:.5px}
+/* hero */
+.hero{padding:74px 0 46px;text-align:center}
+.hero .tag{display:inline-block;font-family:var(--mono);font-size:11.5px;color:var(--acc);border:1px solid rgba(34,211,238,.35);padding:5px 14px;border-radius:999px;margin-bottom:22px;letter-spacing:1.5px;animation:pulse 3s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.25)}50%{box-shadow:0 0 0 9px rgba(34,211,238,0)}}
+.hero h1{font-size:clamp(30px,5vw,52px);font-weight:900;line-height:1.15;background:linear-gradient(120deg,#fff 20%,var(--acc) 55%,var(--acc2) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--dim);max-width:820px;margin:18px auto 0;font-size:15.5px}
+.hero .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.chip{font-family:var(--mono);font-size:11.5px;color:var(--tx);background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:10px}
+.chip b{color:var(--acc)}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:34px 0 10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 16px;text-align:center;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),var(--acc2));opacity:.7}
+.stat .n{font-size:30px;font-weight:900;font-family:var(--mono);color:var(--acc)}
+.stat .l{font-size:11.5px;color:var(--dim);margin-top:4px;letter-spacing:.4px}
+/* sections */
+section{padding:52px 0 8px}
+h2.sec{font-size:26px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:12px}
+h2.sec .no{font-family:var(--mono);font-size:14px;color:var(--acc);border:1px solid rgba(34,211,238,.4);border-radius:9px;padding:3px 9px}
+.sub{color:var(--dim);font-size:13.5px;margin-bottom:22px}
+h3{font-size:17px;margin:26px 0 10px;color:#fff}
+h3 .a{color:var(--acc);font-family:var(--mono);font-size:14px}
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.card h4{font-size:14.5px;margin-bottom:8px;color:var(--acc)}
+.card.warn h4{color:var(--red)} .card.ok h4{color:var(--grn)} .card.amb h4{color:var(--amb)}
+/* code */
+pre{font-family:var(--mono);font-size:12.3px;line-height:1.6;background:#0b111e;border:1px solid var(--line);border-radius:11px;padding:14px 16px;overflow-x:auto;margin:10px 0;color:#b9c8e4}
+pre .c{color:#5b6b8c} pre .k{color:var(--acc)} pre .s{color:var(--grn)} pre .w{color:var(--red)} pre .m{color:var(--acc2)}
+code{font-family:var(--mono);font-size:.88em;background:#0b111e;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--acc)}
+/* tables */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12.8px}
+th{color:var(--acc);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:9px 10px;border-bottom:1px solid var(--line);background:rgba(34,211,238,.05)}
+td{padding:8px 10px;border-bottom:1px solid rgba(31,44,73,.6);vertical-align:top;color:var(--tx)}
+tr:hover td{background:rgba(34,211,238,.03)}
+td.mono,th.mono{font-family:var(--mono);font-size:11.8px}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid}
+.pill.red{color:var(--red);border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.07)}
+.pill.grn{color:var(--grn);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.07)}
+.pill.amb{color:var(--amb);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07)}
+.pill.acc{color:var(--acc);border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.07)}
+.pill.pur{color:var(--acc2);border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.07)}
+/* timeline */
+.tl{position:relative;margin:20px 0 20px 8px;padding-left:26px;border-left:2px solid var(--line)}
+.tl .ev{position:relative;margin:0 0 18px}
+.tl .ev::before{content:'';position:absolute;left:-33px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--acc);box-shadow:0 0 12px rgba(34,211,238,.5)}
+.tl .ev.hot::before{border-color:var(--red);box-shadow:0 0 12px rgba(248,113,113,.6)}
+.tl .ev .t{font-family:var(--mono);font-size:11px;color:var(--acc)}
+.tl .ev.hot .t{color:var(--red)}
+.tl .ev .h{font-weight:700;font-size:14.5px;margin:2px 0}
+.tl .ev .d{color:var(--dim);font-size:13px}
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.rv.on{opacity:1;transform:none}
+/* native cards */
+.nat{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:14px 0;overflow:hidden;transition:border-color .25s}
+.nat:hover{border-color:rgba(34,211,238,.5)}
+.nat .hd{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg,rgba(34,211,238,.06),transparent);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.nat .hd .nm{font-weight:800;font-size:15px}
+.nat .hd .ad{font-family:var(--mono);font-size:11.5px;color:var(--acc)}
+.nat .hd .sz{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.nat .bd{padding:14px 18px}
+.nat .role{font-size:12px;color:var(--acc2);font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px}
+/* bars */
+.bar{height:8px;background:#0b111e;border-radius:99px;overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;transition:width 1.2s ease}
+/* misc */
+.kv{display:grid;grid-template-columns:210px 1fr;gap:4px 14px;font-size:13px}
+.kv .k{color:var(--dim);font-family:var(--mono);font-size:11.8px}
+.note{border-left:3px solid var(--amb);background:rgba(251,191,36,.05);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13.5px}
+.note.red{border-color:var(--red);background:rgba(248,113,113,.05)}
+.note.grn{border-color:var(--grn);background:rgba(52,211,153,.05)}
+footer{margin-top:70px;padding:34px 0 44px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px;text-align:center}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+@media(max-width:640px){.kv{grid-template-columns:1fr}.hero{padding:50px 0 30px}}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+<span class="logo">◈ TOPFOLLOW v846</span>
+<a href="#s1">Summary</a><a href="#s2">Binary</a><a href="#s3">Lifecycle</a><a href="#s4">22 Natives</a><a href="#s5">AES</a><a href="#s6">Detection</a><a href="#s7">Wire</a><a href="#s8">Anti-tamper</a><a href="#s9">APK</a><a href="#s10">Smali</a><a href="#s11">Call graph</a><a href="#s12">Agent</a><a href="#s13">Offsets</a>
+</div></nav>
+
+<div class="wrap">
+<div class="hero">
+  <span class="tag">5× DEEPEST · .so + APK/SMALI · 2026-09-27</span>
+  <h1>libtopfollow.so + TopFollow v8.4.6<br>Complete Deep Analysis</h1>
+  <p>Full reverse-engineering of the Instagram-follow bot's native core <b>and</b> its entire smali layer — every one of the 22 JNI natives' exact logic, the AES pipeline (FIPS-197 proven 6/6), the detection load/run lifecycle, keystore attestation, Play Integrity, the auto-robot service, and the complete C2 surface. No claim without its evidence.</p>
+  <div class="chips">
+    <span class="chip">.so <b>1,101,352 B</b> · sha256 2b2a9eed…</span>
+    <span class="chip">APK <b>9.23 MB</b> · 1,238 entries</span>
+    <span class="chip">dex <b>4,050</b> classes / <b>26,618</b> methods</span>
+    <span class="chip">branch <b>arena/01a0aa64-rakshit</b></span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat rv"><div class="n" data-cnt="22">0</div><div class="l">JNI NATIVES — EXACT LOGIC</div></div>
+  <div class="stat rv"><div class="n" data-cnt="1956">0</div><div class="l">KILL-FLAG POLLS (FLAGCHECK)</div></div>
+  <div class="stat rv"><div class="n" data-cnt="146">0</div><div class="l">HANG TRAPS (b . SELF-LOOPS)</div></div>
+  <div class="stat rv"><div class="n" data-cnt="6">0</div><div class="l">FIPS-197 VECTORS PASSED 6/6</div></div>
+  <div class="stat rv"><div class="n" data-cnt="19">0</div><div class="l">C2 .php ENDPOINTS (dex)</div></div>
+  <div class="stat rv"><div class="n" data-cnt="173">0</div><div class="l">APP CLASSES (com.nivaroid.*)</div></div>
+</div>
+</div>
+
+<div class="wrap">
+
+<!-- ================= S1 ================= -->
+<section id="s1"><div class="rv">
+<h2 class="sec"><span class="no">01</span>Executive Summary — what actually is in this app</h2>
+<p class="sub">Top v8.4.6 = coin-economy Instagram automation. Users log in (WebView + captcha), the <b>auto-robot foreground service</b> runs like/comment/follow/save orders per account; orders are signed by a hardened native core and sent to a C2 that relays to Instagram's private API.</p>
+<div class="grid2">
+<div class="card warn"><h4>⚠ Previous report corrections (5× findings)</h4>
+<ul style="padding-left:18px;font-size:13.5px;color:var(--dim)">
+<li><code>0x923c0</code> is NOT "custom AES" — it's a <b>general custom-B64 decoder</b> (94 callers, <code>clock()</code>-salted, alphabet @0x16f27, fail → <code>b .</code> hang). Every obfuscated string in the binary flows through it.</li>
+<li>Inflate (zlib) trio = <b>dead code, 0 call sites</b> in the entire .text (machine-level scan).</li>
+<li>"AES" = <b>genuine FIPS-197</b> (mbedtls 3.x lineage), word-reversed schedule storage; wrappers = ECB / prefix-XOR-ECB / seeded — all Unicorn-proven.</li>
+<li>Xposed detection lives in <b>x0015b1e9</b> (maps scan + 9× su access()), not in a standalone "xposed native".</li>
+</ul></div>
+<div class="card ok"><h4>✓ What the 5× pass added</h4>
+<ul style="padding-left:18px;font-size:13.5px;color:var(--dim)">
+<li>Exact step-by-step logic of <b>all 22 natives</b> (JNI call maps, field names, crypto arms).</li>
+<li>Detection lifecycle: <b>load-time vs run-time</b> with every trigger site.</li>
+<li><b>env-table offset semantics</b> verified from usage (GetMethodID@0x108, NewStringUTF@0x538, …).</li>
+<li>Full <b>APK/smali analysis</b>: bridge class <code>helper.q</code>, <b>keystore ECDSA attestation</b> (<code>top_key_4286</code>), <b>Play Integrity</b> wiring, robot service, captcha flow, 19 C2 endpoints, complete Java→native call graph.</li>
+</ul></div>
+</div>
+<div class="card"><h4>Architecture in one line</h4>
+<pre><span class="c">Java (smali)</span>  TopActivity→…→ i9/m.k (orchestrator) ──► <span class="k">helper.q.a…v (22 pass-throughs)</span> ──► <span class="m">helper.q x00… (22 native)</span>
+                                                                                     │
+Native        .so: JSON build · custom-B64 strings · AES (FIPS-197) · C2/IG Retrofit ┤ detection: frida_scan, APK-SHA,
+                                                                                     │ xposed+su, delmaps, pin_verify,
+                                                                                     └► keystore T.o/T.sd <span class="c">(JNI calls back INTO Java)</span>
+Wire          i.instagram.com/api/v2/…  +  https://nivafollower…/account|order/*.php (C2, cert-pinned)</pre></div>
+</div></section>
+
+<!-- ================= S2 ================= -->
+<section id="s2"><div class="rv">
+<h2 class="sec"><span class="no">02</span>Binary Map (verified)</h2>
+<table>
+<tr><th>Region</th><th class="mono">Range</th><th>Content</th></tr>
+<tr><td>.text</td><td class="mono">0x002c734–0x0105f04</td><td>891,492 B · 80,796 instructions (BTI-audited)</td></tr>
+<tr><td>PLT stubs</td><td class="mono">0x0105f04–0x0106558</td><td>86 stubs → .got finals (memcpy@0x105f0c→0x10ee90 etc.)</td></tr>
+<tr><td>.rodata</td><td class="mono">0x011510–0x014d54</td><td>static encodings; PIN blob @0x14ce4; CRYPTO-C key @0x16f07; B64 alphabet @0x16f27; su blob @0x16fa0</td></tr>
+<tr><td>symbol pool</td><td class="mono">0x014d54–0x02076b</td><td>5,591 printable strings (Java class/method names, sigs, field names)</td></tr>
+<tr><td>.got / counter page</td><td class="mono">0x010eab0–0x010f3a0</td><td>147 QWORD slots; hot: 0x10ee90×178, 0x10efd0×110, 0x10eef0×88</td></tr>
+<tr><td>JNI table</td><td class="mono">0x010a4e8</td><td>22 natives (exact table in §04)</td></tr>
+<tr><td>ctors / OnLoad</td><td class="mono">0x37550 · 0xcc4c8 · 0x3f4d8</td><td>registry writes → 158-slot ptr-cache</td></tr>
+</table>
+<div class="grid2">
+<div class="card"><h4>Imports that matter (85/88 called)</h4>
+<p style="font-size:13px;color:var(--dim)">access×9 (su checks) · __open_2×3 (maps readers) · clock×1 (B64 salt) · dl_iterate_phdr×1 (DSO walk) · syslog/abort cluster @0xeb2d0 · memcpy/strlen via IRELATIVE finals.</p>
+<p style="margin-top:8px"><span class="pill red">NO pthread_create</span> <span class="pill red">NO dlopen/dlsym</span> <span class="pill red">NO system()</span> <span class="pill red">NO fopen</span> <span class="pill red">inflate×3 = DEAD (0 callers)</span></p></div>
+<div class="card"><h4>Machine-level caller counts (validated scan)</h4>
+<table style="margin:0">
+<tr><td class="mono">0x923c0 custom-B64</td><td><b>94</b> sites</td></tr>
+<tr><td class="mono">0x86684 DECODE_STR</td><td>36</td></tr>
+<tr><td class="mono">0x38f60 CONCAT</td><td>126</td></tr>
+<tr><td class="mono">0xe89fc FLAGCHECK</td><td><b>1,956</b></td></tr>
+<tr><td class="mono">0x37cb8 CRYPTO-A</td><td>12</td></tr>
+<tr><td class="mono">0x87690 CRYPTO-C</td><td>17</td></tr>
+</table></div>
+</div>
+</div></section>
+
+<!-- ================= S3 ================= -->
+<section id="s3"><div class="rv">
+<h2 class="sec"><span class="no">03</span>Detection Lifecycle — kab load hota hai, kab chalta hai</h2>
+<p class="sub">Two phases: LOAD (born with the process) and RUN (inline per-action — <b>zero threads, zero timers</b>; no pthread_create exists in the binary).</p>
+<div class="card">
+<h4>PHASE A — LOAD</h4>
+<div class="tl">
+<div class="ev"><div class="t">.so MAPPED BY DYLD</div><div class="h">ctors 0x37550 / 0xcc4c8</div><div class="d">Write REGISTRY global page @0x101eb8 (+0x8970/0x8974/0x8978).</div></div>
+<div class="ev"><div class="t">FIRST NATIVE CALL</div><div class="h">JNI_OnLoad 0x3f4d8</div><div class="d">Fills 158-slot ptr-cache (env fns, class refs, method IDs) the natives use instead of the raw env table.</div></div>
+<div class="ev hot"><div class="t">APP STARTUP — JAVA STATIC INIT</div><div class="h">x0011a4c2 ()J — APK SHA-256 #1 computed HERE</div><div class="d">FLAGCHECK×4 → APKSHA×2 → counter init (0x36dfc) → mix → long token to Java. The installed APK is hashed once at startup; hash re-verified on every request later.</div></div>
+</div>
+<h4>PHASE B — RUN (per user action, all inline)</h4>
+<div class="tl">
+<div class="ev hot"><div class="t">BEFORE EVERY REQUEST</div><div class="h">x0012e5a1: FRIDA_SCAN @0x4c814 + APKSHA @0x4c87c</div><div class="d">The 38 KB sign/sanitize native ends with the two big environment checks before the request may go out.</div></div>
+<div class="ev hot"><div class="t">EVERY STRING TRANSFORM</div><div class="h">x0014b4f3: FRIDA_SCAN @0x6498c</div><div class="d">Cheap per-call tripwire — transform ⇒ rescan.</div></div>
+<div class="ev hot"><div class="t">AFTER EVERY RESPONSE</div><div class="h">x0015e49c: DELMAPS @0x711f4 · FRIDA_TOKENS @0x7276c · APKSHA2 @0x72e14 · PIN_VERIFY @0x72e1c</div><div class="d">Maps-tamper check, frida token table, second hash variant, signer-pin blob re-verify. Internal 0xa5xxx path adds HOOKTOKENS + CRYPTO-A.</div></div>
+<div class="ev"><div class="t">PAYLOAD/SCAN NATIVE</div><div class="h">x0015b1e9: XPOSED maps scan + gum-js-loop thread scan + 9× access() su checks</div><div class="d">Reads /proc/self/maps, matches xposed/lsposed/edxposed tokens + Frida JS worker thread name.</div></div>
+<div class="ev"><div class="t">CONSTANT</div><div class="h">FLAGCHECK @0xe89fc — 1,956 polls across all natives</div><div class="d">Kill-flag poll at basic-block boundaries; gate MBA checks before/after call blocks.</div></div>
+</div>
+<div class="note red"><b>On detection:</b> flag bits → next FLAGCHECK → <code>b .</code> self-loop <b>hang</b> (146 traps) or 0xeb2d0 syslog+abort. No silent exit, no fake success — deliberate hang/crash. ⇒ agent hooks must stay <b>log-only</b>.</div>
+</div>
+</div></section>
+
+<!-- ================= S4 ================= -->
+<section id="s4"><div class="rv">
+<h2 class="sec"><span class="no">04</span>The 22 JNI Natives — exact logic</h2>
+<p class="sub">All declared in smali as <code>private static native</code> in <b>com.nivaroid.topfollow.helper.q</b>; each wrapped by a 3-instruction public pass-through (q.a…q.v). env-table offsets below are usage-verified from argument registers + paired rodata names + result usage.</p>
+<div class="card"><h4>Verified env-table offset map</h4>
+<table>
+<tr><th class="mono">offset</th><th>signature</th><th>verified semantics</th></tr>
+<tr><td class="mono">0x108</td><td>(env, obj, name, sig)</td><td><b>GetMethodID</b> — every use paired with name + method sig (<code>build</code>/<code>()Lokhttp3/CertificatePinner;</code>, <code>add</code>/<code>(String,[String)…</code>)</td></tr>
+<tr><td class="mono">0xf8</td><td>(env, obj, name, sig)</td><td>field-ID lookup (model/JSON fields)</td></tr>
+<tr><td class="mono">0x538</td><td>(env, C-string)</td><td><b>NewStringUTF</b> — returned to Java in 20+ natives</td></tr>
+<tr><td class="mono">0x548</td><td>(env, jstring, …)</td><td><b>GetStringUTFChars</b>-like — input extracted before hash/concat</td></tr>
+<tr><td class="mono">0xb8</td><td>(env, obj, mid)</td><td><b>CallIntMethod</b> — int getters (follower_count, media_count…)</td></tr>
+<tr><td class="mono">0x488</td><td>(env, obj, mid, jlong)</td><td><b>CallLongMethod</b> — OkHttpClient.Builder.timeout(ms, TimeUnit)</td></tr>
+<tr><td class="mono">0x30</td><td>(env, x)</td><td>string/class create helper (NewStringUTF-like; feeds addProperty)</td></tr>
+<tr><td class="mono">0x2f0/0x2f8</td><td>(env, class, smid, …)</td><td>CallStaticXxxMethod — helper singleton statics</td></tr>
+<tr><td class="mono">0xec0</td><td>(env, class-name)</td><td><b>FindClass</b> — proven with "java/util/concurrent/TimeUnit", "okhttp3/OkHttpClient$Builder"</td></tr>
+</table>
+<p style="font-size:12.5px;color:var(--dim);margin-top:6px">Common prologue/epilogue: stack-canary + REGISTRY finalize; GATE 0x37160 = MBA <code>A·(A−1)+B ∈ {9,10}</code> else <code>b .</code>; counters advanced only by legit paths (0x36dfc, 12 sites).</p>
+</div>
+
+<div class="nat"><div class="hd"><span class="nm">x0011a4c2</span><span class="ad">0x3fdd8</span><code>()J</code><span class="sz">624 B</span></div><div class="bd"><div class="role">INIT — APK SHA at startup</div>
+<pre>FLAGCHECK×4 → h1,h2 = <span class="k">APKSHA()</span> (×2, 0x3fe80/0x3fed4) → H_36dfc() → r = 0xe8ce8(h1,h2) → 0xe90e8(r) → 0x85a4c(r, "0x16e90") → REGISTRY finalize → <span class="k">return r</span> <span class="c">; long token kept in Java singleton</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0014e2e9</span><span class="ad">0x40048</span><code>()String</code><span class="sz">492 B</span></div><div class="bd"><div class="role">constant string getter</div>
+<pre><span class="k">DECODE_STR</span>(≤20B MBA) → GATE → <span class="k">return NewStringUTF(decoded)</span> <span class="c">; one decoded constant (version-ish token)</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0016d3b9</span><span class="ad">0x40234</span><code>()String</code><span class="sz">656 B</span></div><div class="bd"><div class="role">C2 endpoint path</div>
+<pre>DECODE_STR×2 (anchor <span class="s">"topfollow_check.php"</span> @0x16ef4) + GATE×2 → <span class="k">return "…topfollow_check.php"</span> <span class="c">; joins with "https://nivafollower" (0x16ed0)</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0012d3e0</span><span class="ad">0x404c4</span><code>(String)String</code><span class="sz">1,920 B</span></div><div class="bd"><div class="role">hash variant A (request hash)</div>
+<pre>in = <span class="k">GetStringUTFChars</span>(x0) → 0x88efc(in) → CTX_BUILD → <span class="k">CRYPTO_C</span>(in) <span class="c">; 28B key @0x16f07</span> → CONCAT → 0x86880(out, <span class="s">"SHA-256"</span> tail @0x16248) → <span class="k">return hex</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0011e28b</span><span class="ad">0x40c44</span><code>(String)String</code><span class="sz">2,260 B</span></div><div class="bd"><div class="role">hash variant B</div>
+<pre>twin of 4.4 with 0x8c544 in place of 0x86880 (28 FLAGCHECKs) — <span class="k">different mix order</span> for C2 variant-B fields</pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x00120b1e</span><span class="ad">0x41518</span><code>(JsonObject, String)V</code><span class="sz">17,752 B</span></div><div class="bd"><div class="role">helper T init + keystore attestation fields</div>
+<pre>T = <span class="k">FindClass</span>(<span class="s">"com/nivaroid/topfollow/helper/T"</span>); t = NewObject(T.&lt;init&gt;)
+addProperty(json, <span class="s">"3e0"</span>,  <span class="k">T.o(encoded)</span>)   <span class="c">; JNI calls back into Java: ECDSA sig + pub + cert chain</span>
+addProperty(json, <span class="s">"x21"</span>,  …) · addProperty(json, <span class="s">"d27"</span>, …)
+GATEWRAP2×10 · CTX_BUILD×7 · CTX_VALID×4 · env[0xb8]×10</pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0012e5a1</span><span class="ad">0x45a70</span><code>(JsonObject)V</code><span class="sz">38,692 B</span></div><div class="bd"><div class="role">★ MAIN SIGN/SANITIZE + pre-request checks</div>
+<pre>for each field: v = <span class="k">customB64decode</span>(value)   <span class="c">; ×34</span>
+              v = CONCAT chain (×26) → <span class="k">CRYPTO_C</span>(v) (×8) → json.setProperty(key, v)
+GATEWRAP×40 · H_91c00×35 · 249×FLAGCHECK
+<span class="w">FRIDA_SCAN()  @0x4c814   ← BEFORE the request goes out</span>
+<span class="w">APKSHA()      @0x4c87c   ← APK hash re-verified BEFORE request</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x00135e2a</span><span class="ad">0x4f194</span><code>(JsonObject, InstagramAccount, String)V</code><span class="sz">16,104 B</span></div><div class="bd"><div class="role">IG account → JSON (with Facebook IDs!)</div>
+<pre>addProperty(<span class="s">"fbid_v2"</span>, acct.getFbid_v2())
+addProperty(<span class="s">"interop_messaging_user_fbid"</span>, acct.getInteropFbid())
+addProperty(<span class="s">"follower_count"</span>,  acct.getFollowerCount())   <span class="c">; env[0xb8] int getters</span>
+addProperty(<span class="s">"following_count"</span>, acct.getFollowingCount()) · addProperty(<span class="s">"x21"</span>, helper)</pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x00105e9b</span><span class="ad">0x5307c</span><code>(String)String</code><span class="sz">944 B</span></div><div class="bd"><div class="role">string codec via CRYPTO-A</div>
+<pre>CUSTOM_B64×2 → CONCAT → <span class="k">CRYPTO_A</span>(type) → GATE → <span class="k">return NewStringUTF</span> <span class="c">; token decode/encode around transport</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0015b1e9</span><span class="ad">0x5342c</span><code>(JsonObject, String, String)V</code><span class="sz">37,564 B</span></div><div class="bd"><div class="role">★ XPOSED/ROOT SCAN + setup JSON</div>
+<pre>maps = open(<span class="s">"/proc/self/maps"</span>) <span class="c">; b64 @0x15a11, reader 0x59a28</span>
+if maps ⊇ <span class="s">xposed</span>(0x1680c) → flag · <span class="s">lsposed</span>(0x163a4) → flag · <span class="s">edxposed</span>(0x15dff) → flag
+thread scan: /proc/self/task/&lt;tid&gt;/comm vs <span class="w">"gum-js-loop"</span> ×24 <span class="c">; Frida JS worker</span>
+root: <span class="w">access(path, F_OK) ×9</span> on su paths (§06)
+addProperty(<span class="s">"setup"</span>,…) + addProperty(<span class="s">"currentInstagram"</span>,…) <span class="c">; CallStatic×36</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0015a3b7</span><span class="ad">0x5c6e8</span><code>(JsonObject, InstagramAccount, Order)V</code><span class="sz">16,740 B</span></div><div class="bd"><div class="role">order payload JSON</div>
+<pre>addProperty(<span class="s">"username"</span>, acct.username) · addProperty(<span class="s">"order_id"</span>, order.orderId)
+addProperty(<span class="s">"interop_messaging_user_fbid"</span>, acct.interopFbid) + order fields
+strlen×7 length guards · CTX_BUILD×7 · GATEWRAP2×6</pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0017b62c</span><span class="ad">0x6084c</span><code>(String,String,String)String</code><span class="sz">3,268 B</span></div><div class="bd"><div class="role">final string combiner</div>
+<pre>CUSTOM_B64×4 + CONCAT×6 + H_91c00×6 + GATE×2 → <span class="k">return base + payload + hash</span> <span class="c">; final signed body</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0011f42b</span><span class="ad">0x61510</span><code>()String</code><span class="sz">9,800 B</span></div><div class="bd"><div class="role">state JSON (C2 sync/billing)</div>
+<pre>20× NewStringUTF · fields <span class="s">"setup"</span> <span class="s">"currentInstagram"</span> <span class="s">"media_count"</span> <span class="s">"f7c"</span> <span class="s">"x21"</span> → serialized app state string</pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0012f5b7</span><span class="ad">0x63b58</span><code>()String</code><span class="sz">3,376 B</span></div><div class="bd"><div class="role">device fingerprint</div>
+<pre>f = Build.MANUFACTURER | BRAND | MODEL | BOARD | DEVICE | HARDWARE <span class="c">; 0xb6a1c×6 normalize, CONCAT×7</span>
+f += <span class="s">"XRl"</span> @0x15a3d  → <span class="k">return</span> <span class="c">; attached to requests → server-side device binding</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0014b4f3</span><span class="ad">0x64888</span><code>(String)String</code><span class="sz">2,736 B</span></div><div class="bd"><div class="role">string transform + per-call Frida tripwire</div>
+<pre>CUSTOM_B64×3 → CONCAT×3 → GATEWRAP×2 → GATE×2 → <span class="w">FRIDA_SCAN() @0x6498c</span> → <span class="k">return</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0011f1a2</span><span class="ad">0x65338</span><code>(Order)String</code><span class="sz">10,848 B</span></div><div class="bd"><div class="role">IG URL builder</div>
+<pre>base = DECODE_STR(<span class="s">"i.instagram.com/api/v2/"</span>) <span class="c">; 20B literal</span>
+path = DECODE_STR(order.action): <span class="s">friendships/create/</span> | <span class="s">media/</span> | <span class="s">comment/</span> | <span class="s">create_note/v2/</span> | <span class="s">/save/</span> | <span class="s">seen/</span>
+<span class="k">return</span> CONCAT(base, path, order.media_id, <span class="s">"6*2"</span> params) <span class="c">; GATEWRAP×14, CTX_BUILD×4</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0015e49c</span><span class="ad">0x67d98</span><code>(Response, Order, InstagramAccount)String</code><span class="sz">48,456 B</span></div><div class="bd"><div class="role">★ RESPONSE HANDLER + post-response battery</div>
+<pre>ok = response.<span class="k">isSuccessful()</span>()
+ok ? bytes = response.body().<span class="k">bytes()[B]</span> : bytes = response.errorBody().raw()…
+<span class="w">DELMAPS()      @0x711f4   ← maps tamper check</span>
+<span class="w">FRIDA_TOKENS() @0x7276c</span>  <span class="w">APKSHA2() @0x72e14</span>  <span class="w">PIN_VERIFY() @0x72e1c</span>
+internal 0xa5c90: HOOKTOKENS + FRIDA_TOKENS + CRYPTO_A
+decrypt/parse(bytes) → state update (H_36dfc×12, DECODE_STR×12, CTX_BUILD×9)</pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0010e27f</span><span class="ad">0x73ae0</span><code>()String</code><span class="sz">456 B</span></div><div class="bd"><div class="role">pin/hash getter</div>
+<pre>0xc7ffc(read slot) → GATE → <span class="k">return NewStringUTF</span> <span class="c">; used by CaptchaRequest.showReCaptcha</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x00113f7a</span><span class="ad">0x73ca8</span><code>()String</code><span class="sz">672 B</span></div><div class="bd"><div class="role">36-char app token</div>
+<pre><span class="k">DECODE_STR</span>(36-char constant, runtime-decoded) → GATE → <span class="k">return NewStringUTF</span> <span class="c">; used by CaptchaRequest.showHCaptcha</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0014c1f9</span><span class="ad">0x73f48</span><code>(Response)String</code><span class="sz">14,244 B</span></div><div class="bd"><div class="role">response parse → signing ratchet</div>
+<pre>s = response.body().string() → parse JSON
+model.<span class="k">setHash_key</span>(json[<span class="s">"hash_key"</span>]) · model.<span class="k">setNonce</span>(json[<span class="s">"nonce"</span>]) · model.<span class="k">setHash_type</span>(json[<span class="s">"hash_type"</span>])
+<span class="c">; 29× env[0xb8]-class get/set, CTX_VALID×15 — these 3 fields drive the NEXT request's CRYPTO-A keying</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x00126f7c</span><span class="ad">0x776ec</span><code>(Z, String)Retrofit</code><span class="sz">11,456 B</span></div><div class="bd"><div class="role">C2 HTTP client (cert-pinned)</div>
+<pre>pinner = CertificatePinner.Builder().<span class="k">add(domain, pins[3])</span>.build()   <span class="c">; PINNER×3, GetMethodID "add"/"build"</span>
+client = OkHttpClient.Builder().certificatePinner(pinner).<span class="k">timeout(ms, TimeUnit)</span>.build()
+<span class="k">return</span> Retrofit(baseUrl=<span class="s">"https://nivafollower…/topfollow_check.php"</span>).client(client).build() <span class="c">; Z = C2-vs-local flag</span></pre></div></div>
+
+<div class="nat"><div class="hd"><span class="nm">x0018d3f7</span><span class="ad">0x7a3ac</span><code>(I)Retrofit</code><span class="sz">7,392 B</span></div><div class="bd"><div class="role">IG API client</div>
+<pre>same okhttp pattern (GATEWRAP×14, PINNER×1, GetMethodID×5, CallLong timeout×2)
+base = DECODE_STR(0x17230, 31B) = <span class="s">"i.instagram.com/api/v2/…"</span>; I arg = endpoint selector</pre></div></div>
+</div></section>
+
+<!-- ================= S5 ================= -->
+<section id="s5"><div class="rv">
+<h2 class="sec"><span class="no">05</span>Exact AES Logic — FIPS-197, 6/6 vectors proven</h2>
+<p class="sub">Upstream = mbedtls 3.x (copyright header @0x11510). The "custom" feel = word-reversed schedule storage + non-standard mode wrapper.</p>
+<div class="grid2">
+<div class="card"><h4>Key expansion — 0x31260</h4>
+<pre>ABI: (ctx, key, iv_or_aux, w3=keylen, w4=0x10)
+ctx+8 = rounds flag (10/12/14)
+schedule @ctx+0xc — <span class="w">each 32-bit word byte-reversed</span>
+192/256 second half @ctx+0x30 (word-reversed)
+<span class="k">genuine FIPS-197 R1</span> (verified against FIPS appendix)</pre></div>
+<div class="card"><h4>Block cores (Unicorn-proven)</h4>
+<table style="margin:0">
+<tr><th>core</th><th class="mono">addr</th><th>proof</th></tr>
+<tr><td>ENCRYPT</td><td class="mono">0x2edf8</td><td>key 000102…0f, PT 00112233… → CT <b>69c4e0d8 6a7b0430 d8cdb780 70b4c55a</b> ✓ (+192/256)</td></tr>
+<tr><td>DECRYPT</td><td class="mono">0x2fdcc</td><td>all 3 key sizes ✓ — output in STANDARD byte order</td></tr>
+</table>
+<p style="margin-top:8px"><span class="pill grn">6/6 enc+dec × 128/192/256 PASSED</span></p></div>
+</div>
+<div class="card"><h4>Stream wrapper (encrypt) — 0x33260</h4>
+<pre>ABI: (ctx, in, out, x3, w4=mode)     <span class="w">GATE: len%16 != 0 → no-op</span> <span class="c">(20B in → 209 steps, zero out)</span>
+mode 0 = <span class="k">ECB</span>                        CT_i = AES(PT_i)                        [proven]
+mode 1 = <span class="k">PREFIX-XOR-ECB</span>              CT_i = AES(PT_i ^ (PT_1⊕…PT_{i-1}))    [proven]
+mode 2 = <span class="k">SEEDED variant</span>              M1 = dec(CT1)^PT1 = 5db34a7a 22a88b39 35867cfc 884ab119
+decrypt wrapper 0x33aa8: mode 0/1 = exact inverses [proven]</pre></div>
+<div class="grid2">
+<div class="card"><h4>CRYPTO-A — 0x37cb8 (12 sites) — the dispatch</h4>
+<pre>switch(type){ 1 · 0x10d · 0x27c · 0x995 · 0xd9e · 0xf33
+  <span class="k">0x16c8 → KEY K4 + mode-1 PREFIX-XOR-ECB</span>  <span class="c">← the request-body cipher (end-to-end proven)</span>
+  each arm: KEYEXP → WRAP(mode) → per-block loop 0x33aa8 }</pre></div>
+<div class="card"><h4>CRYPTO-B / CRYPTO-C</h4>
+<pre>CRYPTO-B 0x395d4 — 1 caller (0x77a64) = <span class="k">C2 body transform only</span>
+CRYPTO-C 0x87690 — 17 callers, key = <span class="k">28B static @0x16f07</span> (XOR/stream seed, not fed to KEYEXP)
+= every JSON field re-encryption + response parsing</pre></div>
+</div>
+<div class="card"><h4>Keys inventory</h4>
+<table>
+<tr><th>key</th><th class="mono">location</th><th>use</th></tr>
+<tr><td>K1..K4 (AES-128)</td><td class="mono">runtime-decoded via 0x923c0</td><td>CRYPTO-A arms (K4 = request body, proven)</td></tr>
+<tr><td>28B key</td><td class="mono">static @0x16f07</td><td>CRYPTO-C</td></tr>
+<tr><td>M1 seed</td><td class="mono">5db34a7a22a88b3935867cfc884ab119</td><td>wrapper mode 2</td></tr>
+<tr><td>36-char app token</td><td class="mono">36-char encoding, decoded in x00113f7a</td><td>request auth / captcha path</td></tr>
+<tr><td>pin blob</td><td class="mono">0x14ce4 — 120B = b64(b64(hex(sha256))) = d845591e…ea6bec5e</td><td>signer pin (B6 rewrite on every build; traps 0x7c08c/0xbdb68)</td></tr>
+<tr><td>Keystore EC key</td><td class="mono">AndroidKeyStore alias "top_key_4286" (Java side)</td><td>device-identity attestation (§10)</td></tr>
+</table></div>
+</div></section>
+
+<!-- ================= S6 ================= -->
+<section id="s6"><div class="rv">
+<h2 class="sec"><span class="no">06</span>Detection — complete map (every check, exact trigger)</h2>
+<div class="grid2">
+<div class="card"><h4>Environment checks</h4>
+<table style="margin:0">
+<tr><th>check</th><th class="mono">addr</th><th>fires</th></tr>
+<tr><td>frida_scan (#1)</td><td class="mono">0x4c814</td><td>before every request</td></tr>
+<tr><td>frida_scan (#2)</td><td class="mono">0x6498c</td><td>every x0014b4f3 transform</td></tr>
+<tr><td>APK SHA re-verify</td><td class="mono">0x4c87c</td><td>before every request</td></tr>
+<tr><td>delmaps (maps tamper)</td><td class="mono">0x711f4</td><td>after every response</td></tr>
+<tr><td>frida_tokens</td><td class="mono">0x7276c</td><td>after every response</td></tr>
+<tr><td>APK SHA-2 variant</td><td class="mono">0x72e14</td><td>after every response</td></tr>
+<tr><td>pin_verify (blob 0x14ce4)</td><td class="mono">0x72e1c</td><td>after every response</td></tr>
+<tr><td>hooktokens + frida_tokens + CRYPTO_A</td><td class="mono">0xa5368/0xa5370/0xa54ec</td><td>after response (internal 0xa5xxx via 0xa5c90)</td></tr>
+</table></div>
+<div class="card warn"><h4>frida_scan 0xa4054 — what it looks for</h4>
+<p style="font-size:13px;color:var(--dim)">Reads <code>/proc/self/maps</code> (reader 0x59a28 in the 0x55000–0x5b000 module) → matches Frida markers (<code>frida</code>, <code>gadget</code>, <code>linjector</code>, agent tokens from the 0x92798 table) → <b>24× "gum-js-loop"</b> matches = Frida's JS worker thread name via <code>/proc/self/task/&lt;tid&gt;/comm</code> → <code>dl_iterate_phdr</code> (0x1028e8, single site) walks loaded DSOs for the same tokens.</p>
+<p style="margin-top:8px"><span class="pill red">inflate = NOT used here — dead code (0 callers)</span></p></div>
+</div>
+<div class="card"><h4>ROOT CHECK — 9× access() (exact)</h4>
+<pre>for i in 0..8:
+    src, len = overlapping windows (23..25B) of encoded blob @0x16fa0
+    path = STR_BUILD(src, len, dst, salt=0x5a)     <span class="c">; 0xa9ba0 — clock/epoch-gated decode</span>
+    if access(path, F_OK) == 0 → <span class="w">flag ROOT</span>          <span class="c">; import access(), sites @0xa998c..0xa9b4c</span></pre>
+<div class="badge-row">
+<span class="pill grn">/sbin/su</span><span class="pill grn">/system/bin/su</span><span class="pill grn">/system/xbin/su</span><span class="pill grn">/data/local/xbin/su</span><span class="pill grn">/data/local/bin/su</span><span class="pill grn">/system/sd/xbin/su</span><span class="pill grn">/data/local/su</span><span class="pill amb">0x16f93 len25 — epoch-gated (O2)</span><span class="pill amb">0x17008 len23 — epoch-gated (O2)</span>
+</div>
+<p style="font-size:12.5px;color:var(--dim)">7/9 decoded (isolated Unicorn of the builder); all 9 = classic su-binary presence checks. Zero su strings in the dex — root detection is 100% native.</p></div>
+<div class="card"><h4>XPOSED / FRIDA maps scan (inside x0015b1e9)</h4>
+<table>
+<tr><th>token (b64-encoded in rodata)</th><th class="mono">addr</th><th>flag</th></tr>
+<tr><td class="mono">xposed</td><td class="mono">0x1680c</td><td>XPOSED</td></tr>
+<tr><td class="mono">lsposed</td><td class="mono">0x163a4</td><td>LSPOSED</td></tr>
+<tr><td class="mono">edxposed</td><td class="mono">0x15dff</td><td>EDXPOSED</td></tr>
+<tr><td class="mono">gum-js-loop ×24 (thread comm)</td><td class="mono">module 0x55000–0x5b000</td><td>FRIDA-RUNTIME</td></tr>
+</table></div>
+<div class="card"><h4>Failure behavior</h4>
+<ol style="padding-left:20px;font-size:13.5px;color:var(--dim)">
+<li>flag bits set on 0x10eab0 page (hot slots 0x10ee90/0x10efd0/0x10eef0)</li>
+<li>next FLAGCHECK (0xe89fc, 1,956 sites) fails → <code>b .</code> <b>hang</b> (146 traps)</li>
+<li>some paths → 0xeb2d0 cluster → syslog + abort (crash-with-log)</li>
+<li>custom-B64 decode fail → <code>b .</code> @0x92748 (silent hang)</li>
+</ol></div>
+</div></section>
+
+<!-- ================= S7 ================= -->
+<section id="s7"><div class="rv">
+<h2 class="sec"><span class="no">07</span>URL / Header / Response construction (what's on the wire)</h2>
+<div class="grid2">
+<div class="card"><h4>String-decoding machinery</h4>
+<table style="margin:0">
+<tr><th class="mono">0x923c0</th><td>custom-B64 — <code>out[i]=table62[0x16f27][MBA(clock()⊕i)]</code>, alphabet A–Z a–z 0–9, 94 callers, fail→<code>b .</code> @0x92748</td></tr>
+<tr><th class="mono">0x86684</th><td>DECODE_STR — ≤20B direct MBA; ≥31B via 0x101cbc runtime walker (O1)</td></tr>
+<tr><th class="mono">0x38f60</th><td>CONCAT — 126 callers</td></tr>
+<tr><th class="mono">0x14d54+</th><td>symbol pool — 5,591 strings (JNI class/method/field names)</td></tr>
+</table></div>
+<div class="card"><h4>Endpoints</h4>
+<table style="margin:0">
+<tr><td>IG API base</td><td class="mono">i.instagram.com/api/v2/ (literal, len 0x20)</td></tr>
+<tr><td>IG paths</td><td class="mono">friendships/create/ · media/ · comment/ · create_note/v2/ · /save/ · seen/</td></tr>
+<tr><td>C2 base</td><td class="mono">https://nivafollower + topfollow_check.php (0x16ed0/0x16ef4)</td></tr>
+<tr><td>C2 domain (TLS)</td><td class="mono">nivafollower.app (0x172ce)</td></tr>
+<tr><td>IG client base</td><td class="mono">31B encoding @0x17230</td></tr>
+</table></div>
+</div>
+<div class="card"><h4>Request flow (wire order)</h4>
+<pre>x00120b1e (helper T + attestation fields) → x00135e2a (fbid_v2, interop fbid, follower/following)
+→ x0015a3b7 (username, order_id, fbid) → <span class="k">x0012e5a1</span> (all fields: b64-decode → CRYPTO_C → <span class="w">frida_scan → apksha</span>)
+→ x0017b62c (base+payload+hash) = final body
+headers: 36-char token (x00113f7a) + fingerprint (MANUFACTURER|BRAND|MODEL|BOARD|DEVICE|HARDWARE + "XRl")
+         + state JSON (x0011f42b) + Play Integrity token (Java side, 6h RIT)
+url  = x0011f1a2(order)
+client = x00126f7c (C2, <span class="k">3-pin cert pinner</span>) / x0018d3f7 (IG, selector)</pre></div>
+<div class="card"><h4>Response flow</h4>
+<pre>x0015e49c: isSuccessful? body.bytes() : errorBody.raw() → <span class="w">delmaps + frida_tokens + apksha2 + pin_verify</span> + CRYPTO-A decrypt
+x0014c1f9: body().string() → JSON → <span class="k">{hash_key, nonce, hash_type}</span> → model setters
+           <span class="c">; the handshake RATCHETS — next request's CRYPTO-A keying depends on these 3 fields</span></pre></div>
+</div></section>
+
+<!-- ================= S8 ================= -->
+<section id="s8"><div class="rv">
+<h2 class="sec"><span class="no">08</span>Anti-tamper state machine</h2>
+<div class="grid2">
+<div class="card"><h4>Counter page 0x10eab0..0x10f3a0 (147 QWORDs)</h4>
+<p style="font-size:13px;color:var(--dim)">Global state: flags, epochs, ptr-cache finals. GATE 0x37160 reads A, computes <code>A·(A−1)+B</code> (MBA-encoded); must be ∈ {9,10} else <code>b .</code>. Counters advanced only by legit code (0x36dfc init, 12 sites) — <b>patching counters desyncs the gate</b>.</p></div>
+<div class="card"><h4>Trigger arsenal</h4>
+<div class="kv">
+<span class="k">FLAGCHECK 0xe89fc</span><span>1,956 polls — kill-flag check at block boundaries</span>
+<span class="k">b . self-loops</span><span><b>146</b> hang traps (deliberate freeze on detection)</span>
+<span class="k">custom-B64 fail</span><span><code>b .</code> @0x92748 — silent hang on decode error</span>
+<span class="k">0xeb2d0 cluster</span><span>syslog + abort — crash-with-log</span>
+<span class="k">hot slots</span><span>0x10ee90×178 · 0x10efd0×110 · 0x10eef0×88</span>
+</div></div>
+</div>
+<div class="note"><b>Implication for the agent:</b> hooks must be <b>log-only</b> — no patched returns, no counter writes. Intercept at import level (access / __open_2 / syslog / abort) and at detection-fn entry/exit (read flags, never write). Frida's own presence is what R1/R3/R4-R8 catch — so the gadget must be injected, not runtime-scannable maps-wise (gum-js-loop thread + maps lines), and the agent must run with the scanner's token table in mind.</div>
+</div></section>
+
+<!-- ================= S9 ================= -->
+<section id="s9"><div class="rv">
+<h2 class="sec"><span class="no">09</span>APK — structure & manifest</h2>
+<p class="sub">Pure-Python analysis (androguard 4.1.4 dex/axml parse — no Java tooling in sandbox).</p>
+<div class="stats">
+<div class="stat rv"><div class="n" data-cnt="4050">0</div><div class="l">DEX CLASSES</div></div>
+<div class="stat rv"><div class="n" data-cnt="26618">0</div><div class="l">DEX METHODS</div></div>
+<div class="stat rv"><div class="n" data-cnt="21729">0</div><div class="l">DEX STRINGS</div></div>
+<div class="stat rv"><div class="n" data-cnt="1238">0</div><div class="l">ZIP ENTRIES</div></div>
+<div class="stat rv"><div class="n">846</div><div class="l">VERSION CODE (8.4.6)</div></div>
+</div>
+<div class="grid2">
+<div class="card"><h4>APK anatomy</h4>
+<pre>classes.dex            3,866,132 B   <span class="c">SINGLE dex</span>
+AndroidManifest.xml    17,924 B      binary AXML
+resources.arsc         2,181,552 B
+lib/ × 3 ABIs (arm64-v8a, x86, x86_64)
+  libtopfollow.so                  1,101,352 B  <span class="c">= analyzed .so</span>
+  libdatastore_shared_counter.so       7,112 B  <span class="c">androidx — NOT app code</span>
+assets/coin_anim.json  21,892 B      Lottie coin animation
+res/                   1,111 entries
+META-INF/              <span class="w">NO MANIFEST.MF / .SF / .RSA, NO sig block (v2/v3)</span>
+                       <span class="c">workspace file = unsigned pipeline artifact; the .so pin blob still
+                       holds the ORIGINAL signer hash d845591e… → B6 rewrite mandatory</span></pre></div>
+<div class="card"><h4>Manifest (complete)</h4>
+<pre>package com.nivaroid.topfollow  vCode 0x34e  vName 8.4.6
+compileSdk 36 · minSdk 24 · <span class="k">targetSdk 35</span>
+perms: INTERNET · FOREGROUND_SERVICE · FOREGROUND_SERVICE_SPECIAL_USE
+       POST_NOTIFICATIONS · ACCESS_NETWORK_STATE · WAKE_LOCK · c2dm
+application: <span class="k">name=MyApp</span> · allowBackup=false · <span class="w">extractNativeLibs=false</span> <span class="c">(build #9 → true)</span>
+LAUNCHER = <span class="k">TopActivity</span> (not MainActivity)
+19 activities (all exported=false) · DoTasksService (specialUse fg)
+TaskActionReceiver · FCM + Crashlytics + Installations</pre></div>
+</div>
+<div class="card"><h4>Dependency stack visible in dex</h4>
+<div class="badge-row">
+<span class="pill acc">Jetpack Compose</span><span class="pill acc">Room (MyDatabase)</span><span class="pill acc">Retrofit2 + OkHttp</span><span class="pill acc">Gson</span><span class="pill acc">DataStore + native</span><span class="pill pur">Firebase FCM</span><span class="pill pur">Crashlytics</span><span class="pill red">Play Integrity</span><span class="pill red">SafetyNet</span><span class="pill red">reCAPTCHA v3</span><span class="pill red">hCaptcha</span><span class="pill acc">Coroutines</span><span class="pill acc">Lottie</span>
+</div>
+<p style="font-size:13px;color:var(--dim);margin-top:8px">173 app classes (<code>com.nivaroid.topfollow.*</code>): application(3) · db(2) · <b>helper(3: T, q, a0)</b> · listeners(23) · models(75) · ui(19) · views(58) + obfuscated packages (i9, y9, z9, ca, ba, gc, m5, u7, s7, t2, w0, aa, r3…). Firebase project = <code>topfollow-74c69</code> / <code>topfollow-74c69.appspot.com</code>. <b>Root/xposed/frida strings in dex: ZERO</b> — all environment detection is native-side.</p></div>
+</div></section>
+
+<!-- ================= S10 ================= -->
+<section id="s10"><div class="rv">
+<h2 class="sec"><span class="no">10</span>Smali deep-dive — bridge, keystore, orchestrator, robot</h2>
+
+<h3>10.1 <span class="a">helper.q</span> — the native bridge</h3>
+<div class="card">
+<p style="font-size:13.5px;color:var(--dim);margin-bottom:10px">22 × <code>private static native</code> + 22 × <code>public static</code> <b>3-instruction pass-throughs</b> (zero logic). Load point = <code>MyApp.&lt;clinit&gt;</code> — literally 3 instructions:</p>
+<pre>const-string v0, <span class="s">"topfollow"</span>
+invoke-static v0, Ljava/lang/System;->loadLibrary
+return-void</pre>
+<table>
+<tr><th class="mono">wrapper</th><th class="mono">native</th><th>purpose (§04)</th><th class="mono">wrapper</th><th class="mono">native</th><th>purpose</th></tr>
+<tr><td class="mono">q.j()J</td><td class="mono">x0011a4c2</td><td>init/APKSHA</td><td class="mono">q.p(Resp,Ord,Acc)</td><td class="mono">x0015e49c</td><td>response handler</td></tr>
+<tr><td class="mono">q.v(Json)</td><td class="mono">x0012e5a1</td><td>MAIN sign+checks</td><td class="mono">q.q(Resp)</td><td class="mono">x0014c1f9</td><td>response parse</td></tr>
+<tr><td class="mono">q.u(Json,Acc,S)</td><td class="mono">x00135e2a</td><td>account JSON</td><td class="mono">q.r(Json,S,S)</td><td class="mono">x0015b1e9</td><td>xposed scan</td></tr>
+<tr><td class="mono">q.t(Json,Acc,Ord)</td><td class="mono">x0015a3b7</td><td>payload JSON</td><td class="mono">q.s(S,S,S)S</td><td class="mono">x0017b62c</td><td>string combine</td></tr>
+<tr><td class="mono">q.a(S)S</td><td class="mono">x0014b4f3</td><td>transform+frida</td><td class="mono">q.h(Ord)S</td><td class="mono">x0011f1a2</td><td>URL builder</td></tr>
+<tr><td class="mono">q.k(S,Z)Retro</td><td class="mono">x00126f7c</td><td>C2 client</td><td class="mono">q.l(I)Retro</td><td class="mono">x0018d3f7</td><td>IG client</td></tr>
+<tr><td class="mono">q.b()S</td><td class="mono">x0012f5b7</td><td>fingerprint</td><td class="mono">q.m()S</td><td class="mono">x0011f42b</td><td>state JSON</td></tr>
+<tr><td class="mono">q.o(S)S / q.n(S)S</td><td class="mono">x0012d3e0 / x0011e28b</td><td>hash A/B</td><td class="mono">q.c(S)S</td><td class="mono">x00105e9b</td><td>string codec</td></tr>
+<tr><td class="mono">q.d()S</td><td class="mono">x0016d3b9</td><td>C2 path</td><td class="mono">q.e()S</td><td class="mono">x0014e2e9</td><td>const string</td></tr>
+<tr><td class="mono">q.f()S</td><td class="mono">x0010e27f</td><td>pin getter</td><td class="mono">q.g()S</td><td class="mono">x00113f7a</td><td>36-char token</td></tr>
+</table></div>
+
+<h3>10.2 <span class="a">helper.T</span> — AndroidKeyStore ECDSA device identity <span class="pill red">NEW</span></h3>
+<div class="card">
+<p style="font-size:13.5px;color:var(--dim);margin-bottom:10px">The native side <b>calls back into Java</b> (FindClass T → NewObject → T.o/T.sd via GetMethodID "(String)String") to attach a hardware-bound signature to every request JSON:</p>
+<pre><span class="m">m5/h.v(bytes)</span> — one-time key creation:
+  if KeyStore(<span class="s">"AndroidKeyStore"</span>).containsAlias(<span class="s">"top_key_4286"</span>) return
+  KeyPairGenerator(<span class="s">"EC"</span>, <span class="s">"AndroidKeyStore"</span>)
+    .initialize(KeyGenParameterSpec(<span class="s">"top_key_4286"</span>, PURPOSE_SIGN)
+      .setAlgorithmParameterSpec(ECGenParameterSpec(<span class="s">"secp256r1"</span>))
+      .setDigests(<span class="s">"SHA-256"</span>).setUserAuthenticationRequired(false)
+      .setAttestationChallenge(bytes))        <span class="c">← challenge = input (hex via m5/h.x)</span>
+    .generateKeyPair()
+<span class="m">T.o(hex)</span>  → Base64( <span class="k">SHA256withECDSA.sign(data)</span> + <span class="s">"#"</span> + Base64(pubKey) + <span class="s">"#"</span> + JSON[cert chain] )
+<span class="m">T.sd(s)</span>  → Base64( SHA256withECDSA.sign(UTF8(s)) ) or <span class="s">"null"</span></pre>
+<p style="font-size:12.5px;color:var(--dim);margin-top:8px">Server can verify: key is device-bound (keystore, non-exportable), attestation chain, challenge binding. Non-exportable ⇒ cannot be lifted; hooking T.o/T.sd (Java-level) logs the blobs without touching the key.</p></div>
+
+<h3>10.3 <span class="a">i9/m.k</span> — main request orchestrator (203 insns)</h3>
+<div class="card">
+<pre>device = MyDatabase.getDevice()
+if device: <span class="k">q.v(json)</span>                      <span class="c">; native MAIN sign (frida_scan + apksha inside)</span>
+prefs = getSharedPreferences(<span class="s">"TOPNU_Shared"</span>, PRIVATE)
+deviceId = b64decode(prefs[<span class="s">"DeviceId"</span>])
+if empty: deviceId = b64encode(UUID.randomUUID()) → save
+<span class="k">q.u(json, account, deviceId)</span>
+if prefs[<span class="s">"SND"</span>] and prefs[<span class="s">"RID"</span>] == <span class="w">3850153</span>:
+    <span class="m">PLAY INTEGRITY:</span>  Play Integrity (IIntegrityService) [SafetyNet also wired]
+      check: <span class="s">"com.android.vending"</span> installed+enabled+signature-ok + versionCode ≥ 82380000
+      nonce = <span class="k">q.j()</span> + <span class="w">877665803231</span>        <span class="c">; native init token + constant</span>
+      rd    = b64decode(prefs[<span class="s">"RD"</span>])        <span class="c">; attestation challenge bytes</span>
+      IntegrityTokenRequest{nonce, token, rd}  → async Handler
+    json.addProperty(<span class="s">"x2"</span>, b64encode(b64decode(prefs[<span class="s">"AIT"</span>])→<span class="s">"x2"</span>))
+    RIT (integrity ts) expiry = <span class="w">21,600,000 ms = 6 hours</span>
+callback.onReady(json)   <span class="c">; → y9/a.onReady → q.a → request out</span></pre></div>
+
+<h3>10.4 <span class="a">DoTasksService + TaskActionReceiver</span> — the auto-robot</h3>
+<div class="card">
+<pre>onStartCommand(intent):
+  action=<span class="s">"stop"</span>   → cancel all aa/i tasks → stopSelf
+  action=<span class="s">"enable"</span> → aa/i(account=MyDatabase.p(id), ctx, scheduler) → task list
+  default        → notification channel, <span class="k">startForeground(1, "Auto Robot Running")</span>
+                   broadcast <span class="s">"task.service.receiver"</span> (pkg com.nivaroid.topfollow, extra <span class="s">"start"</span>)
+TaskActionReceiver: <span class="s">"task.service.receiver"</span> + type <span class="s">"stop"/"stoping"</span> → stop service</pre>
+<p style="font-size:13px;color:var(--dim);margin-top:8px">Per-account automation loop (like/comment/follow/save) in a foreground <b>specialUse</b> service — the product's coin economy: users earn coins (MinerRequests, daily gifts, invite codes) and spend them on orders executed by the robot.</p></div>
+
+<h3>10.5 <span class="a">CaptchaRequest</span> — human-proof flow</h3>
+<div class="card">
+<pre>showRobotDetectionDialog() → <span class="s">"Suspicious activity… prove that you are not a robot"</span>
+showReCaptcha()            → reCAPTCHA v3 SDK (site-key)
+showHCaptcha()             → hCaptcha (WebView <span class="s">js.hcaptcha.com/1/api.js</span>, site-key meta-data)
+verifyCaptcha(token)       → JsonObject{<span class="s">"request_id"</span>: …, token} → i9/m + JsonCallback
+                             <span class="c">; C2 verifies server-side; native q.f()/q.g() called from this path</span></pre></div>
+
+<h3>10.6 <span class="a">C2 API surface</span> (all .php endpoints from dex) + URLs</h3>
+<div class="card">
+<div class="badge-row">
+<span class="pill acc">account/addCoupon.php</span><span class="pill acc">account/changeMinerRequest.php</span><span class="pill acc">account/checkDailyGift.php</span><span class="pill acc">account/getCoupons.php</span><span class="pill acc">account/getDailyItems.php</span><span class="pill acc">account/getGiftCodeReward.php</span><span class="pill acc">account/getInviteData.php</span><span class="pill acc">account/getLeaderBoard.php</span><span class="pill acc">account/getMinerRequests.php</span><span class="pill acc">account/getQuestions.php</span><span class="pill red">account/getSecretKey.php</span><span class="pill acc">account/getUpgradeStatus.php</span><span class="pill red">account/requestDigitCode.php</span><span class="pill acc">account/setInviteCode.php</span><span class="pill acc">account/upgradeAccountToVip.php</span><span class="pill acc">order/getDefaultComment.php</span><span class="pill acc">order/getSelfOrders.php</span><span class="pill acc">order/syncOrder.php</span><span class="pill acc">get_image.php</span>
+</div>
+<table>
+<tr><th>URL</th><th>use</th></tr>
+<tr><td class="mono">https://b.i.instagram.com/</td><td>IG web-login API (WebView login flow)</td></tr>
+<tr><td class="mono">https://i.instagram.com/ + /rupload_igphoto/</td><td>IG media API + photo upload</td></tr>
+<tr><td class="mono">https://nivafollower-app.com/instagram_info/ic_2fa_1..5.jpg</td><td>2FA tutorial images</td></tr>
+<tr><td class="mono">…/suspicious_login_img_1..4.jpg</td><td>login-detection UX images</td></tr>
+<tr><td class="mono">https://topfollow-apk.org/ · tg://resolve?domain=followland</td><td>site · Telegram support</td></tr>
+<tr><td class="mono">googlechrome://navigate?url=instagram.com/accounts/emailsignup|password/reset</td><td>IG signup/reset deep links</td></tr>
+</table></div>
+
+<h3>10.7 <span class="a">Storage map</span></h3>
+<div class="card">
+<pre>SharedPreferences <span class="s">"TOPNU_Shared"</span>:  DeviceId (b64 UUID) · RD (b64 integrity challenge) · AIT (b64 auth)
+                                   RID (int 3850153) · RIT (6h expiry) · SND (bool)
+                                   <span class="c">— ALL values Base64'd via gc/l.j (decode) / gc/l.k (encode)</span>
+Room DB: accounts (u_id, username, fbid_v2, interop fbid, counts…) · orders (order_id, media_id, action) · device
+DataStore: shared counters (native lib)        Keystore: EC secp256r1 <span class="s">"top_key_4286"</span> (attested, sign-only)</pre></div>
+</div></section>
+
+<!-- ================= S11 ================= -->
+<section id="s11"><div class="rv">
+<h2 class="sec"><span class="no">11</span>Java → Native call graph (complete, full-dex scan)</h2>
+<table>
+<tr><th class="mono">native (via wrapper)</th><th>called by (smali)</th><th>context</th></tr>
+<tr><td class="mono">x0011a4c2 (q.j)</td><td class="mono">i9/m.k</td><td>orchestrator — init token + APKSHA</td></tr>
+<tr><td class="mono">x0012e5a1 (q.v)</td><td class="mono">i9/m.k</td><td>MAIN sign before request</td></tr>
+<tr><td class="mono">x00135e2a (q.u)</td><td class="mono">i9/m.k</td><td>account JSON</td></tr>
+<tr><td class="mono">x0015a3b7 (q.t)</td><td class="mono">y9/a.onReady</td><td>payload JSON (callback path)</td></tr>
+<tr><td class="mono">x0014b4f3 (q.a)</td><td class="mono">y9/a.onReady</td><td>transform + frida tripwire</td></tr>
+<tr><td class="mono">x0015b1e9 (q.r)</td><td class="mono">y9/b.onReady</td><td>xposed scan + setup JSON</td></tr>
+<tr><td class="mono">x0017b62c (q.s)</td><td class="mono">y9/b.onReady</td><td>final string combine</td></tr>
+<tr><td class="mono">x0011f1a2 (q.h)</td><td class="mono">aa/i.b · ba/f.success</td><td>URL build (robot task / order success)</td></tr>
+<tr><td class="mono">x00126f7c (q.k)</td><td class="mono">y9/h.&lt;init&gt; · y9/h.e</td><td>C2 Retrofit build</td></tr>
+<tr><td class="mono">x0018d3f7 (q.l)</td><td class="mono">z9/q.w</td><td>IG Retrofit build</td></tr>
+<tr><td class="mono">x0015e49c (q.p)</td><td class="mono">ba/h · ba/m · z9/m · z9/n  onResponse</td><td>response handler (4 call sites)</td></tr>
+<tr><td class="mono">x0014c1f9 (q.q)</td><td class="mono">ba/f · ba/q · r3/c · y9/e · y9/f  onResponse</td><td>response parse (5 call sites)</td></tr>
+<tr><td class="mono">x0012f5b7 (q.b)</td><td class="mono">gc/d.o</td><td>fingerprint per request map</td></tr>
+<tr><td class="mono">x0012d3e0/x0011e28b (q.o/q.n)</td><td class="mono">gc/l.k · gc/l.j</td><td>hash variants from codec helpers</td></tr>
+<tr><td class="mono">x0016d3b9 (q.d)</td><td class="mono">y9/d.onReady</td><td>C2 endpoint path</td></tr>
+<tr><td class="mono">x0014e2e9 (q.e)</td><td class="mono">y9/i.&lt;init&gt;</td><td>const token</td></tr>
+<tr><td class="mono">x0010e27f (q.f)</td><td class="mono">CaptchaRequest.showReCaptcha</td><td>pin getter in captcha path</td></tr>
+<tr><td class="mono">x00113f7a (q.g)</td><td class="mono">CaptchaRequest.showHCaptcha</td><td>36-char token in captcha path</td></tr>
+<tr><td class="mono">x0011f42b (q.m)</td><td class="mono">ca/i.onReady</td><td>state JSON</td></tr>
+<tr><td class="mono">x00120b1e (q.i)</td><td class="mono">ca/i.onReady</td><td>helper T + attestation JSON</td></tr>
+</table>
+<p style="font-size:12.5px;color:var(--dim)">Machine-readable: <code>work/v846/notes/v846_q_callers.json</code>. Notable: response handling splits across 9 callback classes (ba/z9/r3/y9) — the retrofit layer is fully obfuscated but call-complete.</p>
+</div></section>
+
+<!-- ================= S12 ================= -->
+<section id="s12"><div class="rv">
+<h2 class="sec"><span class="no">12</span>Agent plan (build #9) — refined by this analysis</h2>
+<p class="sub">Pipeline unchanged (build_logger → apk_build → repack --gadget --config --script → v2sign → verify → dist). extractNativeLibs → <b>true</b> (gadget/minizip fix). Agent hooks:</p>
+<table>
+<tr><th class="mono">hook</th><th class="mono">addr / target</th><th>action</th></tr>
+<tr><td class="mono">H13</td><td class="mono">0x86684 post</td><td>log decoded strings (registry URLs)</td></tr>
+<tr><td class="mono">H14</td><td class="mono">0x395d4 in/out</td><td>log C2 transform I/O (CRYPTO-B)</td></tr>
+<tr><td class="mono">H15</td><td class="mono">0x923c0 post (x0=in, x8=out)</td><td><b>log every decoded C-string — reveals ALL obfuscated text at runtime</b></td></tr>
+<tr><td class="mono">H16</td><td class="mono">0x38f60 post</td><td>log concatenations (URL/header assembly)</td></tr>
+<tr><td class="mono">H17</td><td class="mono">0xa4054 in/out</td><td>frida_scan verdict (flag delta)</td></tr>
+<tr><td class="mono">H18</td><td class="mono">0xa998c..0xa9b4c (access×9)</td><td>live su-path + result view (root check)</td></tr>
+<tr><td class="mono">H19</td><td class="mono">0xb88d8 / 0xc7c90 in/out</td><td>delmaps / pin_verify verdicts</td></tr>
+<tr><td class="mono">H20</td><td class="mono">0x37cb8 dispatch</td><td>CRYPTO-A type + key arm per call</td></tr>
+<tr><td class="mono">H21</td><td class="mono">Java T.o / T.sd</td><td>log attestation blobs (no key touch)</td></tr>
+<tr><td class="mono">H22</td><td class="mono">u7/r · s7/d (integrity)</td><td>log Play Integrity token request/result + nonce</td></tr>
+<tr><td class="mono">B6</td><td class="mono">0x14ce4 blob</td><td>rewrite signer sha (mandatory — pin_verify re-checks every response)</td></tr>
+<tr><td class="mono">traffic</td><td class="mono">okhttp/retrofit (Frida Java API)</td><td>full req/resp capture + encrypted resend (PC frida 17.18.0)</td></tr>
+</table>
+<div class="note grn"><b>Hard criteria (every build):</b> APK installs cleanly · no crash at launch · agent log-only (no counter/return patches) · sha256 reported after each stage · success only after <code>git ls-remote</code> shows the commit.</div>
+</div></section>
+
+<!-- ================= S13 ================= -->
+<section id="s13"><div class="rv">
+<h2 class="sec"><span class="no">13</span>Offset appendix (v846 — supersedes all prior notes)</h2>
+<div class="card" style="font-size:12.5px">
+<pre><span class="c">--- core</span>
+.text 0x2c734..0x105f04 · PLT 0x105f04..0x106558 (86) · .got/page 0x10eab0..0x10f3a0 (147)
+JNI_OnLoad 0x3f4d8 · JNI table 0x10a4e8 · ctors 0x37550, 0xcc4c8 · REGISTRY 0x101eb8
+<span class="c">--- strings</span>
+custom-B64 0x923c0 (alphabet 0x16f27 · fail-loop 0x92748 · clock 0x923fc) · frida_tokens 0x92798
+DECODE_STR 0x86684 (walker 0x101cbc) · CONCAT 0x38f60
+nivafollower 0x16ed0 · topfollow_check.php 0x16ef4 · nivafollower.app 0x172ce
+IG base 0x17208 · paths 0x1721b/0x17227/0x14854/0x14a48/0x1675b · 31B 0x17230
+SHA-256 tail 0x16248 · b64 xposed 0x1680c · lsposed 0x163a4 · edxposed 0x15dff
+/proc/self/maps b64 0x15a11 · su blob 0x16fa0 (O2 windows 0x16f93/0x17008)
+<span class="c">--- detection</span>
+FLAGCHECK 0xe89fc (1956) · GATE 0x37160 · GATEWRAP 0x3d0e0/0x3d0d4 · 146× b. traps
+frida_scan 0xa4054 (0x4c814, 0x6498c) · delmaps 0xb88d8 (0x711f4) · hooktokens 0xaf774
+apksha 0x7c08c (0x3fe80/0x3fed4/0x4c87c) · apksha2 0xbdb68 (0x72e14)
+pin_verify 0xc7c90 (0x72e1c) · pin blob 0x14ce4 (120B) · root: builder 0xa9ba0, access×9 0xa998c..0xa9b4c
+<span class="c">--- crypto</span>
+KEYEXP 0x31260 · ENC 0x2edf8 · DEC 0x2fdcc · WRAP 0x33260 (modes 0/1/2) · WRAP-DEC 0x33aa8
+CRYPTO-A 0x37cb8 (12 sites; arms 1/0x10d/0x27c/0x995/0xd9e/0xf33/0x16c8; 0x16c8=K4+mode1)
+CRYPTO-B 0x395d4 (0x77a64) · CRYPTO-C 0x87690 (17 sites; key28 @0x16f07)
+<span class="c">--- env offsets (usage-verified)</span>
+0x30 create · 0xf8 fieldID · 0x108 GetMethodID · 0x2b0/0xef0 mID var · 0x488 CallLong(timeout)
+0x538 NewStringUTF · 0x548 GetStringUTFChars · 0xb8 CallInt · 0x2f0/0x2f8 CallStatic · 0xec0 FindClass
+<span class="c">--- apk</span>
+bridge com.nivaroid.topfollow.helper.q (22 natives) · helper.T (keystore "top_key_4286")
+MyApp.&lt;clinit&gt; = loadLibrary("topfollow") · i9/m.k orchestrator · DoTasksService robot
+prefs "TOPNU_Shared" (DeviceId/RD/AIT/RID=3850153/RIT 6h/SND, all b64)
+Firebase topfollow-74c69 · C2 base 19× .php (see §10.6) · vNonce const 877665803231</pre></div>
+<h3>Open items (explicitly not closed)</h3>
+<div class="card">
+<table>
+<tr><th class="mono">#</th><th>item</th><th>resolution path</th></tr>
+<tr><td class="mono">O1</td><td>0x101cbc runtime walker (≥31B strings: 0x17277/0x172de/0x17230/0x16df4)</td><td>H13/H15 runtime capture — no more static work</td></tr>
+<tr><td class="mono">O2</td><td>2 su-path windows (0x16f93 len25, 0x17008 len23)</td><td>H18 live capture / in-order emulation</td></tr>
+<tr><td class="mono">O3</td><td>reader-2/3 runtime paths (0x985fc/0xae720)</td><td>sequential emulation or live capture</td></tr>
+<tr><td class="mono">O4</td><td>wrapper mode-2 seed derivation (M1 = 5db34a7a…)</td><td>runtime key/ctx dump (H20)</td></tr>
+<tr><td class="mono">O5</td><td>0xa5xxx fn boundary (via 0xa5c90)</td><td>internal fn of response path — behavior already mapped</td></tr>
+<tr><td class="mono">O6</td><td>CRYPTO-A arms other than 0x16c8 (keys behind O1)</td><td>H20 runtime capture</td></tr>
+</table></div>
+</div></section>
+
+<footer>
+TopFollow v8.4.6 (v846) — 5× deepest complete analysis · .so sha256 2b2a9eed…787b · APK sha256 ac0b993e…<br>
+Method: capstone static RE · machine-level BL scans · Unicorn instruction-level emulation (6/6 FIPS) · androguard dex/axml parse (pure Python)<br>
+branch arena/01a0aa64-rakshit · evidence: work/v846/notes/*.json · full text report: REPORT_v846_5x_DEEPEST.md
+</footer>
+</div>
+
+<script>
+// scroll reveal
+const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target);} }), {threshold:.08});
+document.querySelectorAll('.rv, .nat, .stat, .card, table, .tl .ev, .tl').forEach(el => io.observe(el));
+// counters
+const cio = new IntersectionObserver(es => es.forEach(e => {
+  if(!e.isIntersecting) return;
+  const el = e.target, tgt = +el.dataset.cnt; if(!tgt){return}
+  const t0 = performance.now(), dur = 1100;
+  (function step(t){ const p = Math.min(1,(t-t0)/dur); el.textContent = Math.round(tgt*(1-Math.pow(1-p,3))).toLocaleString(); if(p<1) requestAnimationFrame(step); })(t0);
+  cio.unobserve(el);
+}), {threshold:.4});
+document.querySelectorAll('[data-cnt]').forEach(el => cio.observe(el));
+// bars (if any) animate on load
+window.addEventListener('load', () => document.querySelectorAll('.bar i').forEach(b => b.style.width = b.dataset.w + '%'));
+</script>
+</body>
+</html>
