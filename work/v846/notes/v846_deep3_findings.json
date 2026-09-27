@@ -1,0 +1,171 @@
+{
+ "decoded_strings": {
+  "0x16ed0(20)": "https://nivafollower",
+  "0x16ef4(19)": "topfollow_check.php",
+  "0x17208(19)": "friendships/create/",
+  "0x1721b(6)": "media/",
+  "0x17227(9)": "comment/",
+  "0x172ce(16)": "nivafollower.app",
+  "0x16dea(6)": "5555d6545554 (6B crypto material)",
+  "0x17230(31)": "[JNI-segmented, registry path, undecoded statically]",
+  "0x16df4(31)": "[JNI-segmented, registry path, undecoded statically]",
+  "0x17277(36)": "[JNI-segmented, registry path, undecoded statically]",
+  "0x172de(47)": "[JNI-segmented, registry path, undecoded statically]",
+  "0x14854(3x b64)": "create_note/v2/",
+  "0x14a48(2x b64)": "/save/",
+  "0x14b0e(4x b64)": "https://",
+  "0x1564c(3x b64)": "https://i.instagram.com/api/v2/",
+  "0x15862(2x b64)": "https://www.instagram.com/",
+  "0x15a11(1x b64)": "/proc/self/maps",
+  "0x15c65(2x b64)": "HbF0Nh5lp (token)",
+  "0x15dff(2x b64)": "79dc69a2c79d (token)",
+  "0x1675b(3x b64)": "seen/",
+  "0x16992(1x b64)": "libfrida-gadget",
+  "0x163a4(1x b64)": "lsposed",
+  "0x16770(1x b64)": "libart.so (deleted)",
+  "0x16b64(1x b64)": "libbc.so (deleted)",
+  "0x16f31(1x b64)": "rwxp"
+ },
+ "pin_blob_0x14ce4": {
+  "format": "b64(b64(hex(sha256)))",
+  "sha256_hex": "d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e",
+  "note": "APK signature hash verified at 0x7c08c/0xbdb68; data blob updatable at runtime"
+ },
+ "jni_symbol_pool": {
+  "json_fields": [
+   "order_id",
+   "order_stamp2",
+   "follower_count",
+   "following_count",
+   "family_device_id",
+   "hash_key",
+   "hash_type",
+   "url",
+   "token",
+   "type",
+   "base",
+   "currentInstagram",
+   "account_type",
+   "request",
+   "errorBody"
+  ],
+  "json_quoted_literals": [
+   "\"hash_key\"",
+   "\"hash_type\""
+  ],
+  "okhttp_retrofit": [
+   "okhttp3/OkHttpClient$Builder",
+   "certificatePinner",
+   "()Lokhttp3/CertificatePinner;",
+   "()Lokhttp3/ResponseBody;",
+   "()Lokhttp3/HttpUrl;",
+   "writeTimeout",
+   "(Ljava/lang/String;)Lretrofit2/Retrofit$Builder;",
+   "(I)Lretrofit2/Retrofit;",
+   "()Lretrofit2/Retrofit;",
+   "SECONDS",
+   "java/util/concurrent/TimeUnit"
+  ],
+  "crypto_jni": [
+   "java/security/MessageDigest",
+   "getInstance",
+   "SHA-256"
+  ],
+  "fingerprint": [
+   "BRAND",
+   "HARDWARE",
+   "MANUFACTURER",
+   "ANDROID_ID",
+   "android/provider/Settings$Secure",
+   "getString",
+   "getDevice",
+   "family_device_id"
+  ],
+  "models": [
+   "com/nivaroid/topfollow/models/Order",
+   "com/nivaroid/topfollow/models/InstagramAccount",
+   "com/nivaroid/topfollow/db/MyDatabase",
+   "com/nivaroid/topfollow/helper/T"
+  ],
+  "gson": [
+   "(Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)V",
+   "(Lcom/google/gson/JsonObject;Lcom/nivaroid/topfollow/models/InstagramAccount;Lcom/nivaroid/topfollow/models/Order;)V",
+   "addProperty"
+  ],
+  "db": [
+   "add",
+   "addDevice",
+   "setHash_type"
+  ],
+  "obfuscated_names": [
+   "x0011f1a2",
+   "x0014e2e9",
+   "x0016d3b9",
+   "x0015e49c",
+   "x0014c1f9",
+   "x00113f7a",
+   "x00126f7c",
+   "x0018d3f7",
+   "x0011f42b",
+   "x0012f5b7",
+   "x0012e5a1",
+   "x00105e9b",
+   "x00120b1e",
+   "x00135e2a",
+   "x0015b1e9",
+   "x0014b4f3"
+  ],
+  "other_tokens": [
+   "1.2.8",
+   "yptn",
+   "D7q",
+   "Ut]",
+   "n<:",
+   "WVDcwEVM0tGVuJVag",
+   "eWdzaWs="
+  ]
+ },
+ "functions": {
+  "x0014e2e9_0x40048": "()String - DECODE(0x16ed0,w1=36,registry) -> NewStringUTF(vtbl[334]); C2 base URL getter",
+  "x0016d3b9_0x40234": "()String - DECODE(0x16ef4,w1=19) x2 branches -> NewStringUTF x2; topfollow_check.php getter",
+  "x0011f1a2_0x65338": "(Order)String - Order to API URL: DECODE base31(0x17230)+friendships/create(0x17208)+media(0x1721b)x4+comment(0x17227); CONCAT x9; GATEWRAP 0x3d0e0 x14; counter-guard loops",
+  "x0015e49c_0x67d98": "(Response,Order,...)String - 48KB response handler: FLAGCHECK x269, CONCAT x26, DECODE x12, installer 0x923c0 x10, CRYPTO-C 0x87690 x3, CTX_8b30 x11, JNI: NewStringUTF x20, PopLocalFrame x20, CallIntMethod x10, GetStringChars x6, GetStringRegion x5, GetArrayLength x2; saves via MyDatabase",
+  "x00113f7a_0x73ca8": "()String - DECODE(0x17277,w1=36,registry) + GATE + 2 JNI calls; 36-char runtime token getter",
+  "x0014c1f9_0x73f48": "(Response)String - response parse: body()/errorBody, GATE x~10, H_3b4d4 x15, 0xe8fe4 x12, 0xe8f10 x3, 0x9346c x4, symbol-pool refs 0x14-0x16 pages",
+  "x00126f7c_0x776ec": "(Z,String)Retrofit - C2 client: DECODE(0x172ce nivafollower.app) x2, CRYPTO_B(0x395d4) on 0xe40=3648B ctx built by 0xe8b30, PINNER 0x8c18c x3, OkHttpClient$Builder+certificatePinner+writeTimeout(TimeUnit.SECONDS), Retrofit$Builder.baseUrl",
+  "x0018d3f7_0x7a3ac": "(I)Retrofit - production API client: DECODE(0x17230 base31) x2 branches, PINNER x1, GATEWRAP x12, 0xc99a0/0xbd88c/0xc9b1c helpers, DECPAIR_c8310"
+ },
+ "helpers": {
+  "0x86684": "string decoder (x0=enc_src,w1=len,x8=dst); <=20B direct MBA decode; >=31B via JNI registry iterator walker 0x101cbc - needs live JVM",
+  "0x37160": "MBA call-order GATE: global counter pair via ptr cache 0x10e000 page; n(n-1) MBA + aux==9/10 boundary; fail->trap",
+  "0x38f60": "STR_CONCAT(dst,a,b) - gated",
+  "0x3d0e0": "gate wrapper -> 0x3c9e8 per-byte transform (URL param encoding) - gated",
+  "0xe8b30": "context struct builder (ctx for CRYPTO_B 0x395d4)",
+  "0x395d4": "CRYPTO_B bulk decrypt (x0=ctx,w1=len,x8=input); pipeline 0x3aab0/0x3b4d4/0x38df0/0xe84a8; rodata 0x1680b",
+  "0x8c18c": "CertificatePinner helper (3 pins in C2 client)",
+  "0x923c0": "b64+zlib embedded-payload installer - called 10x from response handler",
+  "0x0e89fc": "central flag checker: ldrb [x0]; bit0 set -> trap handler; 1956 call sites",
+  "0xc8198/0xc8310": "DECPAIR: 0x86684 x2 (registry strings)"
+ },
+ "anti_tamper": {
+  "flag_check_0e89fc_sites": 1956,
+  "self_loop_traps": 146,
+  "ptr_cache_page": "0x10e080..0x10ff00 (158 slots, init in JNI_OnLoad 0xcb000s)",
+  "hot_counter_slots": [
+   "0x10ee90(178 refs)",
+   "0x10ee98(79)",
+   "0x10efd0(110)",
+   "0x10efd8(80)",
+   "0x10eec0(49)",
+   "0x10eef0(88)"
+  ],
+  "direct_counter_bumps": [
+   "0xcf800",
+   "0xd2b30",
+   "0xd31a4",
+   "0xd3920",
+   "0xe0a4c"
+  ],
+  "gate_mba": "n*(n-1) XOR 0xfffffffe TST n*(n-1); aux counter must be 9 or 10 (cmp #9/#0xa)"
+ }
+}

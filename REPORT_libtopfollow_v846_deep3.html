@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>libtopfollow.so v846 — Deep-3 RE Report (animated)</title>
+<style>
+:root{
+  --bg:#0a0e14; --bg2:#0e1420; --panel:#111a28; --panel2:#15202f;
+  --line:#1e2d42; --tx:#c8d6e8; --dim:#7d8fa5; --acc:#37e08d; --acc2:#4fc3f7;
+  --warn:#ffb74d; --bad:#ff5470; --purple:#b388ff; --gold:#ffd54f;
+  --mono:'SF Mono','Cascadia Code',Consolas,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:15px/1.6 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:
+   radial-gradient(1200px 600px at 80% -10%, rgba(79,195,247,.08), transparent 60%),
+   radial-gradient(900px 500px at 10% 110%, rgba(55,224,141,.07), transparent 60%),
+   var(--bg);
+}
+.grid-bg{position:fixed;inset:0;z-index:-1;opacity:.35;
+  background-image:linear-gradient(rgba(79,195,247,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,195,247,.05) 1px,transparent 1px);
+  background-size:42px 42px;animation:gridpan 24s linear infinite}
+@keyframes gridpan{from{background-position:0 0}to{background-position:42px 84px}}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+/* ---------- nav ---------- */
+nav{position:sticky;top:0;z-index:50;background:rgba(10,14,20,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;align-items:center;overflow-x:auto;padding:10px 22px}
+nav a{color:var(--dim);text-decoration:none;font-size:12.5px;letter-spacing:.4px;padding:6px 11px;border-radius:8px;white-space:nowrap;transition:.25s}
+nav a:hover{color:var(--acc);background:rgba(55,224,141,.08)}
+nav .logo{color:var(--acc);font-family:var(--mono);font-weight:700;margin-right:8px;font-size:13px}
+nav .logo .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-right:7px;animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 8px var(--acc)}50%{opacity:.35;box-shadow:none}}
+
+/* ---------- hero ---------- */
+header{padding:74px 0 40px;position:relative}
+.hero-kicker{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--acc2);text-transform:uppercase;margin-bottom:14px;opacity:0;animation:fadeup .8s .1s forwards}
+h1{font-size:clamp(30px,4.6vw,52px);line-height:1.12;font-weight:800;letter-spacing:-1px;opacity:0;animation:fadeup .8s .25s forwards}
+h1 .g{background:linear-gradient(92deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{margin-top:16px;color:var(--dim);max-width:820px;font-size:16px;opacity:0;animation:fadeup .8s .4s forwards}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;opacity:0;animation:fadeup .8s .55s forwards}
+.chip{font-family:var(--mono);font-size:12px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--dim)}
+.chip b{color:var(--acc);font-weight:600}
+@keyframes fadeup{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* stat cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:34px 0 10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;position:relative;overflow:hidden}
+.stat::after{content:"";position:absolute;left:0;top:0;height:2px;width:100%;background:linear-gradient(90deg,var(--acc),transparent);transform:scaleX(0);transform-origin:left;animation:bar 1.2s .6s forwards}
+@keyframes bar{to{transform:scaleX(1)}}
+.stat .n{font-size:30px;font-weight:800;font-family:var(--mono);color:var(--acc)}
+.stat .l{font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:.3px}
+
+/* ---------- sections ---------- */
+section{padding:56px 0 10px}
+h2{font-size:27px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+h2 .num{font-family:var(--mono);color:var(--acc);font-size:16px;display:block;margin-bottom:6px;letter-spacing:2px}
+h3{font-size:18px;margin:26px 0 10px;color:#e8f1fb}
+h3 .tag{font-family:var(--mono);font-size:12px;color:var(--acc2);margin-left:8px}
+p{color:var(--dim);margin:10px 0}
+p b,li b{color:var(--tx)}
+ul,ol{margin:10px 0 10px 22px;color:var(--dim)}
+li{margin:6px 0}
+code,pre{font-family:var(--mono)}
+code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1.5px 7px;font-size:12.5px;color:var(--acc2)}
+pre{background:#0b111b;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;color:#a8c3de;margin:14px 0}
+pre .c{color:#5c7290}pre .k{color:var(--acc)}pre .s{color:var(--gold)}pre .h{color:var(--purple)}
+.callout{border-left:3px solid var(--acc);background:rgba(55,224,141,.06);padding:14px 18px;border-radius:0 12px 12px 0;margin:18px 0}
+.callout.warn{border-color:var(--warn);background:rgba(255,183,77,.06)}
+.callout.bad{border-color:var(--bad);background:rgba(255,84,112,.06)}
+.callout .t{font-weight:700;font-size:13px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;color:var(--tx)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.rv.on{opacity:1;transform:none}
+.rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
+
+/* ---------- tables ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}
+.tbl th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--acc2);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);position:sticky;top:49px;background:var(--bg2)}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(30,45,66,.55);vertical-align:top;color:var(--dim)}
+.tbl tr:hover td{background:rgba(79,195,247,.045);color:var(--tx)}
+.tbl td:first-child{font-family:var(--mono);color:var(--acc);white-space:nowrap}
+.tbl .mono{font-family:var(--mono);font-size:12px;color:#9fb4cd}
+.badge{display:inline-block;font-size:10.5px;font-family:var(--mono);padding:2px 8px;border-radius:999px;letter-spacing:.5px}
+.badge.g{background:rgba(55,224,141,.12);color:var(--acc);border:1px solid rgba(55,224,141,.35)}
+.badge.b{background:rgba(79,195,247,.12);color:var(--acc2);border:1px solid rgba(79,195,247,.35)}
+.badge.o{background:rgba(255,183,77,.12);color:var(--warn);border:1px solid rgba(255,183,77,.35)}
+.badge.r{background:rgba(255,84,112,.12);color:var(--bad);border:1px solid rgba(255,84,112,.35)}
+.badge.p{background:rgba(179,136,255,.12);color:var(--purple);border:1px solid rgba(179,136,255,.35)}
+
+/* ---------- flowchart svg ---------- */
+.fc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 14px;margin:22px 0;overflow-x:auto}
+.fc .fc-title{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--acc2);text-transform:uppercase;margin:0 8px 10px}
+svg.flow{display:block;margin:0 auto;max-width:100%}
+svg.flow .node{fill:var(--panel2);stroke:var(--line);stroke-width:1.4;rx:10;transition:.3s;cursor:default}
+svg.flow .node:hover{stroke:var(--acc);filter:drop-shadow(0 0 8px rgba(55,224,141,.35))}
+svg.flow .node.key{stroke:var(--acc);fill:rgba(55,224,141,.07)}
+svg.flow .node.warn{stroke:var(--warn);fill:rgba(255,183,77,.07)}
+svg.flow .node.bad{stroke:var(--bad);fill:rgba(255,84,112,.07)}
+svg.flow .node.io{stroke:var(--acc2);fill:rgba(79,195,247,.07)}
+svg.flow .node.pu{stroke:var(--purple);fill:rgba(179,136,255,.07)}
+svg.flow text{font-family:var(--mono);font-size:11.5px;fill:var(--tx)}
+svg.flow .sub{font-size:9.5px;fill:var(--dim)}
+svg.flow .edge{fill:none;stroke:#2b4260;stroke-width:1.6}
+svg.flow .edge.flowline{stroke:var(--acc);stroke-dasharray:7 7;animation:dash 1.1s linear infinite}
+svg.flow .edge.dim{stroke-dasharray:4 5;stroke:#31465f}
+@keyframes dash{to{stroke-dashoffset:-14}}
+svg.flow .draw{stroke-dasharray:1200;stroke-dashoffset:1200}
+svg .on .draw{animation:draw 1.6s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+svg.flow .pulse-dot{fill:var(--acc)}
+@keyframes travel{0%{offset-distance:0%}100%{offset-distance:100%}}
+.node-title{font-weight:700}
+
+/* typewriter decode demo */
+.decode-demo{background:#0b111b;border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;font-family:var(--mono);font-size:13px}
+.decode-demo .row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px dashed rgba(30,45,66,.6)}
+.decode-demo .row:last-child{border:none}
+.decode-demo .off{color:var(--acc)}
+.decode-demo .ct{color:#5c7290;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.decode-demo .pt{color:var(--acc);min-height:1.4em}
+.cursor{display:inline-block;width:8px;height:14px;background:var(--acc);vertical-align:-2px;animation:blink .8s steps(1) infinite}
+.decode-demo .sel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.decode-demo button{background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:11.5px;padding:5px 11px;border-radius:8px;cursor:pointer;transition:.2s}
+.decode-demo button:hover,.decode-demo button.act{color:var(--acc);border-color:var(--acc);background:rgba(55,224,141,.08)}
+
+/* pipeline steps */
+.pipe{counter-reset:step;margin:18px 0}
+.step{display:flex;gap:14px;margin:10px 0;position:relative}
+.step .b{flex:0 0 34px;height:34px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;color:var(--acc);font-size:13px;position:relative;z-index:1}
+.step::before{content:"";position:absolute;left:16px;top:34px;bottom:-10px;width:1.5px;background:var(--line)}
+.step:last-child::before{display:none}
+.step .c{padding-top:5px}
+.step .c .h{font-weight:700;color:var(--tx);font-size:14.5px}
+.step .c .d{color:var(--dim);font-size:13px}
+.step .c code{font-size:11.5px}
+
+/* radar gauge */
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:18px 0}
+.gauge{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
+.gauge .ring{width:110px;height:110px;margin:8px auto;position:relative}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:19px;font-weight:800;color:var(--tx)}
+.gauge .lbl{font-size:12px;color:var(--dim);letter-spacing:.4px}
+.gauge .ring circle.fg{transition:stroke-dashoffset 1.6s cubic-bezier(.3,.7,.3,1)}
+
+/* two col */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h4{font-size:14.5px;margin-bottom:8px;color:var(--tx)}
+.card h4 .mono{font-family:var(--mono);color:var(--acc);font-size:12px}
+
+footer{margin-top:60px;padding:34px 0 46px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.toc-note{font-size:12px;color:var(--dim);margin-top:4px}
+.search{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--tx);font-family:var(--mono);font-size:13px;margin:12px 0}
+.search:focus{outline:none;border-color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<nav><div class="wrap">
+  <span class="logo"><span class="dot"></span>TOPFOLLOW·v846</span>
+  <a href="#overview">Overview</a><a href="#strings">Strings</a><a href="#url">URL Build</a>
+  <a href="#headers">Headers &amp; Signing</a><a href="#response">Response</a><a href="#crypto">Crypto</a>
+  <a href="#tamper">Anti-Tamper</a><a href="#detection">Detection</a><a href="#agent">Agent Plan</a>
+  <a href="#offsets">Offsets</a>
+</div></nav>
+
+<header><div class="wrap">
+  <div class="hero-kicker">Deep-3 Reverse Engineering Report · 2026-09-27</div>
+  <h1>libtopfollow.so <span class="g">v846</span><br>URL · Headers · Response — exact flows</h1>
+  <p class="hero-sub">Third-pass (3× deeper) analysis of the Instagram-automation native library inside
+  <b style="color:var(--tx)">com.nivaroid.topfollow</b> 8.4.6. Unicorn-verified decoders, complete encoded-string
+  inventory, reconstructed Retrofit/HTTP pipeline, and a quantified call-sequence anti-tamper state machine.</p>
+  <div class="hero-meta">
+    <span class="chip">arch <b>arm64-v8a</b></span>
+    <span class="chip">size <b>1,101,352 B</b></span>
+    <span class="chip">text <b>0x2c734–0x105f04</b></span>
+    <span class="chip">JNI natives <b>22</b></span>
+    <span class="chip">decoded strings <b>25+</b></span>
+    <span class="chip">flag checkpoints <b>1,956</b></span>
+    <span class="chip">method <b>Unicorn 64 + capstone + ELF</b></span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n" data-count="36">0</div><div class="l">string-decode call sites</div></div>
+    <div class="stat"><div class="n" data-count="26">0</div><div class="l">endpoints / tokens decoded</div></div>
+    <div class="stat"><div class="n" data-count="158">0</div><div class="l">pointer-cache slots (0x10e080–0x10ff00)</div></div>
+    <div class="stat"><div class="n" data-count="1956">0</div><div class="l">central flag-check sites (0x0e89fc)</div></div>
+    <div class="stat"><div class="n" data-count="146">0</div><div class="l">self-loop traps (b .)</div></div>
+    <div class="stat"><div class="n" data-count="10">0</div><div class="l">embedded-payload installs per response</div></div>
+  </div>
+</div></header>
+
+<!-- ================= OVERVIEW ================= -->
+<section id="overview"><div class="wrap">
+  <h2 class="rv"><span class="num">§1</span>What this library does</h2>
+  <p class="rv">The native layer is a complete <b>client-side automation engine</b> for Instagram actions
+  (follow / unfollow / comment / note / save / seen), wrapped in heavy obfuscation. It:</p>
+  <div class="cols">
+    <div class="card rv d1"><h4>1 · Talks to Instagram's private API</h4>
+      <p style="font-size:13.5px">Builds requests against <code>https://i.instagram.com/api/v2/</code> using
+      per-action path segments (<code>friendships/create/</code>, <code>media/</code>, <code>comment/</code>,
+      <code>create_note/v2/</code>, <code>seen/</code>, <code>/save/</code>) assembled natively from an
+      <code>Order</code> model — the Java layer never sees the raw URL template.</p></div>
+    <div class="card rv d2"><h4>2 · Runs its own C2 channel</h4>
+      <p style="font-size:13.5px">A second Retrofit client targets <code>nivafollower.app</code>
+      (cert-pinned, 3 pins) with <code>topfollow_check.php</code>; a 3,648-byte config blob is
+      <b>bulk-decrypted at runtime</b> (CRYPTO-B) before client construction.</p></div>
+    <div class="card rv d3"><h4>3 · Signs &amp; verifies payloads</h4>
+      <p style="font-size:13.5px">AES-128 (FIPS-197, 4 emulated mode-wrappers), SHA-256 via Java
+      <code>MessageDigest</code>, <code>hash_key</code>/<code>hash_type</code> JSON fields, and an APK
+      SHA-256 integrity pin (120-byte triple-encoded blob at <code>0x14ce4</code>).</p></div>
+    <div class="card rv d4"><h4>4 · Defends itself relentlessly</h4>
+      <p style="font-size:13.5px">1,956 compromise-flag polls, 146 infinite-loop traps, an MBA-encoded
+      <b>call-epoch counter</b> that makes every function order-sensitive, Frida/Xposed/LSPosed/deleted-library
+      scanners, and a 10× embedded b64+zlib payload installer inside the response handler.</p></div>
+  </div>
+</div></section>
+
+<!-- ================= STRINGS ================= -->
+<section id="strings"><div class="wrap">
+  <h2 class="rv"><span class="num">§2</span>String decoding — the 0x86684 machine</h2>
+  <p class="rv">All obfuscated rodata strings are decoded by <b>one</b> function, <code>0x86684</code>
+  (ABI <code>x0=src, w1=len, x8=dst</code>). Short inputs (≤20 B) decode through an MBA byte loop;
+  long inputs (≥31 B) take a <b>segmented path through a JNI iterator walker</b>
+  (<code>0x101cbc</code>) that pulls segments from a live Java object — undecodable without a JVM,
+  trivial to capture at runtime (hook post-call <code>x8</code>).</p>
+
+  <div class="decode-demo rv d1" id="decodemo">
+    <div class="sel" id="demobtns"></div>
+    <div class="row"><span class="off" id="dm-off">0x16ed0</span><span class="ct" id="dm-ct"></span></div>
+    <div class="row"><span class="off" style="color:var(--acc2)">decoded</span><span class="pt" id="dm-pt"></span></div>
+  </div>
+
+  <table class="tbl rv d2">
+    <thead><tr><th>offset</th><th>w1</th><th>call sites</th><th>decoded value</th><th>method</th></tr></thead>
+    <tbody>
+      <tr><td>0x16ed0</td><td class="mono">36 / 20</td><td class="mono">0x40098 / 0x3884c-rgn</td><td><b>https://nivafollower</b> (+16-char registry tail)</td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x16ef4</td><td class="mono">19</td><td class="mono">0x402c4 · 0x40320</td><td><b>topfollow_check.php</b></td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x17208</td><td class="mono">19</td><td class="mono">0x6639c</td><td><b>friendships/create/</b></td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x1721b</td><td class="mono">6</td><td class="mono">×6 (0x66548…0x6e4ac)</td><td><b>media/</b></td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x17227</td><td class="mono">9</td><td class="mono">0x66e80 · 0x6e9f4</td><td><b>comment/</b></td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x172ce</td><td class="mono">16</td><td class="mono">0x7816c · 0x781d8</td><td><b>nivafollower.app</b> (cert-pinner domain)</td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x16dea</td><td class="mono">6</td><td class="mono">order-builder rgn</td><td><b>5555d6545554</b> (6 B crypto material)</td><td><span class="badge g">emu ✓</span></td></tr>
+      <tr><td>0x17230</td><td class="mono">31</td><td class="mono">×9 (0x6e0cc…0x7b560)</td><td>base API path (31 ch)</td><td><span class="badge o">JNI-seg · hook</span></td></tr>
+      <tr><td>0x16df4</td><td class="mono">31</td><td class="mono">0x6e0cc · 0x6e0e0</td><td>base variant (31 ch)</td><td><span class="badge o">JNI-seg · hook</span></td></tr>
+      <tr><td>0x17277</td><td class="mono">36</td><td class="mono">0x73cf8</td><td>runtime token (36 ch)</td><td><span class="badge o">JNI-seg · hook</span></td></tr>
+      <tr><td>0x172de</td><td class="mono">47</td><td class="mono">0x7a214</td><td>Retrofit#2 base (47 ch)</td><td><span class="badge o">JNI-seg · hook</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="rv">Base64 inventory <span class="tag">2–4 layers, recursive sweep of .rodata</span></h3>
+  <table class="tbl rv d1">
+    <thead><tr><th>offset</th><th>layers</th><th>value</th><th>role</th></tr></thead>
+    <tbody>
+      <tr><td>0x1564c</td><td class="mono">3</td><td><b>https://i.instagram.com/api/v2/</b></td><td>IG API base</td></tr>
+      <tr><td>0x15862</td><td class="mono">2</td><td><b>https://www.instagram.com/</b></td><td>web host</td></tr>
+      <tr><td>0x14b0e</td><td class="mono">4</td><td><b>https://</b></td><td>scheme prefix</td></tr>
+      <tr><td>0x14854</td><td class="mono">3</td><td><b>create_note/v2/</b></td><td>endpoint</td></tr>
+      <tr><td>0x1675b</td><td class="mono">3</td><td><b>seen/</b></td><td>endpoint</td></tr>
+      <tr><td>0x14a48</td><td class="mono">2</td><td><b>/save/</b></td><td>endpoint</td></tr>
+      <tr><td>0x14ce4</td><td class="mono">3</td><td class="mono">d845591e…ec5e</td><td><b>APK SHA-256 pin</b> (120 B blob)</td></tr>
+      <tr><td>0x15a11</td><td class="mono">1</td><td>/proc/self/maps</td><td>detection</td></tr>
+      <tr><td>0x16992</td><td class="mono">1</td><td>libfrida-gadget</td><td>detection</td></tr>
+      <tr><td>0x163a4</td><td class="mono">1</td><td>lsposed</td><td>detection</td></tr>
+      <tr><td>0x16770</td><td class="mono">1</td><td>libart.so (deleted)</td><td>detection</td></tr>
+      <tr><td>0x16b64</td><td class="mono">1</td><td>libbc.so (deleted)</td><td>detection</td></tr>
+      <tr><td>0x16f31</td><td class="mono">1</td><td>rwxp</td><td>maps permission check</td></tr>
+      <tr><td>0x15c65</td><td class="mono">2</td><td>HbF0Nh5lp</td><td>token</td></tr>
+      <tr><td>0x15dff</td><td class="mono">2</td><td>79dc69a2c79d</td><td>token</td></tr>
+    </tbody>
+  </table>
+  <div class="callout rv"><div class="t">Why it matters</div>
+  The app's full network surface is now known statically: IG API base + 6 path segments + C2 host + check
+  endpoint. The only static blind spots are the four JNI-segmented strings — all captured by one runtime hook.</div>
+</div></section>
+
+<!-- ================= URL BUILD ================= -->
+<section id="url"><div class="wrap">
+  <h2 class="rv"><span class="num">§3</span>URL construction — exact flow</h2>
+  <p class="rv">Three native builders produce URLs; the <code>Order</code> model decides the action path.</p>
+
+  <div class="fc rv"><div class="fc-title">Order → request URL · x0011f1a2 @ 0x65338 (10,848 B)</div>
+  <svg class="flow" width="1060" height="470" viewBox="0 0 1060 470">
+    <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#2b4260"/></marker>
+    <marker id="arg" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#37e08d"/></marker></defs>
+    <!-- row 1 -->
+    <rect class="node io" x="20" y="40" width="170" height="58" rx="10"/><text x="105" y="64" text-anchor="middle" class="node-title">Order (jobject)</text><text x="105" y="82" text-anchor="middle" class="sub">order_id · account_type · base</text>
+    <rect class="node" x="240" y="40" width="200" height="58" rx="10"/><text x="340" y="64" text-anchor="middle" class="node-title">JNI field reads</text><text x="340" y="82" text-anchor="middle" class="sub">CallIntMethod ×10 · env vtbl</text>
+    <rect class="node key" x="490" y="30" width="220" height="78" rx="10"/><text x="600" y="55" text-anchor="middle" class="node-title">type switch</text><text x="600" y="74" text-anchor="middle" class="sub">friendships/create/ · media/</text><text x="600" y="90" text-anchor="middle" class="sub">comment/ (0x17208/1b/27)</text>
+    <rect class="node key" x="760" y="40" width="270" height="58" rx="10"/><text x="895" y="64" text-anchor="middle" class="node-title">DECODE base31 (0x17230)</text><text x="895" y="82" text-anchor="middle" class="sub">JNI-segmented · @0x86684</text>
+    <!-- row 2 -->
+    <rect class="node" x="490" y="170" width="220" height="58" rx="10"/><text x="600" y="194" text-anchor="middle" class="node-title">STR_CONCAT ×9</text><text x="600" y="212" text-anchor="middle" class="sub">0x38f60 (dst,a,b) — gated</text>
+    <rect class="node warn" x="760" y="170" width="270" height="58" rx="10"/><text x="895" y="194" text-anchor="middle" class="node-title">param-encode ×14</text><text x="895" y="212" text-anchor="middle" class="sub">0x3d0e0→0x3c9e8 per-byte MBA</text>
+    <rect class="node io" x="240" y="170" width="200" height="58" rx="10"/><text x="340" y="194" text-anchor="middle" class="node-title">NewStringUTF</text><text x="340" y="212" text-anchor="middle" class="sub">env vtbl[334]</text>
+    <rect class="node pu" x="20" y="170" width="170" height="58" rx="10"/><text x="105" y="194" text-anchor="middle" class="node-title">URL string</text><text x="105" y="212" text-anchor="middle" class="sub">returned to Java</text>
+    <!-- row 3: guard -->
+    <rect class="node bad" x="490" y="300" width="540" height="74" rx="10"/><text x="760" y="326" text-anchor="middle" class="node-title">counter-guard loops (every decode)</text><text x="760" y="345" text-anchor="middle" class="sub">ldrw [cntA]·ldrw [cntB] → n(n−1) MBA → cmp B, #9/#0xa → fail: b . (hang)</text><text x="760" y="361" text-anchor="middle" class="sub">traps @ 0x66384 · 0x66b40 · 0x66a4c …</text>
+    <rect class="node" x="20" y="300" width="170" height="74" rx="10"/><text x="105" y="326" text-anchor="middle" class="node-title">FLAGCHECK</text><text x="105" y="345" text-anchor="middle" class="sub">0x0e89fc ×37</text><text x="105" y="361" text-anchor="middle" class="sub">bit0 → trap</text>
+    <rect class="node" x="240" y="300" width="200" height="74" rx="10"/><text x="340" y="326" text-anchor="middle" class="node-title">GATE 0x37160 ×2</text><text x="340" y="345" text-anchor="middle" class="sub">call-epoch counter</text><text x="340" y="361" text-anchor="middle" class="sub">MBA n(n−1) check</text>
+    <!-- edges -->
+    <path class="edge" d="M190,69 L240,69" marker-end="url(#ar)"/>
+    <path class="edge" d="M440,69 L490,69" marker-end="url(#ar)"/>
+    <path class="edge" d="M710,69 L760,69" marker-end="url(#ar)"/>
+    <path class="edge flowline" d="M895,98 L895,120 L600,120 L600,170" marker-end="url(#arg)"/>
+    <path class="edge" d="M710,199 L760,199" marker-end="url(#ar)"/>
+    <path class="edge" d="M490,199 L440,199" marker-end="url(#ar)"/>
+    <path class="edge" d="M240,199 L190,199" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M600,228 L600,300" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M105,228 L105,300" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M340,228 L340,300" marker-end="url(#ar)"/>
+    <text x="530" y="430" class="sub" fill="#5c7290">decoded example:  https://i.instagram.com/api/v2/ + friendships/create/ + ?…(14 gated param encodes)</text>
+  </svg></div>
+
+  <div class="fc rv"><div class="fc-title">C2 Retrofit client · x00126f7c (Z,String)→Retrofit @ 0x776ec (11,456 B)</div>
+  <svg class="flow" width="1060" height="330" viewBox="0 0 1060 330">
+    <rect class="node io" x="20" y="40" width="180" height="58" rx="10"/><text x="110" y="64" text-anchor="middle" class="node-title">(bool, String)</text><text x="110" y="82" text-anchor="middle" class="sub">JNI args</text>
+    <rect class="node key" x="250" y="40" width="220" height="58" rx="10"/><text x="360" y="64" text-anchor="middle" class="node-title">DECODE nivafollower.app</text><text x="360" y="82" text-anchor="middle" class="sub">0x172ce ×2 (0x7816c/0x781d8)</text>
+    <rect class="node" x="520" y="40" width="220" height="58" rx="10"/><text x="630" y="64" text-anchor="middle" class="node-title">CTX build 0xe8b30</text><text x="630" y="82" text-anchor="middle" class="sub">3,648 B (0xe40) struct</text>
+    <rect class="node key" x="790" y="40" width="250" height="58" rx="10"/><text x="915" y="64" text-anchor="middle" class="node-title">CRYPTO-B bulk decrypt</text><text x="915" y="82" text-anchor="middle" class="sub">0x395d4 (x0=ctx,w1=0xe40,x8=in)</text>
+    <rect class="node" x="790" y="150" width="250" height="58" rx="10"/><text x="915" y="174" text-anchor="middle" class="node-title">OkHttpClient$Builder</text><text x="915" y="192" text-anchor="middle" class="sub">writeTimeout(…, SECONDS)</text>
+    <rect class="node warn" x="520" y="150" width="220" height="58" rx="10"/><text x="630" y="174" text-anchor="middle" class="node-title">certificatePinner</text><text x="630" y="192" text-anchor="middle" class="sub">0x8c18c ×3 — 3 pins, domain .app</text>
+    <rect class="node key" x="250" y="150" width="220" height="58" rx="10"/><text x="360" y="174" text-anchor="middle" class="node-title">Retrofit$Builder</text><text x="360" y="192" text-anchor="middle" class="sub">baseUrl(String arg) .client()</text>
+    <rect class="node io" x="20" y="150" width="180" height="58" rx="10"/><text x="110" y="174" text-anchor="middle" class="node-title">Retrofit</text><text x="110" y="192" text-anchor="middle" class="sub">→ topfollow_check.php</text>
+    <rect class="node pu" x="250" y="250" width="500" height="56" rx="10"/><text x="500" y="273" text-anchor="middle" class="node-title">URL getters</text><text x="500" y="291" text-anchor="middle" class="sub">x0014e2e9 → 36-ch C2 base (0x16ed0/36) · x0016d3b9 → topfollow_check.php (0x16ef4/19)</text>
+    <path class="edge" d="M200,69 L250,69" marker-end="url(#ar)"/>
+    <path class="edge" d="M470,69 L520,69" marker-end="url(#ar)"/>
+    <path class="edge" d="M740,69 L790,69" marker-end="url(#ar)"/>
+    <path class="edge flowline" d="M915,98 L915,150" marker-end="url(#arg)"/>
+    <path class="edge" d="M790,179 L740,179" marker-end="url(#ar)"/>
+    <path class="edge" d="M520,179 L470,179" marker-end="url(#ar)"/>
+    <path class="edge" d="M250,179 L200,179" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M500,250 L500,208" marker-end="url(#ar)"/>
+  </svg></div>
+
+  <div class="fc rv"><div class="fc-title">Production IG client · x0018d3f7 (I)→Retrofit @ 0x7a3ac (7,392 B)</div>
+  <svg class="flow" width="1060" height="210" viewBox="0 0 1060 210">
+    <rect class="node io" x="20" y="50" width="150" height="58" rx="10"/><text x="95" y="74" text-anchor="middle" class="node-title">int mode</text><text x="95" y="92" text-anchor="middle" class="sub">env/profile id</text>
+    <rect class="node key" x="220" y="50" width="250" height="58" rx="10"/><text x="345" y="74" text-anchor="middle" class="node-title">DECODE base31 ×2</text><text x="345" y="92" text-anchor="middle" class="sub">0x17230 @0x7b4d8/0x7b560 + 47-ch 0x172de</text>
+    <rect class="node warn" x="520" y="50" width="180" height="58" rx="10"/><text x="610" y="74" text-anchor="middle" class="node-title">PINNER ×1</text><text x="610" y="92" text-anchor="middle" class="sub">0x8c18c</text>
+    <rect class="node" x="750" y="50" width="280" height="58" rx="10"/><text x="890" y="74" text-anchor="middle" class="node-title">client config + params ×12</text><text x="890" y="92" text-anchor="middle" class="sub">0xc99a0 · 0xbd88c · 0xc9b1c · 0x3d0e0 ×12</text>
+    <path class="edge" d="M170,79 L220,79" marker-end="url(#ar)"/>
+    <path class="edge" d="M470,79 L520,79" marker-end="url(#ar)"/>
+    <path class="edge" d="M700,79 L750,79" marker-end="url(#ar)"/>
+    <text x="20" y="180" class="sub" fill="#5c7290">base URL = 31-ch (0x17230) + 47-ch (0x172de) segments — runtime hook on 0x86684 reveals exact strings</text>
+  </svg></div>
+
+  <div class="callout rv"><div class="t">Exact URL assembly (reconstructed)</div>
+  <code>scheme("https://") + host(i.instagram.com) + /api/v2/ + {friendships/create/ | media/ | comment/ | create_note/v2/ | seen/ | /save/} + ?params(14× gated encode)</code><br>
+  C2: <code>https://nivafollower[.app]… + topfollow_check.php</code> (pinned domain <code>nivafollower.app</code>)</div>
+</div></section>
+
+<!-- ================= HEADERS ================= -->
+<section id="headers"><div class="wrap">
+  <h2 class="rv"><span class="num">§4</span>Header / signing construction</h2>
+  <p class="rv">The native layer builds JSON signing fields and pins TLS. The Java surface is exposed by a
+  <b>plain JNI symbol pool</b> at 0x15f00–0x17100 (class/method names left unencoded — the obfuscator only hid
+  the data strings).</p>
+  <div class="cols">
+    <div class="card rv d1"><h4>Signing fields <span class="mono">Gson JsonObject</span></h4>
+      <pre><span class="c">// native → Java: addProperty(String,String)</span>
+<span class="k">hash_key</span>      <span class="c">// server-issued, re-verified</span>
+<span class="k">hash_type</span>     <span class="c">// quoted literal "hash_type" in .rodata</span>
+<span class="k">order_id</span> · <span class="k">order_stamp2</span>
+<span class="k">follower_count</span> · <span class="k">following_count</span>
+<span class="k">family_device_id</span>  <span class="c">// = device fingerprint</span>
+<span class="k">url</span> · <span class="k">token</span> · <span class="k">type</span> · <span class="k">base</span>
+<span class="k">currentInstagram</span> · <span class="k">account_type</span> · <span class="k">request</span></pre>
+      <p style="font-size:13px">SHA-256 computed via Java <code>MessageDigest.getInstance("SHA-256")</code>
+      (JNI: <code>java/security/MessageDigest</code> in the pool) — the same digest family used for the APK pin.</p></div>
+    <div class="card rv d2"><h4>TLS pinning <span class="mono">CertificatePinner</span></h4>
+      <ul style="font-size:13px">
+        <li>C2 client: <b>3 pins</b> (<code>0x8c18c</code> ×3) on domain <code>nivafollower.app</code> (decoded 0x172ce).</li>
+        <li>IG client: <b>1 pin</b> — domain string comes from the JNI-segmented 31/47-ch bases.</li>
+        <li>PIN computation: SHA-256 of the cert chain → SPKI pin format (standard OkHttp).</li>
+        <li>Agent must run with a <b>CA-bypass that also satisfies pinning</b> (session cookie injection or pin-strip via OkHttp hook) — see §7.</li>
+      </ul></div>
+  </div>
+  <div class="card rv d3" style="margin-top:18px"><h4>Runtime token getter <span class="mono">x00113f7a ()→String @ 0x73ca8 (672 B)</span></h4>
+  <div class="pipe" style="margin-top:6px">
+    <div class="step"><div class="b">1</div><div class="c"><div class="h">DECODE 0x17277 (36 ch, JNI-segmented)</div><div class="d">@ 0x73cf8 → 36-character token (session/nonce class)</div></div></div>
+    <div class="step"><div class="b">2</div><div class="c"><div class="h">GATE 0x37160</div><div class="d">call-epoch verification before the token is released</div></div></div>
+    <div class="step"><div class="b">3</div><div class="c"><div class="h">2 JNI calls → String</div><div class="d">FLAGCHECK ×3 wraps the whole function (0x73eb8/0x73ec8/0x73f08)</div></div></div>
+  </div></div>
+  <table class="tbl rv d4">
+    <thead><tr><th>pool symbol</th><th>meaning</th></tr></thead>
+    <tbody>
+      <tr><td>android/provider/Settings$Secure + ANDROID_ID + getString</td><td class="mono">device fingerprint: ANDROID_ID</td></tr>
+      <tr><td>Build.BRAND / HARDWARE / MANUFACTURER</td><td class="mono">device fingerprint fields</td></tr>
+      <tr><td>(Lcom/google/gson/JsonObject;InstagramAccount;Order;)V</td><td class="mono">request-builder ctor w/ both models</td></tr>
+      <tr><td>()Lcom/nivaroid/topfollow/db/MyDatabase; + add + addDevice</td><td class="mono">Room/DB persistence of results &amp; devices</td></tr>
+      <tr><td>writeTimeout + TimeUnit.SECONDS</td><td class="mono">OkHttp client tuning</td></tr>
+      <tr><td>errorBody</td><td class="mono">okhttp Response.errorBody() on failure</td></tr>
+    </tbody>
+  </table>
+</div></section>
+
+<!-- ================= RESPONSE ================= -->
+<section id="response"><div class="wrap">
+  <h2 class="rv"><span class="num">§5</span>Response construction — the 48 KB handler</h2>
+  <p class="rv"><code>x0015e49c (Response, Order, …) → String</code> @ <b>0x67d98</b> is the largest JNI native
+  (48,456 B, 12,114 insns). It decrypts, verifies, persists and — quietly — deploys embedded payloads.</p>
+
+  <div class="fc rv"><div class="fc-title">Response pipeline @ 0x67d98..0x73ae0</div>
+  <svg class="flow" width="1060" height="520" viewBox="0 0 1060 520">
+    <rect class="node io" x="20" y="30" width="190" height="58" rx="10"/><text x="115" y="54" text-anchor="middle" class="node-title">retrofit2.Response</text><text x="115" y="72" text-anchor="middle" class="sub">body() / errorBody()</text>
+    <rect class="node" x="260" y="30" width="230" height="58" rx="10"/><text x="375" y="54" text-anchor="middle" class="node-title">body extraction</text><text x="375" y="72" text-anchor="middle" class="sub">()Lokhttp3/ResponseBody; · GetArrayLength</text>
+    <rect class="node key" x="540" y="30" width="240" height="58" rx="10"/><text x="660" y="54" text-anchor="middle" class="node-title">JSON parse (Gson)</text><text x="660" y="72" text-anchor="middle" class="sub">order_id · follower_count · hash_*</text>
+    <rect class="node key" x="830" y="30" width="210" height="58" rx="10"/><text x="935" y="54" text-anchor="middle" class="node-title">CTX ×11 + CRYPTO-B</text><text x="935" y="72" text-anchor="middle" class="sub">0xe8b30 → 0x395d4 decrypt</text>
+    <rect class="node" x="540" y="140" width="240" height="58" rx="10"/><text x="660" y="164" text-anchor="middle" class="node-title">verify + field decode</text><text x="660" y="182" text-anchor="middle" class="sub">DECODE ×12 · CONCAT ×26 · SHA-256</text>
+    <rect class="node warn" x="830" y="140" width="210" height="58" rx="10"/><text x="935" y="164" text-anchor="middle" class="node-title">CRYPTO-C ×3</text><text x="935" y="182" text-anchor="middle" class="sub">0x87690 (0x16f07 key, 28 B)</text>
+    <rect class="node pu" x="260" y="140" width="230" height="58" rx="10"/><text x="375" y="164" text-anchor="middle" class="node-title">MyDatabase.add</text><text x="375" y="182" text-anchor="middle" class="sub">persist results · addDevice</text>
+    <rect class="node io" x="20" y="140" width="190" height="58" rx="10"/><text x="115" y="164" text-anchor="middle" class="node-title">result String</text><text x="115" y="182" text-anchor="middle" class="sub">NewStringUTF ×20 out</text>
+    <rect class="node bad" x="540" y="270" width="500" height="84" rx="10"/><text x="790" y="296" text-anchor="middle" class="node-title">⚠ embedded payload installer ×10 — 0x923c0</text><text x="790" y="316" text-anchor="middle" class="sub">b64 → zlib-inflate → write/load — runs on EVERY response</text><text x="790" y="332" text-anchor="middle" class="sub">payloads: frida-family tokens (libfrida-gadget · lsposed · libbc.so (deleted) …)</text>
+    <rect class="node bad" x="20" y="270" width="190" height="84" rx="10"/><text x="115" y="296" text-anchor="middle" class="node-title">FLAGCHECK ×269</text><text x="115" y="314" text-anchor="middle" class="sub">0x0e89fc polls</text><text x="115" y="330" text-anchor="middle" class="sub">bit0 → trap</text>
+    <rect class="node" x="260" y="270" width="230" height="84" rx="10"/><text x="375" y="296" text-anchor="middle" class="node-title">GATEWRAP ×26+7</text><text x="375" y="314" text-anchor="middle" class="sub">0x3d0e0 / 0x3d0d4</text><text x="375" y="330" text-anchor="middle" class="sub">MBA-gated transforms</text>
+    <rect class="node io" x="20" y="400" width="1020" height="70" rx="10"/><text x="530" y="426" text-anchor="middle" class="node-title">sibling: x0014c1f9 (Response)→String @ 0x73f48 (14,244 B)</text><text x="530" y="446" text-anchor="middle" class="sub">body()/errorBody → GATE ×10 · 0x3b4d4 ×15 (ctx validator) · 0xe8fe4 ×12 · 0x9346c ×4 · 0xe8f10 ×3 → returns processed string</text>
+    <path class="edge" d="M210,59 L260,59" marker-end="url(#ar)"/>
+    <path class="edge" d="M490,59 L540,59" marker-end="url(#ar)"/>
+    <path class="edge" d="M780,59 L830,59" marker-end="url(#ar)"/>
+    <path class="edge flowline" d="M935,88 L935,110 L660,110 L660,140" marker-end="url(#arg)"/>
+    <path class="edge" d="M830,169 L780,169" marker-end="url(#ar)"/>
+    <path class="edge" d="M540,169 L490,169" marker-end="url(#ar)"/>
+    <path class="edge" d="M260,169 L210,169" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M790,270 L790,226" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M115,270 L115,226" marker-end="url(#ar)"/>
+  </svg></div>
+
+  <div class="gauges rv d1">
+    <div class="gauge"><div class="ring"><svg width="110" height="110"><circle cx="55" cy="55" r="46" stroke="#1e2d42" stroke-width="8" fill="none"/><circle class="fg" cx="55" cy="55" r="46" stroke="#ff5470" stroke-width="8" fill="none" stroke-dasharray="289" stroke-dashoffset="289" data-off="20"/></svg></div><div class="val" data-count="269">0</div><div class="lbl">FLAGCHECK polls (0x0e89fc)</div></div>
+    <div class="gauge"><div class="ring"><svg width="110" height="110"><circle cx="55" cy="55" r="46" stroke="#1e2d42" stroke-width="8" fill="none"/><circle class="fg" cx="55" cy="55" r="46" stroke="#37e08d" stroke-width="8" fill="none" stroke-dasharray="289" stroke-dashoffset="289" data-off="215"/></svg></div><div class="val" data-count="26">0</div><div class="lbl">CONCAT (0x38f60)</div></div>
+    <div class="gauge"><div class="ring"><svg width="110" height="110"><circle cx="55" cy="55" r="46" stroke="#1e2d42" stroke-width="8" fill="none"/><circle class="fg" cx="55" cy="55" r="46" stroke="#4fc3f7" stroke-width="8" fill="none" stroke-dasharray="289" stroke-dashoffset="289" data-off="246"/></svg></div><div class="val" data-count="12">0</div><div class="lbl">DECODE sites</div></div>
+    <div class="gauge"><div class="ring"><svg width="110" height="110"><circle cx="55" cy="55" r="46" stroke="#1e2d42" stroke-width="8" fill="none"/><circle class="fg" cx="55" cy="55" r="46" stroke="#ffd54f" stroke-width="8" fill="none" stroke-dasharray="289" stroke-dashoffset="289" data-off="231"/></svg></div><div class="val" data-count="10">0</div><div class="lbl">installer 0x923c0 runs</div></div>
+    <div class="gauge"><div class="ring"><svg width="110" height="110"><circle cx="55" cy="55" r="46" stroke="#1e2d42" stroke-width="8" fill="none"/><circle class="fg" cx="55" cy="55" r="46" stroke="#b388ff" stroke-width="8" fill="none" stroke-dasharray="289" stroke-dashoffset="289" data-off="260"/></svg></div><div class="val" data-count="3">0</div><div class="lbl">CRYPTO-C 0x87690</div></div>
+  </div>
+  <div class="callout warn rv"><div class="t">Operational note for build #9</div>
+  The 10× installer inside the response path means the app <b>deploys its embedded payload after every API
+  round-trip</b>. The gadget agent must keep its bypass hooks active continuously (not just at startup) and
+  should hook <code>0x923c0</code> to observe (and optionally neuter) each deployment without breaking the
+  call-epoch counter — <b>log-only</b>, no return-value changes.</div>
+</div></section>
+
+<!-- ================= CRYPTO ================= -->
+<section id="crypto"><div class="wrap">
+  <h2 class="rv"><span class="num">§6</span>Crypto subsystem (Unicorn-verified)</h2>
+  <div class="cols">
+    <div class="card rv d1"><h4>AES core <span class="mono">FIPS-197 · 6/6 vectors ✓</span></h4>
+      <table class="tbl" style="margin:8px 0"><tbody>
+        <tr><td>0x2edf8</td><td class="mono">AES-128 encrypt block (ctx,src16,dst16)</td></tr>
+        <tr><td>0x2fdcc</td><td class="mono">AES-128 decrypt block</td></tr>
+        <tr><td>0x31260</td><td class="mono">key expansion (ctx,key,IV,w3=len,w4=0x10); schedule <b>word-reversed</b> @ctx+0xc; 192/256 2nd half @ctx+0x30</td></tr>
+        <tr><td>0x33260</td><td class="mono">wrapper (ctx,IN,OUT,len,w4): 0=ECB · 1=prefix-XOR-ECB · 2=seed-variant (M1=5db34a7a22a88b3935867cfc884ab119)</td></tr>
+        <tr><td>0x33aa8</td><td class="mono">per-block ECB decrypt</td></tr>
+        <tr><td>0x11510/0x12610/0x12510</td><td class="mono">Te0 / Td0 / Sbox tables</td></tr>
+      </tbody></table>
+      <p style="font-size:12.5px">No CBC/CFB/CTR/GCM anywhere — ECB + two wrapper variants only.</p></div>
+    <div class="card rv d2"><h4>Key material <span class="mono">rodata 0x16d1e–0x16f07</span></h4>
+      <table class="tbl" style="margin:8px 0"><tbody>
+        <tr><td>K1</td><td class="mono">24 B 4475d84c…d6955481 (0x16d1e, b^0x5A)</td></tr>
+        <tr><td>K3</td><td class="mono">18 B cd293158…6857 (0x16d51, b−7i−0x0B)</td></tr>
+        <tr><td>K4</td><td class="mono">24 B raw (0x16d6a, A[2i]−B[2i]−2i, B=0xC8) — CRYPTO-A sentinel path</td></tr>
+        <tr><td>K19</td><td class="mono">14 B c1352108…1551 (0x16d3e head)</td></tr>
+        <tr><td>6 B</td><td class="mono">5555d6545554 (decoded 0x16dea — NEW this round)</td></tr>
+        <tr><td>28 B</td><td class="mono">0x16f07 CRYPTO-C key</td></tr>
+      </tbody></table></div>
+  </div>
+  <div class="cols" style="margin-top:18px">
+    <div class="card rv d3"><h4>CRYPTO-A 0x37cb8 <span class="mono">type dispatch</span></h4>
+      <p style="font-size:13px">Types <code>{1, 0x10d, 0x27c, 0x995, 0xd9e, 0xf33, 0x16c8}</code>;
+      <code>0x16c8 → K4 ctx 0x39430 → sentinel 0x39358</code>; KEYEXP@0x3884c → ENC@0x38864;
+      decrypt via 0x395d4/0x8c544 → 0x33aa8. Runtime type→key mapping still needs a fake-JNI env
+      (walker 0x101cbc) — <b>O1</b>, closable by the agent.</p></div>
+    <div class="card rv d4"><h4>CRYPTO-B 0x395d4 <span class="mono">bulk decrypt (NEW this round)</span></h4>
+      <p style="font-size:13px">ABI <code>(x0=ctx, w1=len, x8=input)</code>; called with <b>len=0xe40 (3,648 B)</b>
+      from the C2 Retrofit builder (0x77a64) after ctx built by 0xe8b30. Pipeline: 0x3aab0 → 0x3b4d4 (ctx
+      validator) → 0x38df0 → 0xe84a8 → per-chunk decrypt; table at 0x1680b. This is the
+      <b>runtime config decryption</b> feeding the C2 client.</p></div>
+  </div>
+</div></section>
+
+<!-- ================= TAMPER ================= -->
+<section id="tamper"><div class="wrap">
+  <h2 class="rv"><span class="num">§7</span>Anti-tamper state machine (quantified)</h2>
+  <p class="rv">Beyond the 146 self-loop traps and 1,956 flag polls, v846 runs a
+  <b>call-epoch counter</b>: global counters cached on the pointer page 0x10e080–0x10ff00
+  (158 slots, initialized in JNI_OnLoad) are MBA-checked at the entry of virtually every helper.
+  A hook that skips, reorders or re-enters any gated native desyncs the epoch → silent <code>b .</code> hang.</p>
+
+  <div class="fc rv"><div class="fc-title">Gate anatomy · 0x37160 + function prologues</div>
+  <svg class="flow" width="1060" height="300" viewBox="0 0 1060 300">
+    <rect class="node io" x="20" y="40" width="200" height="64" rx="10"/><text x="120" y="66" text-anchor="middle" class="node-title">call f()</text><text x="120" y="84" text-anchor="middle" class="sub">from native flow</text>
+    <rect class="node key" x="280" y="30" width="300" height="84" rx="10"/><text x="430" y="55" text-anchor="middle" class="node-title">load counter pair (A,B)</text><text x="430" y="74" text-anchor="middle" class="sub">via ptr cache: ldr x8,[0x10ee90] → ldr w,[x8]</text><text x="430" y="92" text-anchor="middle" class="sub">hot slots: 0x10ee90(178×) 0x10efd0(110×) 0x10eef0(88×)</text>
+    <rect class="node" x="640" y="30" width="240" height="84" rx="10"/><text x="760" y="55" text-anchor="middle" class="node-title">MBA test</text><text x="760" y="74" text-anchor="middle" class="sub">t = A·(A−1); t XOR 0xfffffffe; TST t</text><text x="760" y="92" text-anchor="middle" class="sub">AND B ∈ {9,10}  (cmp #9 / cmp #0xa)</text>
+    <rect class="node key" x="940" y="40" width="100" height="64" rx="10"/><text x="990" y="66" text-anchor="middle" class="node-title">PASS</text><text x="990" y="84" text-anchor="middle" class="sub">→ body</text>
+    <rect class="node bad" x="940" y="160" width="100" height="64" rx="10"/><text x="990" y="186" text-anchor="middle" class="node-title">TRAP</text><text x="990" y="204" text-anchor="middle" class="sub">b . (hang)</text>
+    <rect class="node warn" x="280" y="170" width="600" height="70" rx="10"/><text x="580" y="196" text-anchor="middle" class="node-title">central flag poll 0x0e89fc — 1,956 sites</text><text x="580" y="216" text-anchor="middle" class="sub">ldrb w8,[flag]; tbnz w8,#0,→trap-handler · any detection sets bit 0 · flag cached in TLS (.bss)</text>
+    <path class="edge" d="M220,72 L280,72" marker-end="url(#ar)"/>
+    <path class="edge" d="M580,72 L640,72" marker-end="url(#ar)"/>
+    <path class="edge flowline" d="M880,72 L940,72" marker-end="url(#arg)"/>
+    <path class="edge dim" d="M760,114 L760,150 L990,150 L990,160" marker-end="url(#ar)"/>
+    <path class="edge dim" d="M120,104 L120,235 L280,205" marker-end="url(#ar)"/>
+    <text x="20" y="280" class="sub" fill="#5c7290">direct counter bumps: 0xcf800 · 0xd2b30 · 0xd31a4 · 0xd3920 · 0xe0a4c (detection counters); epoch counter advanced via hub 0x0e89fc-adjacent ctors</text>
+  </svg></div>
+
+  <div class="cols">
+    <div class="card rv d1"><h4>APK integrity pin <span class="mono">0x14ce4 · 120 B</span></h4>
+      <pre><span class="c">blob = b64( b64( hex( sha256 ) ) )</span>
+sha256 = <span class="s">d845591e 086033a9 035fd6b6 6c3c3d73
+         aa33af90 794d6b98 6e64779e ea6bec5e</span></pre>
+      <p style="font-size:13px">Verified by 0x7c08c / 0xbdb68 (5 traps each). Because it is <b>data</b>,
+      build #9's cleanest bypass = rewrite the 120-byte blob to the re-signed APK's own hash
+      (agent writes it at load, before first verify) — no verifier NOP needed.</p></div>
+    <div class="card rv d2"><h4>Obfuscation layers summary</h4>
+      <ul style="font-size:13px">
+        <li>MBA-encoded comparisons everywhere (n(n−1) parity idiom).</li>
+        <li>Control-flow: per-decode guard loops, 1,956 flag polls, 146 <code>b .</code> traps.</li>
+        <li>Strings: 0x86684 runtime decode + 2–4× base64 nesting + plain JNI pool (unencoded).</li>
+        <li>Names: JNI methods registered as <code>x0011f1a2</code>-style hashes.</li>
+        <li>Counters: global call-epoch state machine (158-slot pointer cache).</li>
+      </ul></div>
+  </div>
+</div></section>
+
+<!-- ================= DETECTION ================= -->
+<section id="detection"><div class="wrap">
+  <h2 class="rv"><span class="num">§8</span>Detection subsystem — complete token list</h2>
+  <table class="tbl rv">
+    <thead><tr><th>offset</th><th>token / check</th><th>scanner</th><th>note</th></tr></thead>
+    <tbody>
+      <tr><td>0x15a11</td><td class="mono">/proc/self/maps</td><td class="mono">0xa4054 (b64)</td><td>maps enumeration root</td></tr>
+      <tr><td>0x15841</td><td class="mono">frida</td><td class="mono">0xa4054</td><td>substring scan of maps</td></tr>
+      <tr><td>0x15de6</td><td class="mono">gum-js-loop</td><td class="mono">0xa4054</td><td>Frida JS thread name</td></tr>
+      <tr><td>0x16992</td><td class="mono">libfrida-gadget</td><td class="mono">0xa4054</td><td>gadget library name</td></tr>
+      <tr><td>0x15c7a</td><td class="mono">re.frida.server</td><td class="mono">0xa4054</td><td>frida-server process</td></tr>
+      <tr><td>0x163a4</td><td class="mono">lsposed</td><td class="mono">0x92798</td><td><b>NEW this round</b> — LSPosed scan</td></tr>
+      <tr><td>0x16770</td><td class="mono">libart.so (deleted)</td><td class="mono">0xb88d8</td><td><b>NEW</b> — ART injected-lib check</td></tr>
+      <tr><td>0x16b64</td><td class="mono">libbc.so (deleted)</td><td class="mono">0xb88d8</td><td><b>NEW</b> — Xposed bridge lib</td></tr>
+      <tr><td>0x16f31</td><td class="mono">rwxp</td><td class="mono">0xb88d8</td><td><b>NEW</b> — maps permission bits</td></tr>
+      <tr><td>0x17075…</td><td class="mono">frida token set</td><td class="mono">0xaf774</td><td>hook-point tokens</td></tr>
+      <tr><td>0xa994c</td><td class="mono">clock_gettime ×9</td><td class="mono">—</td><td>timing anti-DBI</td></tr>
+      <tr><td>0x15c65</td><td class="mono">HbF0Nh5lp</td><td class="mono">—</td><td><b>NEW</b> — opaque token</td></tr>
+      <tr><td>0x15dff</td><td class="mono">79dc69a2c79d</td><td class="mono">—</td><td><b>NEW</b> — opaque token</td></tr>
+    </tbody>
+  </table>
+  <div class="callout rv"><div class="t">Agent bypass priorities (B-series)</div>
+  <code>B1</code> hide maps entries (frida/gadget/lsposed/deleted) · <code>B2</code> stub clock deltas ·
+  <code>B3</code> hide gum-js-loop thread · <code>B6</code> <b>rewrite 0x14ce4 blob (data patch, no code NOP)</b> ·
+  all bypasses must be <b>non-invasive to the call-epoch counter</b>.</div>
+</div></section>
+
+<!-- ================= AGENT ================= -->
+<section id="agent"><div class="wrap">
+  <h2 class="rv"><span class="num">§9</span>Agent plan (build #9 inputs)</h2>
+  <p class="rv">Hook table deltas from this round. <b>Rule: log-only hooks.</b> Any return-value change,
+  skipped call or re-entrant call desyncs the epoch counter → app hangs (the <code>b .</code> traps are
+  unreachable in Java; the process just stalls).</p>
+  <table class="tbl rv">
+    <thead><tr><th>id</th><th>target</th><th>purpose</th><th>mode</th></tr></thead>
+    <tbody>
+      <tr><td>H13 <span class="badge g">NEW</span></td><td class="mono">0x86684 post</td><td>read x8 → capture the 4 registry strings (31/31/36/47) + 36-ch C2 base</td><td>log-only</td></tr>
+      <tr><td>H14 <span class="badge g">NEW</span></td><td class="mono">0x395d4 pre/post</td><td>CRYPTO-B ctx + 3,648 B config blob (C2 client config)</td><td>log-only</td></tr>
+      <tr><td>H15 <span class="badge g">NEW</span></td><td class="mono">0x923c0 pre</td><td>observe embedded-payload deployments (10×/response)</td><td>log-only</td></tr>
+      <tr><td>H16 <span class="badge g">NEW</span></td><td class="mono">0x38f60 post</td><td>full URL strings at concat time</td><td>log-only</td></tr>
+      <tr><td>B6  <span class="badge r">CRIT</span></td><td class="mono">0x14ce4 (mem)</td><td>rewrite 120 B blob = b64(b64(hex(sha256(our APK)))) at load</td><td>data patch</td></tr>
+      <tr><td>H1–H12 <span class="badge b">v846</span></td><td class="mono">report §10</td><td>AES/SHA hooks, traffic capture, encrypted resend (unchanged)</td><td>mixed</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn rv"><div class="t">Rebuild #9 status</div>
+  Ready on the v846 base (work/v846_new.apk). Input: this report's §10 hook tables + §14 deltas above.
+  Pending user OK. Acceptance: installs cleanly on RMX3491 (Android 13, non-root), no crash, gadget log
+  via logcat "Frida", B6 data-patch applied, H13–H16 capturing the four registry strings.</div>
+</div></section>
+
+<!-- ================= OFFSETS ================= -->
+<section id="offsets"><div class="wrap">
+  <h2 class="rv"><span class="num">§10</span>Offset appendix (v846)</h2>
+  <input class="search rv" id="offsearch" placeholder="filter offsets / names / roles…" oninput="filtOff(this.value)">
+  <div style="max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:12px">
+  <table class="tbl rv" id="offtbl">
+    <thead><tr><th>offset</th><th>size</th><th>name / role</th></tr></thead>
+    <tbody id="offbody">
+      <tr><td>0x2c734</td><td class="mono">930,692</td><td>.text start</td></tr>
+      <tr><td>0x11510</td><td class="mono">—</td><td>.rodata start · Te0 table</td></tr>
+      <tr><td>0x10a4e8</td><td class="mono">—</td><td>JNI method table</td></tr>
+      <tr><td>0x1101b0</td><td class="mono">—</td><td>.got.plt (88 imports)</td></tr>
+      <tr><td>0x1144f0</td><td class="mono">—</td><td>.bss start (flag, counters)</td></tr>
+      <tr><td>0x3f4d8</td><td class="mono">—</td><td>JNI_OnLoad (ptr-cache init)</td></tr>
+      <tr><td>0x40048</td><td class="mono">492</td><td>x0014e2e9 ()String — C2 base URL getter</td></tr>
+      <tr><td>0x40234</td><td class="mono">656</td><td>x0016d3b9 ()String — topfollow_check.php getter</td></tr>
+      <tr><td>0x6084c</td><td class="mono">—</td><td>codec native</td></tr>
+      <tr><td>0x5342c</td><td class="mono">—</td><td>xposed check native</td></tr>
+      <tr><td>0x63b58</td><td class="mono">—</td><td>fingerprint native (BRAND/HARDWARE/ANDROID_ID)</td></tr>
+      <tr><td>0x65338</td><td class="mono">10,848</td><td>x0011f1a2 (Order)String — URL builder</td></tr>
+      <tr><td>0x67d98</td><td class="mono">48,456</td><td>x0015e49c (Response,Order,…)String — big handler</td></tr>
+      <tr><td>0x73ca8</td><td class="mono">672</td><td>x00113f7a ()String — 36-ch runtime token</td></tr>
+      <tr><td>0x73f48</td><td class="mono">14,244</td><td>x0014c1f9 (Response)String — response parse</td></tr>
+      <tr><td>0x776ec</td><td class="mono">11,456</td><td>x00126f7c (Z,String)Retrofit — C2 client</td></tr>
+      <tr><td>0x7a3ac</td><td class="mono">7,392</td><td>x0018d3f7 (I)Retrofit — IG client</td></tr>
+      <tr><td>0x7c08c / 0xbdb68</td><td class="mono">—</td><td>APK SHA-256 verify (5 traps each)</td></tr>
+      <tr><td>0x2edf8 / 0x2fdcc</td><td class="mono">—</td><td>AES enc/dec block</td></tr>
+      <tr><td>0x31260</td><td class="mono">—</td><td>AES key expansion (word-reversed)</td></tr>
+      <tr><td>0x33260 / 0x33aa8</td><td class="mono">—</td><td>ECB wrapper / per-block dec</td></tr>
+      <tr><td>0x37cb8</td><td class="mono">—</td><td>CRYPTO-A type dispatcher</td></tr>
+      <tr><td>0x395d4</td><td class="mono">—</td><td>CRYPTO-B bulk decrypt (0xe40 config)</td></tr>
+      <tr><td>0x87690</td><td class="mono">—</td><td>CRYPTO-C (key 0x16f07)</td></tr>
+      <tr><td>0x86684</td><td class="mono">—</td><td>string decoder (x0,w1,x8) — 36 sites</td></tr>
+      <tr><td>0x38f60</td><td class="mono">—</td><td>STR_CONCAT (dst,a,b)</td></tr>
+      <tr><td>0x37160</td><td class="mono">—</td><td>MBA GATE (call-epoch counter)</td></tr>
+      <tr><td>0x3d0e0 → 0x3c9e8</td><td class="mono">—</td><td>gated per-byte param transform</td></tr>
+      <tr><td>0x0e89fc</td><td class="mono">—</td><td>central flag checker — 1,956 sites</td></tr>
+      <tr><td>0x101cbc / 0x101d94</td><td class="mono">—</td><td>registry/JNI-iterator walkers (long-string path)</td></tr>
+      <tr><td>0x923c0</td><td class="mono">—</td><td>b64+zlib payload installer (10×/response)</td></tr>
+      <tr><td>0xa4054</td><td class="mono">—</td><td>Frida maps scanner</td></tr>
+      <tr><td>0xb88d8</td><td class="mono">—</td><td>"(deleted)" maps scanner (art/libbc/rwxp)</td></tr>
+      <tr><td>0xa994c</td><td class="mono">—</td><td>clock_gettime ×9 timing</td></tr>
+      <tr><td>0x16ed0…0x172ce</td><td class="mono">—</td><td>encoded URL/path strings</td></tr>
+      <tr><td>0x14b0e…0x15862</td><td class="mono">—</td><td>multi-layer b64 hosts/endpoints</td></tr>
+      <tr><td>0x14ce4</td><td class="mono">120</td><td>APK SHA-256 pin blob (b64(b64(hex)))</td></tr>
+      <tr><td>0x15f00–0x17100</td><td class="mono">—</td><td>plain JNI symbol pool (JSON fields, OkHttp, Gson)</td></tr>
+      <tr><td>0x16d1e–0x16f07</td><td class="mono">—</td><td>key material (K1/K3/K4/K19/6B/28B)</td></tr>
+      <tr><td>0x10e080–0x10ff00</td><td class="mono">—</td><td>pointer cache (158 slots, counters, JNI refs)</td></tr>
+      <tr><td>0x0e89fc region ×1956</td><td class="mono">—</td><td>flag-check call sites</td></tr>
+      <tr><td>146 sites</td><td class="mono">—</td><td>b . self-loop traps (e.g. 0x66384, 0x66b40)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>libtopfollow.so v846 · 1,101,352 B · arm64-v8a · com.nivaroid.topfollow 8.4.6</span>
+  <span>deep-3 pass 2026-09-27 · Unicorn 64 + capstone · source: REPORT_libtopfollow_so.md §14</span>
+</div></footer>
+
+<script>
+/* ---------- reveal on scroll ---------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}}),{threshold:.18});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+/* svg draw + gauges on reveal */
+const io2=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){
+  e.target.querySelectorAll('circle.fg').forEach(c=>{c.style.strokeDashoffset=c.dataset.off;});
+  io2.unobserve(e.target);}}),{threshold:.3});
+document.querySelectorAll('.fc,.gauges').forEach(el=>io2.observe(el));
+/* counters */
+const io3=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){
+  const el=e.target;const t=+el.dataset.count;let s=0;const st=Math.max(1,t/60);
+  const iv=setInterval(()=>{s+=st;if(s>=t){s=t;clearInterval(iv);}el.textContent=Math.floor(s);},24);
+  io3.unobserve(el);}}),{threshold:.5});
+document.querySelectorAll('[data-count]').forEach(el=>io3.observe(el));
+/* ---------- decode demo ---------- */
+const DEMO=[
+ {off:"0x16ed0", ct:"=!!%&ozz;<#43:99:\"0'x4%%{6:8z4%<x#fz!", pt:"https://nivafollower"},
+ {off:"0x16ef4", ct:"6=06>{%=%...", pt:"topfollow_check.php"},
+ {off:"0x17208", ct:"3'<0;1&=<%&z6'04!0z801<4zz9<>0zz6:880;!z", pt:"friendships/create/"},
+ {off:"0x1721b", ct:"80z801<4zz", pt:"media/"},
+ {off:"0x17227", ct:"9z801<4zz9<>", pt:"comment/"},
+ {off:"0x172ce", ct:";<#43:99:\"0'x4%%=!!%&ozz;<#43:99", pt:"nivafollower.app"},
+ {off:"0x1564c (b64×3)", ct:"WVUhU01HTklUVFpNZVRsd1RHMXNkV016VW1oYU0wcG9ZbE0xYW...", pt:"https://i.instagram.com/api/v2/"},
+ {off:"0x14854 (b64×3)", ct:"V1ROS2JGbFlVbXhZTWpWMlpFZFZkbVJxU1hZPQ==", pt:"create_note/v2/"},
+ {off:"0x14ce4 (b64×3)", ct:"WkRnME5UVTVNV1V3T0RZd016TmhPVEF6Tndaa05tSTJObU16...", pt:"d845591e086033a9035fd6b66c3c3d73aa33af90794d6b986e64779eea6bec5e"}
+];
+const btns=document.getElementById('demobtns');
+DEMO.forEach((d,i)=>{const b=document.createElement('button');b.textContent=d.off;b.onclick=()=>runDemo(i,b);btns.appendChild(b);});
+function runDemo(i,b){
+  document.querySelectorAll('#demobtns button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
+  const d=DEMO[i];
+  document.getElementById('dm-off').textContent=d.off;
+  const ct=document.getElementById('dm-ct');ct.textContent='';
+  const pt=document.getElementById('dm-pt');pt.innerHTML='';
+  let j=0;
+  const ctiv=setInterval(()=>{
+    ct.textContent=d.ct.slice(0,++j);
+    if(j>=d.ct.length){clearInterval(ctiv);typeOut();}
+  },14);
+  function typeOut(){
+    let k=0;
+    const ptiv=setInterval(()=>{
+      pt.innerHTML=d.pt.slice(0,++k)+'<span class="cursor"></span>';
+      if(k>=d.pt.length){clearInterval(ptiv);pt.textContent=d.pt;}
+    },22);
+  }
+}
+runDemo(0,btns.firstChild);
+/* ---------- offset filter ---------- */
+function filtOff(q){
+  q=q.toLowerCase();
+  document.querySelectorAll('#offbody tr').forEach(tr=>{
+    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';});
+}
+</script>
+</body>
+</html>
