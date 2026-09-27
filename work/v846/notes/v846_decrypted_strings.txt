@@ -1,0 +1,17 @@
+=== v846 NATIVE STRING DECRYPTION (libtopfollow.so, arm64-v8a) ===
+  file 1,101,352 bytes; .rodata VA [0x11510,0x1a76b)
+
+########## XOR KEY 0x55 ##########
+  2 distinct interesting strings; categories: {'URL': 2}
+
+  offset     category           xref-fns                     string
+  --------------------------------------------------------------------------------------------------------------
+  0x00016ed0 URL                0x40048                      'https://nivafollower-app.com/api-v3/topfollow_check.php'
+  0x00017207 URL                0x65338,0x67d98              'Ufriendships/create/media//like//comment/https://i.instagram.com/api/v1/6Ld3...'
+
+########## XOR KEY 0x5a ##########
+  1 distinct interesting strings; categories: {'endpoint': 1}
+
+  offset     category           xref-fns                     string
+  --------------------------------------------------------------------------------------------------------------
+  0x00016f93 endpoint           0xa994c                      '/system/app/Superuser.apk/sbin/su/system/bin/su/system/xbin/su/data/local/xb...'

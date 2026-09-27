@@ -1,0 +1,78 @@
+{
+  "proof_method": "Unicorn emulation of extracted arm64 .so (file off == RVA), PLT->RETZERO shims, IRELATIVE final pointers resolved, guard counters at 0x116704/0x11670c",
+  "keyexp": {
+    "addr": "0x31260",
+    "abi": "(ctx, key, iv_or_aux, w3=keylen, w4=0x10)",
+    "call_sites": ["0x3884c", "0x3a5fc", "0x881c0", "0x8d384"],
+    "ctx_layout": "ctx+8 = 1 (flag); schedule at ctx+0xc WORD-REVERSED (each 4B word byte-reversed); AES-192/256 2nd key half at ctx+0x30 (word-reversed)",
+    "proven": "genuine FIPS-197 key expansion for 16/24/32-byte keys (R1 matches standard: FIPS fd74aad6...; 0123.. c09a9e62...)",
+    "steps": {"16B": 29468, "32B": 43886}
+  },
+  "block_cores": {
+    "enc": {"addr": "0x2edf8", "inner": "0x2ccbc", "abi": "(ctx, src16, dst16)", "proven": "FIPS-197 block encrypt, all 3 key sizes; output at dst in STANDARD byte order"},
+    "dec": {"addr": "0x2fdcc", "inner": "0x2dbc0", "abi": "(ctx, src16, dst16)", "proven": "FIPS-197 block decrypt, all 3 key sizes"},
+    "fips_vectors": {
+      "128": {"pt": "00112233445566778899aabbccddeeff", "key": "000102030405060708090a0b0c0d0e0f", "ct": "69c4e0d86a7b0430d8cdb78070b4c55a"},
+      "192": {"ct": "dda97ca4864cdfe06eaf70a0ec0d7191"},
+      "256": {"ct": "8ea2b7ca516745bfeafc49904b496089"}
+    },
+    "vectors_passed": "6/6 (enc+dec x 128/192/256)"
+  },
+  "stream_wrappers": {
+    "enc_wrapper": {
+      "addr": "0x33260",
+      "abi": "(ctx, in, out, x3=data/null, w4=mode)",
+      "gating": "len%16 != 0 => early no-op (20B input: 209 steps, no output)",
+      "modes": {
+        "0": "ECB (proven: 2-block output = AES(PT1)||AES(PT2))",
+        "1": "PREFIX-XOR-ECB (proven 3-block): CT_i = AES(PT_i ^ PT_1^...^PT_{i-1})",
+        "2": "variant, M1 = dec(CT1)^PT1 = 5db34a7a22a88b3935867cfc884ab119 (nonzero seed w/ zero IV arg; exact derivation open)"
+      }
+    },
+    "dec_wrapper": {
+      "addr": "0x33aa8",
+      "abi": "(ctx, in, out, x3, w4 in {0,1})",
+      "modes": {
+        "0": "ECB decrypt (proven: out_i = dec(in_i))",
+        "1": "identical to 0 on 16-aligned data (extra ~3.3k steps; diff unlocated - likely final-block/remainder path)"
+      },
+      "guard_counters": ["0x10eb30", "0x10eb38"]
+    },
+    "no_gcm": "no 'gcm'/'GCM' strings; no GHASH constants; no CTR (disproven by vector test)",
+    "note": "v845 report claimed AES-128-CBC + AES-192-GCM; v846 empirically uses ECB / prefix-XOR / diff-chaining custom modes"
+  },
+  "crypto_dispatcher": {
+    "addr": "0x37cb8",
+    "size_insns": 1607,
+    "abi": "(x0=buffer, x1=type, [x8=aux])",
+    "types": {"1": "caller 0x5a9a4 (x0=[x19+0xb0])", "0x10d": "0x44cec", "0x27c": "0x490ec,0x63404", "0x995": "0x48af8,0x5f324", "0xd9e": "0x49d58", "0xf33": "0x4e140,0xa54ec", "0x16c8": "0x53128,0x71284"},
+    "call_sites": ["0x44cec","0x48af8","0x490ec","0x49d58","0x4aa30","0x4e140","0x53128","0x5a9ac","0x5f324","0x63404","0x71284","0xa54ec"],
+    "internal_flow": "KEYEXP at 0x3884c (ctx=sp+0xc8, x1=key, w3=keylen, w4=0x10) -> ENC 0x33260 at 0x38864 (x1=in,x2=out,x3=data,w4=mode from w24) -> verifier 0x105f60 path",
+    "keylen_values": {"32 (0x20)": "AES-256", "24 (0x18)": "AES-192"},
+    "trap": "w28==0x16c8 + sub-condition -> bl 0x39358 (sentinel)",
+    "early_gate": "calls fn@0x101cbc (dispatcher-registry walker, .bss callback table); stuck in harness w/o JNI env (needs env vtable populated by JNI_OnLoad/ART)",
+    "key_derivation_loops": {
+      "K1_32B_AES256": {"src_blob": "0x16d1e", "len": 32, "transform": "byte ^ 0x5A (MBA: (b&0xFFD4)|(0x2B&~b) ^ 0x71)", "loop": "0x38188..0x381ac (x20: 0..0x1F)", "result_ascii": "RHXYTAXzJOR1ZKY3RrVDJWc2NG7WlVSB", "std_b64_decode_24B": "4475d84c05f324e47564a63746b543256736346ed6955481"},
+      "K3_24B_AES192": {"src_blob": "0x16d51", "len": 24, "transform": "byte - 7*i - 0x0B (mod 256)", "loop": "0x38588..0x385a8", "result_ascii": "zSkxWMGRLUjJOR1VrUVWa2hX", "std_b64_decode_18B": "cd293158c1912d48c9391d55ad45566b6857"},
+      "K19_19B": {"src_blob": "0x16d3e", "len": 19, "transform": "byte - 7*i - 0x0B (mod 256)", "loop": "0x39268..0x39288", "result_ascii": "wTUhCNlVsZDRhR05FVG", "std_b64_decode_14B": "c1352108d955b190d1851d391551"},
+      "K4_24B_AES192": {"src_blobs": ["0x16d6a (even idx)", "0x16d9a (even idx)"], "len": 24, "transform": "out[i] = A[2i] - B[2i] - 2*i (mod 256); B[2i]=0xC8 const", "loop": "0x39430..0x39454", "result_ascii": "XoVSPgiNekmZ`^iR6Hg@Y15@", "note": "chars 0x60/0x5E/0x40 in NEITHER standard NOR custom b64 alpha => used RAW as 24-byte key (or other scheme)"},
+      "blob_note": "0x16d51 is the last 24B of the 43B blob at 0x16d3e (first 19B = K19 src); 0x5A XOR invariant matches v845 'nonce XOR 0x5A' fact",
+      "iv_default": "0x1680b (empty string) via 0xe930c (string->bytes) at 0x38544/0x385cc/0x38610; key can also come from Java jstring via 0x37160 (0x38620)",
+      "b64_decode_call": "0x38328: 0x34638(dst=sp+0x20, src=0x15c65) = strlen + 0xe8b30(dst,src,len) (classifier, single-byte out); then 0x35764 x2 (sp+0x20/0x38 -> sp+0x38/0x50)"
+    }
+  },
+  "crypto_c": {
+    "addr": "0x87690",
+    "keys": ["0x16f07 (28B raw: 90fefac8daddbe95f9b4174f557c4532f0c58ef5fdbeac9d85927148)", "0x15451 (dex descriptor 'com/nivaroid/topfollow/helper/a0' + '(Landroid/conte...')"],
+    "uses_direct_keyexp_enc": true
+  },
+  "blob40_F3AES": {"addr": "0x1476c", "len": 40, "hex": "fdfbff0ea792b479a999b970bb84ae6bb58fa3629fbe805d91b58d5483a89a4f8da3974633414553", "note": "32B binary + 'F3AES' magic tail"},
+  "frida_detection_descriptors": {
+    "cluster": "0x15c65..0x15ca1",
+    "strings": {"0x15c65": "U0dKR01FNW9OV3h3 (13B, std-b64 -> 'SGJGME5oNWxw' = class name)", "0x15c73": "gem (method name)", "0x15c77": "cmUuZnJpZGEuc2VydmVy (20B, std-b64 -> 're.frida.server')", "0x15c8a": "()Ljava/lang/Object; (descriptor)"}
+  },
+  "b64_alphabets": {
+    "custom_0x16f21": "qHaAk?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345 (64B, NOT NUL-terminated; no ADRP/ADR xref found in .text - likely copied to .bss at init or referenced via resolved pointer)",
+    "plainkey16_0x15dc5": "0123456789abcdef (xref'd by mega-sig 0x7c08c/0xbdb68)"
+  }
+}

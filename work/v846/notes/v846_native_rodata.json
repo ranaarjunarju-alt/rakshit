@@ -1,0 +1,183 @@
+{
+ "0x3fdd8": [
+  "0x16e90 [1x] b1ede1e0e0ece4b0e5ede3e5e6e6b4ec"
+ ],
+ "0x40048": [
+  "0x16ed0 [1x] b'=!!%&ozz;<#43:99:\"0\\'x4%%'"
+ ],
+ "0x40234": [
+  "0x16ef4 [2x] 213a25333a39393a220a363d30363e7b"
+ ],
+ "0x404c4": [
+  "0x16248 [1x] b'x4'"
+ ],
+ "0x40c44": [
+  "0x16248 [1x] b'x4'"
+ ],
+ "0x41518": [
+  "0x15de2 [6x] b'+'",
+  "0x147ef [2x] b'com/nivaroid/topfollow/helper/T'",
+  "0x1680b [2x] ",
+  "0x1673f [1x] b'addProperty'",
+  "0x16c7d [1x] b'(Ljava/lang/String;Ljava/lang/String;)V'",
+  "0x14fbd [1x] b'<init>'",
+  "0x158ef [1x] b'()V'",
+  "0x15de0 [1x] b'o'",
+  "0x14cbb [1x] b'(Ljava/lang/String;)Ljava/lang/String;'",
+  "0x16b50 [1x] b'x0'",
+  "0x15f60 [1x] b'y'"
+ ],
+ "0x45a70": [
+  "0x14fc4 [8x] b'-'",
+  "0x14af0 [6x] b'#'",
+  "0x1639f [5x] b'x2'",
+  "0x16671 [4x] b'|'",
+  "0x15de4 [4x] b'^'",
+  "0x14ce2 [4x] b'_'",
+  "0x1673f [2x] b'addProperty'",
+  "0x16c7d [2x] b'(Ljava/lang/String;Ljava/lang/String;)V'",
+  "0x161c0 [2x] b'1'",
+  "0x15de2 [2x] b'+'",
+  "0x15337 [2x] b'*'",
+  "0x16b53 [2x] b':'"
+ ],
+ "0x4f194": [
+  "0x15de4 [9x] b'^'",
+  "0x1665e [6x] b'Ljava/lang/String;'",
+  "0x15a2d [2x] b'pk'",
+  "0x15df7 [2x] b'fbid_v2'",
+  "0x1517c [2x] b'interop_messaging_user_fbid'",
+  "0x15b0b [2x] b'profile_pic_id'",
+  "0x16077 [2x] b'family_device_id'",
+  "0x1624b [2x] b'follower_count'",
+  "0x1674b [2x] b'following_count'",
+  "0x1680b [2x] ",
+  "0x1673f [1x] b'addProperty'",
+  "0x16c7d [1x] b'(Ljava/lang/String;Ljava/lang/String;)V'"
+ ],
+ "0x5307c": [
+  "0x15a0f [2x] b'@'"
+ ],
+ "0x5342c": [
+  "0x15de4 [28x] b'^'",
+  "0x1665e [22x] b'Ljava/lang/String;'",
+  "0x1480f [2x] b'setup'",
+  "0x1517c [2x] b'interop_messaging_user_fbid'",
+  "0x16077 [2x] b'family_device_id'",
+  "0x15a2d [2x] b'pk'",
+  "0x14af2 [2x] b'u_a'",
+  "0x14e5b [2x] b'mid'",
+  "0x1584a [2x] b'profile_pic_url'",
+  "0x15b0b [2x] b'profile_pic_id'",
+  "0x15198 [2x] b'username'",
+  "0x1624b [2x] b'follower_count'"
+ ],
+ "0x5c6e8": [
+  "0x14fc4 [12x] b'-'",
+  "0x1665e [4x] b'Ljava/lang/String;'",
+  "0x15198 [2x] b'username'",
+  "0x15a2d [2x] b'pk'",
+  "0x161c2 [2x] b'order_id'",
+  "0x15df7 [2x] b'fbid_v2'",
+  "0x1517c [2x] b'interop_messaging_user_fbid'",
+  "0x1673f [1x] b'addProperty'",
+  "0x16c7d [1x] b'(Ljava/lang/String;Ljava/lang/String;)V'"
+ ],
+ "0x6084c": [
+  "0x14fc4 [6x] b'-'"
+ ],
+ "0x61510": [
+  "0x15a0f [4x] b'@'",
+  "0x1480f [2x] b'setup'",
+  "0x164af [2x] b'()Lcom/nivaroid/topfollow/db/MyDatabase;'",
+  "0x15f05 [2x] b'currentInstagram'",
+  "0x14815 [2x] b'()Lcom/nivaroid/topfollo'",
+  "0x14848 [2x] b'media_count'",
+  "0x1665e [2x] b'Ljava/lang/String;'",
+  "0x1680b [1x] "
+ ],
+ "0x63b58": [
+  "0x14a35 [6x] b'android/os/Build'",
+  "0x16b53 [5x] b':'",
+  "0x15a3d [4x] b'>'",
+  "0x169f0 [1x] b'MANUFACTURER'",
+  "0x16815 [1x] b'BRAND'",
+  "0x14e5f [1x] b'MODEL'",
+  "0x158f5 [1x] b'BOARD'",
+  "0x15e0c [1x] b'DEVICE'",
+  "0x163b1 [1x] b'HARDWARE'"
+ ],
+ "0x64888": [
+  "0x14ce2 [2x] b'_'"
+ ],
+ "0x65338": [
+  "0x1721b [5x] b'801<4zz9<>0zz6:880;!z=!!'",
+  "0x1665e [4x] b'Ljava/lang/String;'",
+  "0x15a2d [2x] b'pk'",
+  "0x15e19 [2x] b'media_id'",
+  "0x17208 [1x] b\"3'<0;1&=<%&z6'04!0z801<4\"",
+  "0x16dea [1x] ",
+  "0x14a46 [1x] b'/'",
+  "0x17227 [1x] b'z6:880;!z=!!%&ozz<{<;&!4'"
+ ],
+ "0x67d98": [
+  "0x14fc4 [6x] b'-'",
+  "0x17230 [5x] b\"=!!%&ozz<{<;&!42'48{6:8z\"",
+  "0x1721b [5x] b'801<4zz9<>0zz6:880;!z=!!'",
+  "0x14af0 [4x] b'#'",
+  "0x1625a [2x] b'bytes'",
+  "0x14fb8 [2x] b'()[B'",
+  "0x1676c [2x] b'url'",
+  "0x14f7f [2x] b'()Ljava/lang/String;'",
+  "0x14b2f [2x] b'sign'",
+  "0x1665e [2x] b'Ljava/lang/String;'",
+  "0x1563f [1x] b'isSuccessful'",
+  "0x15edc [1x] b'()Z'"
+ ],
+ "0x73ae0": [],
+ "0x73ca8": [
+  "0x17277 [1x] b'770074m0x7044xaa`mx46cex'"
+ ],
+ "0x73f48": [
+  "0x15e22 [2x] b'body'",
+  "0x15c8f [2x] b'()Ljava/lang/Object;'",
+  "0x15a3f [2x] b'string'",
+  "0x14f7f [2x] b'()Ljava/lang/String;'",
+  "0x14d5d [2x] b'(Ljava/lang/String;)V'",
+  "0x15ee0 [2x] b'com/nivaroid/topfollow/db/MyDatabase'",
+  "0x1480f [2x] b'setup'",
+  "0x164af [2x] b'()Lcom/nivaroid/topfollow/db/MyDatabase;'",
+  "0x1680b [1x] ",
+  "0x16260 [1x] b'\"hash_key\"'",
+  "0x156a2 [1x] b'\"nonce\"'",
+  "0x1681b [1x] b'\"hash_type\"'"
+ ],
+ "0x776ec": [
+  "0x14fbd [4x] b'<init>'",
+  "0x158ef [4x] b'()V'",
+  "0x163f0 [4x] b'java/util/concurrent/TimeUnit'",
+  "0x14a84 [3x] b'build'",
+  "0x172ce [2x] b';<#43:99:\"0\\'{4%%=!!%&ozz'",
+  "0x15a46 [2x] b'()Lokhttp3/OkHttpClient;'",
+  "0x14b45 [2x] b'(JLjava/util/concurrent/'",
+  "0x16099 [2x] b'certificatePinner'",
+  "0x15e3b [2x] b'(Lokhttp3/CertificatePin'",
+  "0x163d3 [2x] b'okhttp3/OkHttpClient$Builder'",
+  "0x1640e [2x] b'SECONDS'",
+  "0x1626b [2x] b'Ljava/util/concurrent/TimeUnit;'"
+ ],
+ "0x7a3ac": [
+  "0x163f0 [4x] b'java/util/concurrent/TimeUnit'",
+  "0x14b45 [2x] b'(JLjava/util/concurrent/'",
+  "0x1640e [2x] b'SECONDS'",
+  "0x1626b [2x] b'Ljava/util/concurrent/TimeUnit;'",
+  "0x17230 [2x] b\"=!!%&ozz<{<;&!42'48{6:8z\"",
+  "0x14a84 [1x] b'build'",
+  "0x15a46 [1x] b'()Lokhttp3/OkHttpClient;'",
+  "0x156aa [1x] b'readTimeout'",
+  "0x15f3a [1x] b'writeTimeout'",
+  "0x14fbd [1x] b'<init>'",
+  "0x158ef [1x] b'()V'",
+  "0x16099 [1x] b'certificatePinner'"
+ ]
+}

@@ -55,3 +55,9 @@ work/repack/keys/_params.json
 
 # 25MB extracted frida-gadget binary (on origin/main as .xz)
 work/repack/gadget/
+
+# v846 extracted payload (regenerate by unzipping work/v846_new.apk)
+work/v846/extract/
+work/v846/so/
+work/v846/dex/
+work/v846/v845_ref/

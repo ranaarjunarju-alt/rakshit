@@ -1,0 +1,30 @@
+[
+ {
+  "key": "0x55",
+  "offset": "0x16ed0",
+  "category": "URL",
+  "xref": [
+   "0x40048"
+  ],
+  "string": "https://nivafollower-app.com/api-v3/topfollow_check.php"
+ },
+ {
+  "key": "0x55",
+  "offset": "0x17207",
+  "category": "URL",
+  "xref": [
+   "0x65338",
+   "0x67d98"
+  ],
+  "string": "Ufriendships/create/media//like//comment/https://i.instagram.com/api/v1/6Ld3yDspAAAAAH_yYoClNySU6O_dpbyXSXAujdQ3bbeeba8e-beaa-4458-ac60-6d9a61b2be9esha256/NFO8h81x1d8PG6HZwilrqXvglF1oHC0PRkvqNKVpdNY=nivafollower.apphttps://nivafollower.app/api-v3/TopFollow/v840/https://b.i.instagram.com/api/v1/"
+ },
+ {
+  "key": "0x5a",
+  "offset": "0x16f93",
+  "category": "endpoint",
+  "xref": [
+   "0xa994c"
+  ],
+  "string": "/system/app/Superuser.apk/sbin/su/system/bin/su/system/xbin/su/data/local/xbin/su/data/local/bin/su/system/sd/xbin/su/system/bin/failsafe/su/data/local/suAt91IxVnRSbFppV0UxNFdUSnplTW5ONAWMVEwVG02eGFlVmRM0VEwVGt0aVJuQjFW6V3ROZU/proc/self/mapsxposedlsposededxposedrirusubstratelibcso_substratelibbridge.sozygisk"
+ }
+]
