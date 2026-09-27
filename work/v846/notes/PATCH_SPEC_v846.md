@@ -55,7 +55,7 @@ Key helper: `0x85a4c` = string compare (bit0=1 ⇒ strings differ). `0x923c0` = 
 
 ---
 
-## 3. THE PATCHES (8 code patches — verified byte-exact)
+## 3. THE PATCHES (12 code patches — verified byte-exact)
 
 Input file: `libtopfollow.so` (arm64-v8a), **sha256 `2b2a9eeda016465adcdb0b18bf6c51ec9efa50effc14a664b93a7516cba5787b`**, 1,101,352 bytes.
 Layout fact (assert before patching): **file offset == virtual address** (`.text` VA 0x2c734 = file off 0x2c734). All sites are inside `.text`.
@@ -70,8 +70,12 @@ Layout fact (assert before patching): **file offset == virtual address** (`.text
 | 6 | `0x3ff98` | `36 00 02 15` | `tbz w21, #0, #0x3ffd8` | `14 00 00 10` | `b #0x3ffd8` | L3 APK-SHA init compare → clean (returns 0) |
 | 7 | `0xa536c` | `37 00 00 60` | `tbnz w0, #0, #0xa5378` | `d5 03 20 1f` | `nop` | R8 hooktokens → clean (falls to next check) |
 | 8 | `0xa5374` | `36 00 17 40` | `tbz w0, #0, #0xa565c` | `ba 00 00 14` | `b #0xa565c` | R8 frida_tokens → clean |
+| 9 | `0x72f88` | `98 0b 00 36` | `tbz w24, #0, #0x730f8` | `5c 00 00 14` | `b #0x730f8` | **R6/R7 post-response verdict** (APK-SHA#2 compare result `w24` from `0x85a4c`; pin channel `x22` proven unused) → clean |
+| 10 | `0x5f2f8` | `36 00 00 a0` | `tbz w0, #0, #0x5f30c` | `14 00 00 05` | `b #0x5f30c` | hooktokens, call site @`0x5f2f4` → clean |
+| 11 | `0xa5ba4` | `36 07 be 60` | `tbz w0, #0, #0xa5370` | `f3 fd ff 17` | `b #0xa5370` (back-branch) | hooktokens, call site @`0xa5ba0` → clean |
+| 12 | `0x44c60` | `36 00 00 a0` | `tbz w0, #0, #0x44c74` | `14 00 00 05` | `b #0x44c74` | frida_tokens, call site @`0x44c0c` → clean |
 
-(Byte column = little-endian word bytes; manifest `v846_patch_manifest.json` is authoritative and stores the full 32-bit word in hex.)
+(Byte column = little-endian word bytes; manifest `v846_patch_manifest.json` stores the full 32-bit word in hex. Row 11 is a **backwards** branch — imm26 is signed two's-complement; the patcher's round-trip disassembly assert guarantees correctness.)
 
 **Encoding rules (so you can recompute instead of trusting the table):**
 - `b #tgt` from `pc`: `word = 0x14000000 | (((tgt - pc) / 4) & 0x3FFFFFF)`.
@@ -82,34 +86,32 @@ Layout fact (assert before patching): **file offset == virtual address** (`.text
 **Verification protocol (non-negotiable before shipping):**
 1. Read the 4 original bytes at each VA; disassemble; must equal the "before (asm)" column exactly — else ABORT (file changed / wrong build).
 2. Write new bytes; disassemble again; must equal "after (asm)" exactly (and for `b`: decoded target == intended target).
-3. `diff` old vs new file: **only** the 8×4 = 32 byte-positions may differ.
+3. `diff` old vs new file: **only** the 12 patch sites may differ (48 bytes max; in practice 35 bytes because same-opclass edits touch fewer byte lanes).
 4. `readelf -h` / `readelf -S` still parse; size unchanged (1,101,352 B).
 
 **Deliverable of the patcher run** (already generated in this repo):
 - Patched file: `work/v846/apkx/lib/arm64-v8a/libtopfollow_patched.so`
-- sha256: `bbddc4118649f57edb0756dcf3670f727d6bfe8982b3f96cba4750fbdabb59da`
+- sha256: `5d98fc764914312854e56133a14319c5c0457fe37cddae622f4293280cf99251`
 - Manifest: `work/v846/notes/v846_patch_manifest.json` (per-site before/after hex + asm + label)
 - Patcher: `work/v846/patch_topfollow.py` (pure Python + capstone; refuses to run if any "before" bytes don't match; writes output + manifest)
 
 ---
 
-## 4. What these 8 patches do NOT cover (and how to finish it)
+## 4. What the 12 code patches leave to the data layer (and how to finish it)
 
-### 4a. R6 — APK-SHA variant #2 (`0xbdb68`, call @ `0x72e14`)
-Its compare-branch sits deep in the MBA maze beyond `0x732f4` (not yet traced). Two ways to close it:
-- **(preferred, no code patch)** data-patch its expected digest (see §4b — same blob family), or
-- trace: from `0x72e14`, result ends up in `x22` (saved at `0x7324c: mov x22, x0`); walk forward from `0x732f4` until the first `tbz/tbnz/cbz/cbnz` on `w22/x22` (or on a register copied from it) whose non-clean side leads to a `bl 0x923c0` token-trap; force the clean side (same recipe as §3).
-Note: the R6+R7 pair at `0x72e14/0x72e1c` runs on the **post-response** path; R7 is covered by the pin-blob data rewrite (§4c), R6 needs one of the two above.
+### 4a. R6 — APK-SHA variant #2 (`0xbdb68`, call @ `0x72e14`) — **CLOSED by patch #9**
+The post-response function (x0015e49c) runs a **gate-controlled re-verify loop**: two `0x85a4c` string compares (computed-vs-expected, at `0x72efc` and `0x72f70`) repeat while the counter-gate says "keep going"; the first compare's verdict is held in `w24`. When the gate times out, flow lands on **`0x72f88: tbz w24, #0, #0x730f8`** — bit0=0 (strings equal) → `0x730f8` normal continuation; bit0=1 → trap block. **Patch #9 forces that branch to the clean target**, which also kills the R6+R7 verdict channel.
+Proven unused side channel: the `0xc7c90` pin-verdict (call @`0x72e1c`) is parked in `x22` at `0x7324c: mov x22, x0` but is **overwritten at `0x73b08: mov w22, #0xdc27`** before any use (only a frame spill at `0x73af4` in between) — so no branch ever consumes it. (If you re-derive this on a different build, scan for `tbz/tbnz/cbz/cbnz` on the held verdict register *after* the gate ladder, and remember capstone `op_str` does NOT include the mnemonic.)
 
 ### 4b. Expected-digest data layer (why it exists)
 The init loop (L3) decodes a **64-byte raw SHA-256 digest stored XOR-0x52 at file/VA `0x16e90..0x16edf`** (transform at `0x3ff24`: `(0x52 & ~byte) | (byte & 0xab)` = `byte ^ 0x52`, since 0x52 and 0xab are bit-complements). Decoded value today:
 `e3bfb3b2 b2beb6e2 b7bfb1b7 b4b4e6be b7b4b2e1 e3b1e5b1 b1e4b4e4 b4e3b0b4 e6e6b4b4 e6e1beb7 b0beb3e3 b1e5bebfb1 e2b1b3b0 b0bee2e2 e6b1e5e2 e4b2e2`
 It does **not** equal `sha256(v846_new.apk)` (`ac0b993e…`) nor of: APK minus signature block, APK up-to-EOCD, the `.so`, or `classes.dex` (all tested). The exact input span is undetermined.
-Calibration recipe for the final build: on the first install (with Frida), hook `0x85a4c` (args x0=computed, x1=expected, both growable-strings) or `0x7c08c`'s output; capture the expected string once; you'll see exactly what the app hashes. Then: `new_blob = (new_expected_64bytes XOR 0x52)` written at `0x16e90` (64 bytes) for your final APK bytes.
-⚠ Order matters: digest data-patch must be computed from the **final** APK (after all other patches + signing are known). If you patch the .so inside the APK *before* signing, the hash input includes the patched .so — recompute after every change, or simpler: **ship with code patches (§3) that disable the 0x7c08c comparisons outright (sites #2 and #6), and only use the data layer for 0xbdb68 (R6) if its code branch stays unpatched.**
+Calibration recipe (only if you ever need the digest checks alive): on the first install (with Frida), hook `0x85a4c` (args x0=computed, x1=expected, both growable-strings); capture the expected string once; you'll see exactly what the app hashes. Then: `new_blob = (new_expected_64bytes XOR 0x52)` written at `0x16e90` (64 bytes) for your final APK bytes.
+**With the full 12-patch set all three SHA-compare consumptions (#2, #6, #9) are code-disabled — the digest data layer is NOT needed for capture builds.** It's documented for completeness and for any build that must keep SHA integrity alive for other reasons.
 
-### 4c. R7 — signer-pin blob (already solved by existing pipeline)
-Blob @ `0x14ce4` (120 B) = `b64(b64(hex(sha256)))`-style hash chain of the **original NivaRoid signing cert** (cert DER extracted: `work/v846/notes/v846_orig_cert.der`). Any re-signing changes the hash chain → verify fails → hang. **Do not code-patch this one in the first build** — the existing resign pipeline already rewrites this blob to match the new signer (byte-verified in builds #8/#9). Keep that step in the APK integration chain (§6).
+### 4c. R7 — signer-pin blob (defense in depth: keep the data rewrite)
+Blob @ `0x14ce4` (120 B) = `b64(b64(hex(sha256)))`-style hash chain of the **original NivaRoid signing cert** (cert DER extracted: `work/v846/notes/v846_orig_cert.der`). With patch #9, the verdict channel is dead, so a mismatch can no longer hang the app via that path. **Keep the pin-blob rewrite in the resign pipeline anyway** (byte-verified in builds #8/#9): `0xc7c90` still *runs* on every response, and we have only proven its return value is unused at this call site — the data rewrite makes the check itself pass, which is strictly safer.
 
 ### 4d. R9 — root/su + Xposed scan (leave as-is on non-rooted)
 9 su checks call `access()` via PLT stub `0x106060` (GOT slot `0x110260`) at:
@@ -149,19 +151,20 @@ They are only reached through the detection paths disabled above. Globally conve
 
 1. Replace `lib/arm64-v8a/libtopfollow.so` inside the APK with the patched file (keep 4-byte zip alignment for uncompressed entries; `zipalign -p -f 4` semantics — our pure-Python writer already handles this).
 2. **Resign** the APK (apksigner) with the working cert.
-3. **Rewrite the pin blob** `0x14ce4` inside the *installed* .so (post-sign hash chain of the new cert) — existing pipeline step, byte-verified formula in builds #8/#9. (Order: sign first, then compute blob, then patch the blob into the .so inside the APK; the blob is inside the .so, so the .so change must be done **before** the final zip write, and the APK-SHA code checks are already dead via patches #2/#6 — but R6 (§4a) still hashes the APK, so either data-patch R6's expected digest or code-patch its branch for this final form.)
+3. **Rewrite the pin blob** `0x14ce4` inside the *installed* .so (post-sign hash chain of the new cert) — existing pipeline step, byte-verified formula in builds #8/#9. (Order: sign first, then compute blob, then write the blob into the .so inside the APK before the final zip write. All three APK-SHA compare consumptions are code-disabled by patches #2/#6/#9, so no digest data-patch is required for this final form.)
 4. `extractNativeLibs=true` stays (required for Frida-gadget coexistence, frida issue #3689).
 5. Install on the non-rooted device; verify: clean launch, no freeze on first request, no syslog/abort.
 
 ## 7. Known follow-ups (ranked)
-1. Trace & patch R6's (`0xbdb68`) consume-branch, or data-patch its expected digest (§4a/4b).
-2. Runtime-calibrate the SHA input span (hook `0x85a4c`) if any SHA check must stay alive for other purposes.
+1. ~~R6 consume-branch~~ — **done (patch #9)**.
+2. Runtime-calibrate the SHA input span (hook `0x85a4c`) only if a SHA check must stay alive for other purposes.
 3. Optional su-access hardening (§4d) if the device gets rooted later.
 4. network-security-config resource patch (§4e) if capture method is plain MITM instead of Frida.
+5. On-device acceptance test of the 12-patch .so (clean launch, no freeze, capture alive) — static verification is complete; this is the one remaining gate before shipping a build.
 
 ## 8. Repo pointers (this workspace)
 - Patcher: `work/v846/patch_topfollow.py` · Manifest: `work/v846/notes/v846_patch_manifest.json`
 - Original .so: `work/v846/apkx/lib/arm64-v8a/libtopfollow.so` (sha256 2b2a9eed…)
-- Patched .so: `work/v846/apkx/lib/arm64-v8a/libtopfollow_patched.so` (sha256 bbddc411…)
+- Patched .so: `work/v846/apkx/lib/arm64-v8a/libtopfollow_patched.so` (sha256 5d98fc764914312854e56133a14319c5c0457fe37cddae622f4293280cf99251)
 - Detection-map source: `REPORT_v846_5x_DEEPEST.md` §6 · 100× evidence: `work/v846/notes/v846_100x_findings.json`
 - Original signing cert: `work/v846/notes/v846_orig_cert.der`

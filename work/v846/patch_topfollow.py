@@ -22,10 +22,14 @@ Patch list (all verified by disassembly, see PATCH_SPEC_v846.md):
   6  0x3ff98  tbz w21,#0,#0x3ffd8              b  #0x3ffd8      APK-SHA init compare (returns 0x85ec29 on mismatch)
   7  0xa536c  tbnz w0,#0,#0xa5378              NOP              hooktokens (post-response internal)
   8  0xa5374  tbz w0,#0,#0xa565c               b  #0xa565c      frida_tokens (post-response internal)
+  9  0x72f88  tbz w24,#0,#0x730f8              b  #0x730f8      R6/R7 post-response verdict loop -> force clean
+ 10  0x5f2f8  tbz w0,#0,#0x5f30c               b  #0x5f30c      hooktokens (call site @0x5f2f4)
+ 11  0xa5ba4  tbz w0,#0,#0xa5370               b  #0xa5370      hooktokens (call site @0xa5ba0)
+ 12  0x44c60  tbz w0,#0,#0x44c74               b  #0x44c74      frida_tokens (call site @0x44c0c)
 
-NOTE: R6/R7 (APK-SHA#2 0xbdb68 + signer-pin 0xc7c90, sites 0x72e14/0x72e1c) are
-      handled at the DATA layer (pin blob @0x14ce4 + expected-digest rewrite),
-      i.e. by the existing resign pipeline — see PATCH_SPEC_v846.md §5.
+NOTE: the signer-pin BLOB itself (data @0x14ce4) is still rewritten by the
+      existing resign pipeline (defense in depth); patch #9 covers its
+      compare-consumption channel as well. See PATCH_SPEC_v846.md.
 """
 import struct, sys, json, hashlib, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -44,6 +48,10 @@ PATCHES = [
     (0x3ff98, 'tbz',  'w21, #0, #0x3ffd8', 'b',   0x3ffd8, 'APK-SHA init compare -> force clean (ret 0)'),
     (0xa536c, 'tbnz', 'w0, #0, #0xa5378',  'nop', None,    'hooktokens (post-response internal) -> force clean'),
     (0xa5374, 'tbz',  'w0, #0, #0xa565c',  'b',   0xa565c, 'frida_tokens (post-response internal) -> force clean'),
+    (0x72f88, 'tbz',  'w24, #0, #0x730f8', 'b',   0x730f8, 'R6/R7 post-response verdict (APK-SHA#2 compare + pin channel) -> force clean'),
+    (0x5f2f8, 'tbz',  'w0, #0, #0x5f30c',  'b',   0x5f30c, 'hooktokens (call site @0x5f2f4) -> force clean'),
+    (0xa5ba4, 'tbz',  'w0, #0, #0xa5370',  'b',   0xa5370, 'hooktokens (call site @0xa5ba0) -> force clean'),
+    (0x44c60, 'tbz',  'w0, #0, #0x44c74',  'b',   0x44c74, 'frida_tokens (call site @0x44c0c) -> force clean'),
 ]
 NOP64 = 0xD503201F
 

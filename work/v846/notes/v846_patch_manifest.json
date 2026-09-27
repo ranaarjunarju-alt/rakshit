@@ -75,7 +75,43 @@
       "after_hex": "140000ba",
       "after_asm": "b #0xa565c",
       "label": "frida_tokens (post-response internal) -> force clean"
+    },
+    {
+      "va": 470920,
+      "file_offset": 470920,
+      "before_hex": "36000b98",
+      "before_asm": "tbz w24, #0, #0x730f8",
+      "after_hex": "1400005c",
+      "after_asm": "b #0x730f8",
+      "label": "R6/R7 post-response verdict (APK-SHA#2 compare + pin channel) -> force clean"
+    },
+    {
+      "va": 389880,
+      "file_offset": 389880,
+      "before_hex": "360000a0",
+      "before_asm": "tbz w0, #0, #0x5f30c",
+      "after_hex": "14000005",
+      "after_asm": "b #0x5f30c",
+      "label": "hooktokens (call site @0x5f2f4) -> force clean"
+    },
+    {
+      "va": 678820,
+      "file_offset": 678820,
+      "before_hex": "3607be60",
+      "before_asm": "tbz w0, #0, #0xa5370",
+      "after_hex": "17fffdf3",
+      "after_asm": "b #0xa5370",
+      "label": "hooktokens (call site @0xa5ba0) -> force clean"
+    },
+    {
+      "va": 281696,
+      "file_offset": 281696,
+      "before_hex": "360000a0",
+      "before_asm": "tbz w0, #0, #0x44c74",
+      "after_hex": "14000005",
+      "after_asm": "b #0x44c74",
+      "label": "frida_tokens (call site @0x44c0c) -> force clean"
     }
   ],
-  "output_sha256": "bbddc4118649f57edb0756dcf3670f727d6bfe8982b3f96cba4750fbdabb59da"
+  "output_sha256": "5d98fc764914312854e56133a14319c5c0457fe37cddae622f4293280cf99251"
 }
