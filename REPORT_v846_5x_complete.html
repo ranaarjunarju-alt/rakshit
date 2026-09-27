@@ -107,7 +107,7 @@ footer{margin-top:70px;padding:34px 0 44px;border-top:1px solid var(--line);colo
 <body>
 <nav><div class="wrap">
 <span class="logo">◈ TOPFOLLOW v846</span>
-<a href="#s1">Summary</a><a href="#s2">Binary</a><a href="#s3">Lifecycle</a><a href="#s4">22 Natives</a><a href="#s5">AES</a><a href="#s6">Detection</a><a href="#s7">Wire</a><a href="#s8">Anti-tamper</a><a href="#s9">APK</a><a href="#s10">Smali</a><a href="#s11">Call graph</a><a href="#s12">Agent</a><a href="#s13">Offsets</a>
+<a href="#s1">Summary</a><a href="#s2">Binary</a><a href="#s3">Lifecycle</a><a href="#s4">22 Natives</a><a href="#s5">AES</a><a href="#s6">Detection</a><a href="#s7">Wire</a><a href="#s8">Anti-tamper</a><a href="#s9">APK</a><a href="#s10">Smali</a><a href="#s11">Call graph</a><a href="#s12">Agent</a><a href="#s13">Offsets</a><a href="#s14">100× Round</a><a href="#s15">ApkPatcher</a>
 </div></nav>
 
 <div class="wrap">
@@ -712,9 +712,98 @@ Firebase topfollow-74c69 · C2 base 19× .php (see §10.6) · vNonce const 87766
 </table></div>
 </div></section>
 
+<!-- ================= S14 ================= -->
+<section id="s14"><div class="rv">
+<h2 class="sec"><span class="no">14</span>100× Round — major correction + new findings</h2>
+<div class="sub">2026-09-27 · everything re-proven by <b>Unicorn emulation of the real code</b> (not just static disasm). Evidence: <code>notes/v846_token_sites.json</code>, <code>notes/v846_orig_cert.der</code>, <code>uc_decode2.py</code> (reusable emulator).</div>
+
+<div class="note red"><b>CORRECTION (supersedes §07/§08/§12 mentions):</b> <code>0x923c0</code> is <b>NOT</b> a string decoder. It is a <b>runtime TOKEN / blob GENERATOR</b>. The "94 obfuscated strings decoded through it" do not exist as static data. The real fixed strings come from the XOR codec below. This single correction reframes the whole string story.</div>
+
+<h3>14.1 What 0x923c0 actually is — proven, not inferred</h3>
+<div class="grid2">
+<div class="card"><h4>ABI + call pattern</h4>
+<code>0x923c0(x0 = len, x8 = out-string-struct)</code>
+<p style="color:var(--dim);font-size:13px">Every site: <code>add x8, sp, #off; mov w0, #LEN; bl 0x923c0</code>. 88/94 sites give an immediate LEN (table in <code>v846_token_sites.json</code>).</p></div>
+<div class="card"><h4>Input is never read</h4><p style="color:var(--dim);font-size:13px">The per-byte loop (0x924ec–0x926fc) computes each output byte from <code>(i, clock(), MBA-constants)</code> only. Two completely different 36-byte inputs → <b>byte-identical</b> outputs.</p></div>
+<div class="card"><h4>Output = base64 token</h4><p style="color:var(--dim);font-size:13px">Alphabet <code>A–Z a–z 0–9</code> (62 chars @ <code>0x16f27</code>, standard b64, no <code>+/</code>). E.g. len=36, fixed clock → <code>xvd1ctjlj0NBJebzlwHtCeefuLiD4jxSWeJj</code>.</p></div>
+<div class="card"><h4>Clock-seeded ⇒ non-deterministic</h4><p style="color:var(--dim);font-size:13px">6 different <code>clock()</code> values → 6 different tokens. Impossible for fixed strings; exactly right for nonces / device tokens / request salts.</p></div>
+<div class="card"><h4>Counter-gates are theater</h4><p style="color:var(--dim);font-size:13px">Output identical for 8 different counter states (incl. all-zero) at 0x10f4a0 / 0x10f480 / 0x10f330 / 0x10ec28. Gates punish tampering (<code>b .</code> hang), they do not select plaintext.</p></div>
+<div class="card"><h4>Rodata blobs are DECOYS</h4><p style="color:var(--dim);font-size:13px">Alphabet-looking strings staged before each call (e.g. <code>=!!%&amp;ozz&lt;{&lt;&amp;!</code> @0x17230) are overwritten by the generator — their content is irrelevant.</p></div>
+</div>
+
+<h3>14.2 The 94 sites — token/blob generation, sized</h3>
+<table>
+<tr><th>length (chars/bytes)</th><th>count</th><th>interpretation</th></tr>
+<tr><td class="mono">10–53 (12×4, 14×4, 17×5, 21×4, 26×4, 36×4, 35×4, 33×3, 34×3, …)</td><td class="mono">80</td><td>device tokens / RID salts / nonces sent to C2</td></tr>
+<tr><td class="mono">110, 128×2, 192×2, 328, 384, 594</td><td class="mono">8</td><td>random padding / payload blobs (junk memory, anti-analysis)</td></tr>
+<tr><td class="mono">1963, 2983</td><td class="mono">2</td><td>large random buffers</td></tr>
+<tr><td class="mono">register-passed (unresolved)</td><td class="mono">6</td><td>cosmetic; table complete at 88/94</td></tr>
+</table>
+<div class="note grn"><b>Agent impact:</b> H15 (hook on 0x923c0) still valuable — it captures the <b>runtime tokens</b> the app actually sends to C2 — but it will NOT dump URLs/field names. For static strings, hook the XOR-decoder family (14.3) instead.</div>
+
+<h3>14.3 The REAL string codec — single-byte XOR, per-site keys</h3>
+<p style="color:var(--dim);font-size:13.5px;margin-bottom:8px">Fixed strings are plain XOR in rodata, decoded by per-byte loop functions (e.g. <code>0x86684(src, w1=len, x8=out)</code> called at 0x40098 as <code>(0x16ed0, 36, sp+0x10)</code>). The loop wraps each byte in MBA tautologies + counter-gate csel webs to hide the key — but an XOR sweep recovers everything. The counter state selects the active key/transform path (wrong state → wrong path → garbage/hang — verified: emulating 0x86684 with a non-runtime counter yields 1 byte, not the URL).</p>
+<table>
+<tr><th class="mono">key</th><th class="mono">rodata</th><th>decoded</th></tr>
+<tr><td class="mono">0x55</td><td class="mono">0x16ed0 (46B)</td><td><code>https://nivafollower-app.com/api-v3/topfollow_check.php</code> (C2 check endpoint; first 36B also the base)</td></tr>
+<tr><td class="mono">0x55</td><td class="mono">0x17207 cluster</td><td><code>friendships/create/</code> · <code>media/</code> · <code>like/</code> · <code>comment/</code> · <code>https://i.instagram.com/api/v1/</code> · IG app-id <code>6Ld3yDspAAAAAH_yYoC…</code> · <code>sha256/</code> · <code>nivafollower.app</code> · <code>https://nivafollower.app/api-v3/TopFollow/v840/</code> · <code>https://b.i.instagram.com/api/v1/</code></td></tr>
+<tr><td class="mono">0x5a</td><td class="mono">0x16f93 (+0x17008)</td><td>root-detect paths <code>/system/app/Superuser.apk</code> <code>/sbin/su</code> <code>/system/bin/su</code> <code>/system/xbin/su</code> <code>/data/local/xbin/su</code> <code>/data/local/bin/su</code> <code>/system/sd/xbin/su</code> <code>/system/bin/failsafe/su</code> <code>/data/local/su</code> + tokens <code>/proc/self/maps</code> <code>xposed</code> <code>lsposed</code> <code>edxposed</code> <code>riru</code> <code>substrate</code> <code>libsubstrate</code> <code>libbridge.so</code> <code>zygisk</code></td></tr>
+</table>
+
+<h3>14.4 Signature — original signer recovered (the APK is the user's ORIGINAL)</h3>
+<div class="grid2">
+<div class="card"><h4>What was wrong before</h4><p style="color:var(--dim);font-size:13px"><code>v846_new.apk</code> is the <b>original APK the user supplied</b> — not a build artifact. Its signature is structurally broken (no META-INF v1 files), which looked like an unsigned pipeline output.</p></div>
+<div class="card"><h4>Mangled v2 block (byte-verified)</h4><p style="color:var(--dim);font-size:13px">CD ends 0x8b64b6, CD @0x8b94b8. The 12,290-byte gap holds a <b>mangled v2 block</b>: <code>"APK Sig Block 42"</code> magic at the <i>tail</i> (0x8b94a8, 16B before CD), leading words zeroed (<code>0x2ff80000</code>=12,280), v2-signer ID <code>0x7109871a</code> @0x8b64c8, cert-structure words <code>0x2c 0x28 0x103 0x20</code>, no v3/v4.</p></div>
+</div>
+<div class="card ok"><h4>Recovered original X.509 certificate (860 B @ 0x8b6510 → notes/v846_orig_cert.der)</h4>
+<div class="kv">
+<div class="k">Subject</div><div>CN=Maryam Ahmadi, OU=Android Developer, <b>O=NivaRoid</b>, L=Shiraz, ST=Fars, C=IR</div>
+<div class="k">Key / type</div><div>self-signed <b>EC</b></div>
+<div class="k">Validity</div><div>2023-12-15 → 2048-12-08</div>
+<div class="k">Meaning</div><div>The <b>original signer</b> — a NivaRoid (Iran) build. The in-.so signer-pin blob @0x14ce4 (<code>d845591e…ea6bec5e</code>) is the hash chain of <b>this</b> certificate ⇒ any re-sign (our gadget builds) MUST rewrite the pin blob. Confirmed mandatory, no change.</div>
+</div></div>
+</div></section>
+
+<!-- ================= S15 ================= -->
+<section id="s15"><div class="rv">
+<h2 class="sec"><span class="no">15</span>ApkPatcher analysis (github.com/TechnoIndian/ApkPatcher)</h2>
+<div class="sub">Analysis only — nothing built/patched, per user. Cloned to <code>work/apkpatcher_ref/</code>. Termux-Python CLI (PyPI <code>ApkPatcherX</code>). Pipeline: APKEditor decompile → <b>regex-patch smali</b> → apktool recompile → apksigner sign → zipalign.</div>
+
+<h3>15.1 Its logger — how it actually works</h3>
+<div class="grid2">
+<div class="card"><h4><code>-A</code> AES logger (template Utils/Files/AES.smali → RK_TECHNO_INDIA/AES)</h4>
+<p style="color:var(--dim);font-size:13px"><code>&lt;clinit&gt;</code> starts a <b>daemon Thread</b>; lines flow through a <code>LinkedBlockingQueue</code>. API: <code>getInstance()</code> (logs Cipher algorithm), <code>a(data)</code>, <code>b1..b6</code> (params), <code>b()</code> (group flush); <code>y()</code> stringifies (Arrays.toString per array); <code>z()</code> formats banner <code>[TIME]/[CLASS]/[METHOD]/[LOCATION]/[RESULT]</code> — LOCATION from <code>new Throwable().getStackTrace()[2]</code>.</p>
+<p style="color:var(--dim);font-size:13px">Matcher <code>AES_Logs_Inject</code>: any smali method with <code>Cipher.doFinal</code> + <code>SecretKeySpec</code>/<code>IvParameterSpec</code> + literal <code>"AES/&lt;mode&gt;/&lt;padding&gt;"</code> gets the wrapping calls injected.</p></div>
+<div class="card warn"><h4>Where it writes (the fatal flaw)</h4>
+<p style="color:var(--dim);font-size:13px"><b><code>[SDCARD]/MT2/logs/[PACKAGE]-[TIME].json</code></b> via <code>getExternalStorageDirectory()</code>; fallback <code>/data/data/PKG/logs/</code> (needs root). <b>Throws RuntimeException on IO failure — uncaught ⇒ app crash.</b></p></div>
+</div>
+<h3 style="margin-top:18px"><code>-A2</code> (Algorithm.dex, decompiled)</h3>
+<p style="color:var(--dim);font-size:13.5px"><code>com/algorithm/hook/URL</code>: <code>URL.openConnection</code>, <code>HttpURLConnection.connect</code>, okhttp <code>Request.url</code>, <code>OkHttpClient.newCall</code> → logs "URL ┃" + headers. <code>AESHOOK</code>: <code>SecretKeySpec</code>/<code>IvParameterSpec</code>/<code>Cipher.getInstance/init/doFinal</code> → key/IV as b64+string, algorithm, mode, IN/OUT. <code>Utils.saveLog</code> appends to <b><code>/sdcard/Algorithm/Logs.json</code></b> (raw <code>FileWriter</code>, no permission handling).</p>
+
+<h3>15.2 Verdict for TopFollow (v846)</h3>
+<table>
+<tr><th>feature</th><th>on TopFollow</th><th class="mono">why</th></tr>
+<tr><td><code>-A</code> AES logger</td><td><span class="pill red">USELESS</span></td><td>Matches exactly <b>1 method</b>: <code>com/bumptech/glide/c.d</code> (Glide encrypted-image decrypt — a 3rd-party lib path, no app logic). TopFollow's crypto is 100% native (AES-128 in .so, C2 body signed there).</td></tr>
+<tr><td><code>-A2</code> URL/AES dex</td><td><span class="pill red">CRASH</span></td><td>Would catch okhttp URL+headers, but every write targets <code>/sdcard</code>. TopFollow has <b>no storage permissions</b> (Android 13 scoped storage, non-rooted) → <code>FileWriter</code> throws → uncaught → crash (violates the hard no-crash criterion). <code>/data/data</code> fallback needs root (absent).</td></tr>
+<tr><td>ApkPatcher as-is</td><td><span class="pill red">WILL NOT WORK</span></td><td>Nothing useful captured + crash risk. Do not use it on this APK.</td></tr>
+</table>
+
+<h3>15.3 Custom logger for TopFollow — YES, 3 viable designs (not built, per user)</h3>
+<div class="grid2">
+<div class="card amb"><h4>(a) Smali-inject our own logger (adapt their template, NOT their paths)</h4>
+<p style="color:var(--dim);font-size:13px">Wrap <code>helper.q.*</code> natives (all 22 — args/rets visible in smali), add an okhttp interceptor for URL+headers, wrap <code>T.o</code>/<code>T.sd</code> (keystore attestation) and <code>gc/l</code> (Base64 prefs codec). Write to <b><code>Context.getFilesDir()</code></b> (private app dir — no permission) + logcat mirror, <b>never /sdcard</b>. Any smali change breaks APK-SHA / signer-pin ⇒ must combine with <b>pin-blob rewrite + resign</b> (already in our pipeline).</p></div>
+<div class="card ok"><h4>(b) Frida-gadget agent (our build #9) — RECOMMENDED</h4>
+<p style="color:var(--dim);font-size:13px">Supersedes (a): full native+Java coverage from inside the process, no smali surgery, traffic + AES/SHA + detection bypass already planned. The logger question is answered by the agent itself — no ApkPatcher dependency.</p></div>
+<div class="card"><h4>(c) Pine native hooks (their <code>-p/-x</code>)</h4>
+<p style="color:var(--dim);font-size:13px">C-level hooks on the .so functions — strongest, but requires C dev + maps-scan exposure risk. Not needed: the gadget already covers it.</p></div>
+<div class="card warn"><h4>Its "AES patcher"</h4>
+<p style="color:var(--dim);font-size:13px">There is <b>no key patching</b> — <code>-A</code>/<code>-A2</code> only <i>log</i> AES usage. TopFollow's AES keys are decoded in native (CRYPTO-A arms, CRYPTO-C 28B @0x16f07 etc.), so <b>no smali-level AES key exists to patch</b>. To capture keys: hook the native AES entry (our H-series agent plan). Java-side: the only <code>javax.crypto</code> usage is Glide's (7× Cipher refs, 0× IvParameterSpec, sole doFinal site = <code>com/bumptech/glide/c.d</code>) ⇒ <b>no Java-side app crypto to hook</b>.</p></div>
+</div>
+</div></section>
+
 <footer>
-TopFollow v8.4.6 (v846) — 5× deepest complete analysis · .so sha256 2b2a9eed…787b · APK sha256 ac0b993e…<br>
-Method: capstone static RE · machine-level BL scans · Unicorn instruction-level emulation (6/6 FIPS) · androguard dex/axml parse (pure Python)<br>
+TopFollow v8.4.6 (v846) — 5× deepest complete analysis + 100× round (corrections, token-generator proof, NivaRoid cert, ApkPatcher) · .so sha256 2b2a9eed…787b · APK sha256 ac0b993e…<br>
+Method: capstone static RE · machine-level BL scans · Unicorn instruction-level emulation (6/6 FIPS, 0x923c0/0x86684 decode proofs) · androguard dex/axml parse (pure Python) · openssl cert recovery<br>
 branch arena/01a0aa64-rakshit · evidence: work/v846/notes/*.json · full text report: REPORT_v846_5x_DEEPEST.md
 </footer>
 </div>

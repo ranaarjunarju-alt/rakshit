@@ -1,0 +1,52 @@
+{
+ "round": "100x",
+ "date": "2026-09-27",
+ "correction_0x923c0": {
+  "was": "custom-B64 string decoder (94 sites)",
+  "now": "runtime token/blob generator: out[i] = alphabet[0x16f27][f(i, clock())]; input buffer NEVER read (decoy); counter-gates are tamper-theater (output identical for 8 counter states incl all-zero); clock-seeded => non-deterministic per run",
+  "evidence": [
+   "2 different 36B inputs -> identical 36B output",
+   "6 clock values -> 6 different outputs",
+   "8 counter combos -> identical output",
+   "ABI at all sites: add x8,sp,#off; mov w0,#LEN; bl 0x923c0 (88/94 len resolved)"
+  ],
+  "alphabet_0x16f27": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+  "sample_output_len36_clock1700000000": "xvd1ctjlj0NBJebzlwHtCeefuLiD4jxSWeJj",
+  "len_distribution": "tokens 10-53 (80 sites); blob buffers 110,128x2,192x2,328,384,594 (8); large 1963,2983 (2); register-passed (6)"
+ },
+ "real_string_codec": {
+  "type": "single-byte XOR, per-site key, decoded by per-byte loop fns (e.g. 0x86684(src, w1=len, x8=out)); key hidden by MBA tautologies + counter-gate path selection",
+  "keys_found": {
+   "0x55": [
+    "https://nivafollower-app.com/api-v3/topfollow_check.php (0x16ed0, 46B)",
+    "IG api cluster 0x17207 (friendships/create, media, like, comment, i.instagram.com/api/v1, app-id 6Ld3yDsp..., sha256/, nivafollower.app, nivafollower.app/api-v3/TopFollow/v840, b.i.instagram.com/api/v1)"
+   ],
+   "0x5a": [
+    "root paths 0x16f93 (Superuser.apk, 9 su paths)",
+    "xposed/lsposed/edxposed/riru/substrate/libbridge/zygisk tokens + /proc/self/maps"
+   ]
+  }
+ },
+ "signature": {
+  "apk_is": "USER'S ORIGINAL (not pipeline artifact)",
+  "v2_block": "mangled: magic 'APK Sig Block 42' at gap tail 0x8b94a8, leading words zeroed, v2 signer id 0x7109871a @0x8b64c8, no v3/v4; gap 0x8b64b6-0x8b94b8 = 12290B",
+  "orig_cert": "860B X.509 @0x8b6510 -> notes/v846_orig_cert.der; CN=Maryam Ahmadi, O=NivaRoid, Shiraz/Fars/IR; self-signed EC; 2023-12-15..2048-12-08",
+  "consequence": "pin blob 0x14ce4 = hash chain of this cert; every resign must rewrite it (build #9 already does)"
+ },
+ "apkpatcher_verdict": {
+  "tool": "Termux Python CLI (PyPI ApkPatcherX): APKEditor decompile -> regex smali patch -> recompile -> sign -> align",
+  "logger_A": "daemon thread + LinkedBlockingQueue; RK_TECHNO_INDIA/AES class; writes [SDCARD]/MT2/logs/PKG-TIME.json, fallback /data/data (root); RuntimeException on IO fail (uncaught crash)",
+  "logger_A2": "com/algorithm/hook URL (openConnection/connect/Request.url/newCall) + AESHOOK (key/IV/alg/mode/IN-OUT); Utils.saveLog appends /sdcard/Algorithm/Logs.json",
+  "topfollow": {
+   "-A": "matches ONLY com/bumptech/glide/c.d (Glide lib) - useless",
+   "-A2": "okhttp visible BUT /sdcard writes fail (no storage perms, Android 13 scoped, non-root) -> crash",
+   "as_is": "WILL NOT WORK usefully"
+  },
+  "custom_logger_options": [
+   "(a) smali-inject our logger: wrap helper.q.*, okhttp interceptor, T.o/T.sd, gc/l; write getFilesDir()+logcat (NOT /sdcard); combine pin-blob rewrite+resign",
+   "(b) Frida-gadget agent build #9 - RECOMMENDED, supersedes (a)",
+   "(c) Pine native hooks - C dev, maps-scan risk, not needed"
+  ],
+  "aes_patcher": "no key patching exists - only logging; app crypto 100% native; Java javax.crypto usage = Glide only (7 Cipher, 0 IvParameterSpec, 1 doFinal @ com/bumptech/glide/c.d)"
+ }
+}

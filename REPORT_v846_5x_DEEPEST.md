@@ -795,3 +795,159 @@ q.i  (helper T JSON)        ← ca/i.onReady
 5. **FCM + Crashlytics embedded** — the app phones home via Firebase (project `topfollow-74c69` / `topfollow-74c69.appspot.com`); agent should log FCM messages (push = server commands to the robot).
 6. **extractNativeLibs=false (original)** — our build flips to true (frida gadget + minizip fix, per prior decision).
 7. **targetSdk=35** — 16KB page alignment NOT required (<10000? targetSdk 35 < 36 → no 16KB page requirement yet).
+
+# PART C — 100× ROUND (2026-09-27): CORRECTIONS + NEW FINDINGS
+
+> This part supersedes conflicting statements in Part A/B. Everything below was
+> re-verified this round by **Unicorn emulation of the real code** (not just static
+> disassembly) + raw byte analysis of the APK. Evidence files: `notes/v846_token_sites.json`,
+> `notes/v846_orig_cert.der`, `uc_decode2.py` (reusable emulator), `work/apkpatcher_ref/`.
+
+## 25. MAJOR CORRECTION — `0x923c0` IS NOT A STRING DECODER (it is a runtime TOKEN GENERATOR)
+
+Part A called `0x923c0` a "custom-B64 decoder" and said "every encoded string
+decodes through it (94 callers)". **That is wrong.** Emulation proved:
+
+1. **ABI**: `0x923c0(x0 = len, x8 = out-string-struct)`. At every call site the
+   pattern is `add x8, sp, #off; mov w0, #LEN; bl 0x923c0` (88/94 sites give an
+   immediate LEN; table in `notes/v846_token_sites.json`).
+2. **The input buffer is never read.** The per-byte loop (0x924ec–0x926fc) computes
+   each output byte purely from `(i, clock(), MBA-constants)` and stores
+   `out[i] = alphabet[0x16f27][index]`. Feeding two completely different 36-byte
+   inputs produced byte-identical outputs.
+3. **Output is a base64-alphabet token** (alphabet `A–Z a–z 0–9`, 62 chars @ `0x16f27` —
+   standard b64 alphabet, no `+/`). Example (fixed clock, len=36):
+   `xvd1ctjlj0NBJebzlwHtCeefuLiD4jxSWeJj`.
+4. **Clock-seeded**: different `clock()` values give different tokens (tested 6 values)
+   → values are **non-deterministic per app run**. Impossible for fixed strings;
+   exactly right for nonces / device tokens / request salts.
+5. **Counter-gates are theater**: output was identical for 8 different counter
+   states (incl. all-zero) at 0x10f4a0/0x10f480/0x10f330/0x10ec28 etc. The gates
+   exist to punish tampering (wrong values → `b .` hang), not to select plaintext.
+6. **The rodata blobs staged before each call (alphabet-looking strings like
+   `=!!%&ozz<{<;&!42'48{6:8z4%<z#dz` @0x17230) are DECOYS** — the generator
+   overwrites them; their content is irrelevant.
+
+**Len distribution of the 94 sites** (88 resolved): tokens of 10–53 chars
+(12×4, 14×4, 17×5, 21×4, 26×4, 36×4, …) **plus large buffers** 110, 128×2, 192×2,
+328, 384, 594, 1963, 2983 bytes — the large ones are random padding/payload blobs
+(junk memory for anti-analysis), not text.
+
+Consequences:
+- The "94 obfuscated strings" do not exist as static data. The real fixed strings
+  come from the **XOR codec (next section)**; the 94 sites are **token/blob
+  generation** points (device tokens, RID salts, nonces, padding).
+- **H15 (agent hook on 0x923c0)** still has value — it captures the **runtime
+  tokens** the app sends to C2 (valuable for replay/analysis) — but it will NOT
+  dump URLs/field names. For strings, hook the XOR-decoder family instead.
+
+## 26. THE REAL STRING CODEC — XOR with per-site keys (0x55 / 0x5a / 0x50)
+
+Fixed strings are encoded as **plain single-byte XOR** in rodata and decoded at
+runtime by a family of per-byte loop functions (e.g. `0x86684(src, w1=len, x8=out)`
+called at 0x40098 with `(0x16ed0, 36, sp+0x10)`). The decode loop wraps each byte
+in MBA tautologies (`(b & ~5) | (b & 0xFA)` etc.) plus counter-gate csel webs, so
+the key constant looks hidden, but XOR sweep recovers everything:
+
+| key | rodata | decoded |
+|---|---|---|
+| **0x55** | 0x16ed0 (46B) | `https://nivafollower-app.com/api-v3/topfollow_check.php` (C2 check endpoint; first 36B also used as base) |
+| **0x55** | 0x17207 cluster | `friendships/create/`, `media/`, `like/`, `comment/`, `https://i.instagram.com/api/v1/`, IG app-id `6Ld3yDspAAAAAH_yYoC...`, `sha256/`, `nivafollower.app`, `https://nivafollower.app/api-v3/TopFollow/v840/`, `https://b.i.instagram.com/api/v1/` |
+| **0x5a** | 0x16f93 (25B+23B windows) | `/system/app/Superuser.apk`, `/sbin/su`, `/system/bin/su`, `/system/xbin/su`, `/data/local/xbin/su`, `/data/local/bin/su`, `/system/sd/xbin/su`, `/system/bin/failsafe/su`, `/data/local/su` (root-detection paths) + `/proc/self/maps`, `xposed`, `lsposed`, `edxposed`, `riru`, `substrate`, `libsubstrate`, `libbridge.so`, `zygisk` tokens |
+
+The counter-gates around the loop select the active key/transform path (wrong
+state → wrong path → garbage or hang — verified: emulating 0x86684 with a
+non-runtime counter state yields a 1-byte output, not the URL). So **static
+recovery works via XOR sweep (done), runtime capture is trivial via H15-style
+hook on the 0x86684 family** (x0=src, w1=len, x8=out → log result).
+
+## 27. SIGNATURE — ORIGINAL SIGNER RECOVERED (correction: the APK is the user's ORIGINAL)
+
+`v846_new.apk` is **the original APK supplied by the user** — not a build artifact.
+Its signature is structurally broken (no META-INF v1 files), which initially
+looked like an unsigned pipeline output. Full byte analysis this round:
+
+- Central directory ends at 0x8b64b6; CD @0x8b94b8. The 12,290-byte gap between
+  them contains a **mangled v2 signature block**: the `"APK Sig Block 42"` magic
+  sits at the *tail* of the gap (0x8b94a8, 16B before CD), the leading words are
+  zeroed (0x2ff80000 = 12,280), v2-signer ID `0x7109871a` @0x8b64c8, cert-structure
+  words `0x2c 0x28 0x103 0x20`, no v3/v4.
+- An **860-byte X.509 certificate sits intact at 0x8b6510** inside the gap →
+  recovered to `notes/v846_orig_cert.der` and parsed with openssl:
+  - **CN=Maryam Ahmadi, OU=Android Developer, O=NivaRoid, L=Shiraz, ST=Fars, C=IR**
+  - self-signed **EC** key, validity **2023-12-15 → 2048-12-08**.
+- That is the **original signer** — the package is a NivaRoid (Iran) build, and the
+  in-.so **signer-pin blob @0x14ce4 (`d845591e…ea6bec5e`)** is the hash chain of
+  THIS certificate. Any re-sign (our gadget builds) must rewrite the pin blob —
+  confirmed mandatory, no change.
+
+## 28. APKPATCHER (github.com/TechnoIndian/ApkPatcher) — FULL ANALYSIS (analysis only, per user)
+
+Cloned to `work/apkpatcher_ref/`. Termux-Python CLI (PyPI `ApkPatcherX`); pipeline:
+APKEditor decompile → **regex-patch smali** → apktool recompile → apksigner sign →
+zipalign align. Flags: default = VPN & SSL pin bypass; `-A` = AES logger; `-A2` =
+Algorithm.dex; `-D` Android_ID spoof; `-r` random info; `-pkg` pkg spoof; `-p/-x`
+Pairip/CoreX (Pine); `-pine`; `-rmads/-rmss/-rmusb`; `-t` Telegram; `-f` Flutter.
+
+**Logger mechanism (`-A`, template `Utils/Files/AES.smali` → class `RK_TECHNO_INDIA/AES`):**
+- `<clinit>` starts a **daemon Thread**; log lines go through a
+  `LinkedBlockingQueue`; API: `getInstance()` (logs Cipher algorithm), `a(data)`,
+  `b1..b6` (params), `b()` (group flush); `y()` stringifies params
+  (Arrays.toString per array); `z()` formats banner
+  `[TIME]/[CLASS]/[METHOD]/[LOCATION]/[RESULT]` — LOCATION from
+  `new Throwable().getStackTrace()[2]`.
+- **Write target: `[SDCARD]/MT2/logs/[PACKAGE]-[TIME].json`**
+  (`Environment.getExternalStorageDirectory()`); fallback `/data/data/PKG/logs/`
+  (needs root); **throws RuntimeException on IO failure** (uncaught → app crash).
+- Matcher `AES_Logs_Inject`: any smali method containing `Cipher.doFinal` +
+  `SecretKeySpec`/`IvParameterSpec` + literal `"AES/<mode>/<padding>"` gets the
+  wrapping calls injected.
+
+**`-A2` (Algorithm.dex, decompiled):** `com/algorithm/hook/URL`
+(`URL.openConnection`, `HttpURLConnection.connect`, okhttp `Request.url`,
+`OkHttpClient.newCall` → logs "URL ┃" + headers) and `AESHOOK`
+(`SecretKeySpec`/`IvParameterSpec`/`Cipher.getInstance/init/doFinal` → key/IV as
+b64+string, algorithm, mode, IN/OUT). `Utils.saveLog` appends to
+**`/sdcard/Algorithm/Logs.json`** (raw `FileWriter`, no permission handling).
+
+**Verdict for TopFollow (v846):**
+1. **`-A` matches exactly ONE method: `com/bumptech/glide/c.d`** (Glide's
+   encrypted-image decrypt — a third-party library path, no app logic). TopFollow's
+   crypto is 100% native (AES-128 in .so, C2 body signed there) → the AES logger
+   captures **nothing useful**.
+2. **`-A2` would catch okhttp calls (URL + headers)** — but every write goes to
+   `/sdcard`: TopFollow has **no storage permissions** (Android 13 scoped storage,
+   non-rooted phone) → `FileWriter` throws → uncaught → **crash** (violates the
+   hard no-crash criterion). The `/data/data` fallback needs root (absent).
+   → **ApkPatcher as-is will NOT work usefully on this APK.**
+3. **Custom logger for TopFollow — YES, possible, 3 viable designs** (not built, per
+   user):
+   - **(a) Smali-inject our own logger** (adapt their template, not their paths):
+     wrap `helper.q.*` natives (all 22 — args/rets visible in smali), add an
+     okhttp interceptor for URL+headers, wrap `T.o`/`T.sd` (keystore attestation),
+     `gc/l` (Base64 prefs codec). Write to **`Context.getFilesDir()` (private app
+     dir — no permission needed) + logcat mirror**, never /sdcard. Any APK smali
+     change breaks the APK-SHA / signer-pin checks → must combine with
+     **pin-blob rewrite + resign** (already in our pipeline, build #9).
+   - **(b) Frida-gadget agent (our build #9)** — supersedes (a): full native+Java
+     coverage from inside the process, no smali surgery, traffic + AES/SHA +
+     detection bypass already planned. **This is the recommended path.**
+   - **(c) Pine native hooks (their `-p/-x`)** — C-level hooks on the .so
+     functions; strongest but requires C dev + maps-scan exposure risk; not needed
+     since the gadget covers it.
+4. **AES patcher (`-A`/`-A2` "patching")**: there is no key patching — it only
+   *logs* AES usage. TopFollow's AES keys are decoded in native (CRYPTO-A arms,
+   0x16f07 CRYPTO-C key 28B etc.), so no smali-level AES key exists to patch.
+   To *capture* keys: hook the native AES entry (our H-series agent plan) or, if
+   Java-visible, the `SecretKeySpec` ctor — in this APK the only Java
+   `javax.crypto` usage is Glide's (7× Cipher refs total, 0× IvParameterSpec,
+   only doFinal site = `com/bumptech/glide/c.d`), i.e. **no Java-side app crypto
+   to hook**.
+
+## 29. UPDATED OPEN ITEMS / NEXT
+- H15 redefined: hook **0x86684 family** (string decode, x0=src,w1=len,x8=out) for
+  static-string capture at runtime; hook **0x923c0** for runtime **token** capture
+  (what the app actually sends as salts/nonces).
+- The 6 unresolved token-site lengths (register-passed) are cosmetic; table at 88/94.
+- Build #9 unchanged in plan (tf_agent.js = H13–H20 + B6 pin-blob rewrite); the
+  logger question is answered by the agent itself — no ApkPatcher dependency.
