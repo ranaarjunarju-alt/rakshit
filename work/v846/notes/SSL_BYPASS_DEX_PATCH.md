@@ -8,7 +8,7 @@ call silently no-op'd, so every conclusion below is from the fixed scan):
 
 | Layer | Finding | Bypass needed? |
 |---|---|---|
-| **Native .so — TLS** | ZERO TLS/network imports (no SSL_*/socket/connect/send/recv/getifaddrs), zero static TLS strings, zero TLS code | **Nothing to bypass.** The .so cannot open connections; all HTTP is Java. |
+| **Native .so — TLS** | ZERO TLS/network imports (no SSL_*/socket/connect/send/recv/getifaddrs), zero static TLS strings, zero TLS code. **Syscall-level scan also done**: only `svc` count in `.text` = 0; `syscall()` PLT (0x106370) has exactly **2 call sites** (0xeafe4, 0xeb03c), both with number **0xb2 = `delete_module`** — an environment-fingerprint canary (return value compared/stored), NOT networking. | **Nothing to bypass.** The .so cannot open connections; all HTTP is Java. |
 | **Native .so — OkHttp JNI strings** | Present in rodata but **zero code references** (dead build residue) | Nothing. |
 | **Java/dex — pinning** | Exactly 5 `new OkHttpClient$Builder` sites (`Ly9/i;.<init>` = C2 client, `Lz9/q;.q/.t`, `Lz9/v;.run`, `Lz9/x;.success` = 4 IG clients). **None** calls `certificatePinner(...)`, `sslSocketFactory(...)`, `hostnameVerifier(...)`, `proxy(...)`, or `proxySelector(...)`. All `CertificatePinner`/`TrustManager` usage in the dex is stock OkHttp-internal (`Lcc/*`, `Lyb/*`, `Ldc/*` = minified okhttp internals). | No pinning exists. |
 | **Java/dex — proxy** | No `setProxy`, no custom `ProxySelector` on any client → all 5 clients use the **system proxy** (HTTPCanary's). `Lic/a;.select` (NO_PROXY) is OkHttp's *own* internal RouteSelector fallback, not app code. | No proxy-bypass to remove — good, traffic DOES flow through HTTPCanary. |
