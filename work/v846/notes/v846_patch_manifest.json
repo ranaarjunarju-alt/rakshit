@@ -1,0 +1,81 @@
+{
+  "input": "work/v846/apkx/lib/arm64-v8a/libtopfollow.so",
+  "input_sha256": "2b2a9eeda016465adcdb0b18bf6c51ec9efa50effc14a664b93a7516cba5787b",
+  "input_size": 1101352,
+  "output": "work/v846/apkx/lib/arm64-v8a/libtopfollow_patched.so",
+  "patches": [
+    {
+      "va": 313452,
+      "file_offset": 313452,
+      "before_hex": "3600c79c",
+      "before_asm": "tbz w28, #0, #0x4e15c",
+      "after_hex": "1400063c",
+      "after_asm": "b #0x4e15c",
+      "label": "frida scan #1 (pre-request) -> force clean"
+    },
+    {
+      "va": 319772,
+      "file_offset": 319772,
+      "before_hex": "36000200",
+      "before_asm": "tbz w0, #0, #0x4e15c",
+      "after_hex": "14000010",
+      "after_asm": "b #0x4e15c",
+      "label": "APK-SHA pre-request compare -> force clean"
+    },
+    {
+      "va": 412052,
+      "file_offset": 412052,
+      "before_hex": "360000a0",
+      "before_asm": "tbz w0, #0, #0x649a8",
+      "after_hex": "14000005",
+      "after_asm": "b #0x649a8",
+      "label": "frida scan #2 (string transform) -> force clean"
+    },
+    {
+      "va": 463464,
+      "file_offset": 463464,
+      "before_hex": "37000d18",
+      "before_asm": "tbnz w24, #0, #0x71408",
+      "after_hex": "d503201f",
+      "after_asm": "nop ",
+      "label": "delmaps maps-tamper -> force clean (fallthrough)"
+    },
+    {
+      "va": 468848,
+      "file_offset": 468848,
+      "before_hex": "360000a0",
+      "before_asm": "tbz w0, #0, #0x72784",
+      "after_hex": "14000005",
+      "after_asm": "b #0x72784",
+      "label": "frida_tokens (post-response) -> force clean"
+    },
+    {
+      "va": 262040,
+      "file_offset": 262040,
+      "before_hex": "36000215",
+      "before_asm": "tbz w21, #0, #0x3ffd8",
+      "after_hex": "14000010",
+      "after_asm": "b #0x3ffd8",
+      "label": "APK-SHA init compare -> force clean (ret 0)"
+    },
+    {
+      "va": 676716,
+      "file_offset": 676716,
+      "before_hex": "37000060",
+      "before_asm": "tbnz w0, #0, #0xa5378",
+      "after_hex": "d503201f",
+      "after_asm": "nop ",
+      "label": "hooktokens (post-response internal) -> force clean"
+    },
+    {
+      "va": 676724,
+      "file_offset": 676724,
+      "before_hex": "36001740",
+      "before_asm": "tbz w0, #0, #0xa565c",
+      "after_hex": "140000ba",
+      "after_asm": "b #0xa565c",
+      "label": "frida_tokens (post-response internal) -> force clean"
+    }
+  ],
+  "output_sha256": "bbddc4118649f57edb0756dcf3670f727d6bfe8982b3f96cba4750fbdabb59da"
+}
